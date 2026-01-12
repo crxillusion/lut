@@ -12,11 +12,64 @@ export default function Home() {
   const [currentSection, setCurrentSection] = useState<Section>('hero');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'forward' | 'reverse'>('forward');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   const transitionVideoRef = useRef<HTMLVideoElement>(null);
   const aboutLoopVideoRef = useRef<HTMLVideoElement>(null);
   const lastScrollTime = useRef<number>(0);
   const scrollCooldown = 1500; // Cooldown between transitions
+
+  // Preload all videos
+  useEffect(() => {
+    const videos = [
+      `${basePath}/videos/Homepage_loop[0000-0150].mp4`,
+      `${basePath}/videos/Homepage_aboutstart[0150-0180].mp4`,
+      `${basePath}/videos/aboutstart_homepage_reverse[0180-0150].mp4`,
+      `${basePath}/videos/aboutstart_loop[0000-0150].mp4`,
+    ];
+
+    let loadedCount = 0;
+    const totalVideos = videos.length;
+
+    const videoElements = videos.map(src => {
+      const video = document.createElement('video');
+      video.src = src;
+      video.preload = 'auto';
+      
+      const updateProgress = () => {
+        loadedCount++;
+        const progress = (loadedCount / totalVideos) * 100;
+        setLoadingProgress(progress);
+        
+        if (loadedCount === totalVideos) {
+          // Small delay to ensure smooth transition
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 500);
+        }
+      };
+
+      video.addEventListener('canplaythrough', updateProgress, { once: true });
+      video.load();
+      
+      return video;
+    });
+
+    // Fallback timeout - show page after 10 seconds even if videos aren't fully loaded
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 10000);
+
+    return () => {
+      clearTimeout(timeout);
+      videoElements.forEach(video => {
+        video.remove();
+      });
+    };
+  }, []);
 
   // Handle wheel/scroll events to trigger transitions
   useEffect(() => {
@@ -138,7 +191,31 @@ export default function Home() {
   };
 
   return (
-    <main className="fixed inset-0 w-full h-screen overflow-hidden">
+    <>
+      {/* Loading Screen */}
+      {isLoading && (
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
+          <div className="text-center">
+            {/* Logo or Brand Name */}
+            <h1 className="text-white text-6xl md:text-8xl font-bold mb-8">LUT</h1>
+            
+            {/* Loading Bar */}
+            <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white transition-all duration-300 ease-out"
+                style={{ width: `${loadingProgress}%` }}
+              />
+            </div>
+            
+            {/* Loading Text */}
+            <p className="text-white text-sm mt-4 tracking-wider opacity-70">
+              Loading {Math.round(loadingProgress)}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      <main className="fixed inset-0 w-full h-screen overflow-hidden">
       {/* Hero Section - Homepage Loop */}
       <section 
         className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
@@ -272,5 +349,6 @@ export default function Home() {
         </div>
       </section>
     </main>
+    </>
   );
 }
