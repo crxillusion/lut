@@ -34,9 +34,7 @@ export function useVideoPreloader(videoPaths: string[]) {
 
     // Fallback timeout
     const timeout = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }, LOADING_TIMEOUT);
 
     return () => {

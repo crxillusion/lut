@@ -15,6 +15,7 @@ export default function Home() {
   const [currentSection, setCurrentSection] = useState<Section>('hero');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<TransitionDirection>('forward');
+  const isTransitioningRef = useRef(false);
 
   // Video refs
   const heroVideoRef = useRef<HTMLVideoElement>(null);
@@ -31,68 +32,88 @@ export default function Home() {
 
   // Transition handlers
   const transitionToAbout = useCallback(() => {
-    if (isTransitioning) return;
+    if (isTransitioningRef.current) return;
     
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
     setTransitionDirection('forward');
     
     setTimeout(() => {
-      if (transitionVideoRef.current) {
-        transitionVideoRef.current.currentTime = 0;
-        
-        transitionVideoRef.current.onended = () => {
-          setCurrentSection('about');
-          setIsTransitioning(false);
+      try {
+        if (transitionVideoRef.current) {
+          transitionVideoRef.current.currentTime = 0;
           
-          if (aboutLoopVideoRef.current) {
-            aboutLoopVideoRef.current.currentTime = 0;
-            aboutLoopVideoRef.current.play().catch(err => console.log('About video play error:', err));
-          }
-        };
-        
-        transitionVideoRef.current.play().catch(err => {
-          console.log('Transition video play error:', err);
-          setCurrentSection('about');
-          setIsTransitioning(false);
-          if (aboutLoopVideoRef.current) {
-            aboutLoopVideoRef.current.play();
-          }
-        });
+          transitionVideoRef.current.onended = () => {
+            setCurrentSection('about');
+            setIsTransitioning(false);
+            isTransitioningRef.current = false;
+            
+            if (aboutLoopVideoRef.current) {
+              aboutLoopVideoRef.current.currentTime = 0;
+              aboutLoopVideoRef.current.play().catch(err => console.log('About video play error:', err));
+            }
+          };
+          
+          transitionVideoRef.current.play().catch(err => {
+            console.log('Transition video play error:', err);
+            setCurrentSection('about');
+            setIsTransitioning(false);
+            isTransitioningRef.current = false;
+            if (aboutLoopVideoRef.current) {
+              aboutLoopVideoRef.current.play();
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Transition error:', err);
+        setCurrentSection('about');
+        setIsTransitioning(false);
+        isTransitioningRef.current = false;
       }
     }, 50);
-  }, [isTransitioning]);
+  }, []);
 
   const transitionToHero = useCallback(() => {
-    if (isTransitioning) return;
+    if (isTransitioningRef.current) return;
     
+    isTransitioningRef.current = true;
     setIsTransitioning(true);
     setTransitionDirection('reverse');
     
     setTimeout(() => {
-      if (transitionVideoRef.current) {
-        transitionVideoRef.current.currentTime = 0;
-        
-        transitionVideoRef.current.onended = () => {
-          setCurrentSection('hero');
-          setIsTransitioning(false);
+      try {
+        if (transitionVideoRef.current) {
+          transitionVideoRef.current.currentTime = 0;
           
-          if (heroVideoRef.current) {
-            heroVideoRef.current.currentTime = 0;
-            heroVideoRef.current.play().catch(err => console.log('Hero video play error:', err));
-          }
-        };
-        
-        transitionVideoRef.current.play().catch(err => {
-          console.log('Transition video play error:', err);
-          setCurrentSection('hero');
-          setIsTransitioning(false);
-          if (heroVideoRef.current) {
-            heroVideoRef.current.play();
-          }
-        });
+          transitionVideoRef.current.onended = () => {
+            setCurrentSection('hero');
+            setIsTransitioning(false);
+            isTransitioningRef.current = false;
+            
+            if (heroVideoRef.current) {
+              heroVideoRef.current.currentTime = 0;
+              heroVideoRef.current.play().catch(err => console.log('Hero video play error:', err));
+            }
+          };
+          
+          transitionVideoRef.current.play().catch(err => {
+            console.log('Transition video play error:', err);
+            setCurrentSection('hero');
+            setIsTransitioning(false);
+            isTransitioningRef.current = false;
+            if (heroVideoRef.current) {
+              heroVideoRef.current.play();
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Transition error:', err);
+        setCurrentSection('hero');
+        setIsTransitioning(false);
+        isTransitioningRef.current = false;
       }
     }, 50);
-  }, [isTransitioning]);
+  }, []);
 
   // Scroll handling
   useScrollTransition({
