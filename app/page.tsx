@@ -41,28 +41,42 @@ export default function Home() {
     setTimeout(() => {
       try {
         if (transitionVideoRef.current) {
-          transitionVideoRef.current.currentTime = 0;
+          const video = transitionVideoRef.current;
+          video.currentTime = 0;
           
-          transitionVideoRef.current.onended = () => {
+          // Load the video to ensure it's ready
+          video.load();
+          
+          const handleCanPlay = () => {
+            video.play().catch(err => {
+              console.warn('Transition video play error:', err.name);
+              // If play fails, skip to about section immediately
+              setCurrentSection('about');
+              setIsTransitioning(false);
+              isTransitioningRef.current = false;
+              if (aboutLoopVideoRef.current) {
+                aboutLoopVideoRef.current.play().catch(() => {});
+              }
+            });
+          };
+          
+          video.onended = () => {
             setCurrentSection('about');
             setIsTransitioning(false);
             isTransitioningRef.current = false;
             
             if (aboutLoopVideoRef.current) {
               aboutLoopVideoRef.current.currentTime = 0;
-              aboutLoopVideoRef.current.play().catch(err => console.log('About video play error:', err));
+              aboutLoopVideoRef.current.play().catch(() => {});
             }
           };
           
-          transitionVideoRef.current.play().catch(err => {
-            console.log('Transition video play error:', err);
-            setCurrentSection('about');
-            setIsTransitioning(false);
-            isTransitioningRef.current = false;
-            if (aboutLoopVideoRef.current) {
-              aboutLoopVideoRef.current.play();
-            }
-          });
+          // Wait for video to be ready to play
+          if (video.readyState >= 3) {
+            handleCanPlay();
+          } else {
+            video.addEventListener('canplay', handleCanPlay, { once: true });
+          }
         }
       } catch (err) {
         console.error('Transition error:', err);
@@ -83,28 +97,42 @@ export default function Home() {
     setTimeout(() => {
       try {
         if (transitionVideoRef.current) {
-          transitionVideoRef.current.currentTime = 0;
+          const video = transitionVideoRef.current;
+          video.currentTime = 0;
           
-          transitionVideoRef.current.onended = () => {
+          // Load the video to ensure it's ready
+          video.load();
+          
+          const handleCanPlay = () => {
+            video.play().catch(err => {
+              console.warn('Transition video play error:', err.name);
+              // If play fails, skip to hero section immediately
+              setCurrentSection('hero');
+              setIsTransitioning(false);
+              isTransitioningRef.current = false;
+              if (heroVideoRef.current) {
+                heroVideoRef.current.play().catch(() => {});
+              }
+            });
+          };
+          
+          video.onended = () => {
             setCurrentSection('hero');
             setIsTransitioning(false);
             isTransitioningRef.current = false;
             
             if (heroVideoRef.current) {
               heroVideoRef.current.currentTime = 0;
-              heroVideoRef.current.play().catch(err => console.log('Hero video play error:', err));
+              heroVideoRef.current.play().catch(() => {});
             }
           };
           
-          transitionVideoRef.current.play().catch(err => {
-            console.log('Transition video play error:', err);
-            setCurrentSection('hero');
-            setIsTransitioning(false);
-            isTransitioningRef.current = false;
-            if (heroVideoRef.current) {
-              heroVideoRef.current.play();
-            }
-          });
+          // Wait for video to be ready to play
+          if (video.readyState >= 3) {
+            handleCanPlay();
+          } else {
+            video.addEventListener('canplay', handleCanPlay, { once: true });
+          }
         }
       } catch (err) {
         console.error('Transition error:', err);
