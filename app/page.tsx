@@ -5,6 +5,9 @@ import { Instagram, Linkedin } from 'lucide-react';
 
 type Section = 'hero' | 'about' | 'contact';
 
+// Use basePath for GitHub Pages deployment
+const basePath = process.env.NODE_ENV === 'production' ? '/lut' : '';
+
 export default function Home() {
   const [currentSection, setCurrentSection] = useState<Section>('hero');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -151,7 +154,7 @@ export default function Home() {
           preload="auto"
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/videos/Homepage_loop[0000-0150].mp4" type="video/mp4" />
+          <source src={`${basePath}/videos/Homepage_loop[0000-0150].mp4`} type="video/mp4" />
         </video>
 
         {/* Navigation Overlay */}
@@ -209,8 +212,8 @@ export default function Home() {
           >
             <source 
               src={transitionDirection === 'forward' 
-                ? "/videos/Homepage_aboutstart[0150-0180].mp4" 
-                : "/videos/aboutstart_homepage_reverse[0180-0150].mp4"
+                ? `${basePath}/videos/Homepage_aboutstart[0150-0180].mp4` 
+                : `${basePath}/videos/aboutstart_homepage_reverse[0180-0150].mp4`
               } 
               type="video/mp4" 
             />
@@ -232,7 +235,7 @@ export default function Home() {
           preload="auto"
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/videos/aboutstart_loop[0000-0150].mp4" type="video/mp4" />
+          <source src={`${basePath}/videos/aboutstart_loop[0000-0150].mp4`} type="video/mp4" />
         </video>
 
         {/* About Content Overlay */}
