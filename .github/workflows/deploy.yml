@@ -22,7 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: true
+          lfs: false
+      
+      - name: Checkout LFS objects
+        run: |
+          git lfs install
+          git lfs pull
       
       - name: Setup Node
         uses: actions/setup-node@v4
