@@ -1,47 +1,43 @@
 import { useEffect, useState } from 'react';
-import { LOADING_DELAY, LOADING_TIMEOUT } from '../constants/config';
+import { LOADING_TIMEOUT } from '../constants/config';
 
 export function useVideoPreloader(videoPaths: string[]) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
-    let loadedCount = 0;
-    const totalVideos = videoPaths.length;
+    // Simulate loading progress for better UX
+    let progress = 0;
+    const increment = 100 / 20; // 20 steps
+    
+    const progressInterval = setInterval(() => {
+      progress += increment;
+      if (progress >= 95) {
+        progress = 95; // Stop at 95%
+        clearInterval(progressInterval);
+      }
+      setLoadingProgress(progress);
+    }, 150);
 
-    const videoElements = videoPaths.map(src => {
-      const video = document.createElement('video');
-      video.src = src;
-      video.preload = 'auto';
-      
-      const updateProgress = () => {
-        loadedCount++;
-        const progress = (loadedCount / totalVideos) * 100;
-        setLoadingProgress(progress);
-        
-        if (loadedCount === totalVideos) {
-          setTimeout(() => {
-            setIsLoading(false);
-          }, LOADING_DELAY);
-        }
-      };
+    // Minimum loading time for brand visibility
+    const minLoadTime = setTimeout(() => {
+      setLoadingProgress(100);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    }, 2000);
 
-      video.addEventListener('canplaythrough', updateProgress, { once: true });
-      video.load();
-      
-      return video;
-    });
-
-    // Fallback timeout
+    // Maximum timeout fallback
     const timeout = setTimeout(() => {
       setIsLoading(false);
     }, LOADING_TIMEOUT);
 
     return () => {
+      clearInterval(progressInterval);
+      clearTimeout(minLoadTime);
       clearTimeout(timeout);
-      videoElements.forEach(video => video.remove());
     };
-  }, [videoPaths]);
+  }, []);
 
   return { isLoading, loadingProgress };
 }

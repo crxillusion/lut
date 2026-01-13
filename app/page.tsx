@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { HeroSection } from './components/HeroSection';
 import { AboutSection } from './components/AboutSection';
@@ -22,13 +22,26 @@ export default function Home() {
   const transitionVideoRef = useRef<HTMLVideoElement>(null);
   const aboutLoopVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Preload videos
+  // Preload videos (simplified - no actual preloading to prevent memory issues)
   const { isLoading, loadingProgress } = useVideoPreloader([
     VIDEO_PATHS.heroLoop,
     VIDEO_PATHS.heroToAbout,
     VIDEO_PATHS.aboutToHero,
     VIDEO_PATHS.aboutLoop,
   ]);
+
+  // Cleanup videos on unmount
+  useEffect(() => {
+    return () => {
+      [heroVideoRef, transitionVideoRef, aboutLoopVideoRef].forEach(ref => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.src = '';
+          ref.current.load();
+        }
+      });
+    };
+  }, []);
 
   // Transition handlers
   const transitionToAbout = useCallback(() => {
