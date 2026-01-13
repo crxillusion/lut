@@ -1,4 +1,4 @@
-import { RefObject, useEffect } from 'react';
+import { RefObject, useEffect, useRef, useState } from 'react';
 import { RotateCcw, Instagram, Linkedin } from 'lucide-react';
 
 interface StaticSectionProps {
@@ -18,42 +18,108 @@ export function StaticSection({
   content,
   onBackClick 
 }: StaticSectionProps) {
-  // Load video and seek to last frame when component mounts
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isFrameCaptured, setIsFrameCaptured] = useState(false);
+  const captureAttemptedRef = useRef(false);
+  const targetTimeRef = useRef<number>(0);
+  
+  // Capture the last frame to canvas
   useEffect(() => {
-    if (videoRef.current && isVisible) {
+    if (videoRef.current && canvasRef.current && !captureAttemptedRef.current) {
       const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
       
-      const seekToEnd = () => {
-        if (video.duration && !isNaN(video.duration)) {
-          // Seek to last frame (duration - 0.001 seconds)
-          video.currentTime = video.duration - 0.001;
+      if (!ctx) return;
+      
+      let seekTimeout: NodeJS.Timeout | null = null;
+      
+      const captureFrame = () => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          // Set canvas dimensions to match video
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
+          // Draw the current frame
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          setIsFrameCaptured(true);
+          captureAttemptedRef.current = true;
+          
+          console.log(`[StaticSection ${videoSrc.split('/').pop()}] ✅ Frame captured at ${video.currentTime.toFixed(3)}s / ${video.duration.toFixed(3)}s`);
         }
       };
       
-      const handleLoadedMetadata = () => {
-        seekToEnd();
+      const seekToLastFrame = () => {
+        if (video.duration && !isNaN(video.duration) && video.duration > 0) {
+          targetTimeRef.current = video.duration - 0.05;
+          video.currentTime = targetTimeRef.current;
+          
+          console.log(`[StaticSection ${videoSrc.split('/').pop()}] 🎯 Seeking to ${targetTimeRef.current.toFixed(3)}s`);
+          
+          // Fallback: if seeked event doesn't fire within 500ms, try capturing anyway
+          seekTimeout = setTimeout(() => {
+            console.log(`[StaticSection ${videoSrc.split('/').pop()}] ⚠️ Seeked event timeout, capturing current frame`);
+            captureFrame();
+          }, 500);
+        }
       };
       
       const handleSeeked = () => {
-        video.pause(); // Ensure it stays paused after seeking
+        if (seekTimeout) {
+          clearTimeout(seekTimeout);
+          seekTimeout = null;
+        }
+        
+        console.log(`[StaticSection ${videoSrc.split('/').pop()}] 📍 Seeked event fired, currentTime: ${video.currentTime.toFixed(3)}s, target: ${targetTimeRef.current.toFixed(3)}s`);
+        
+        // Verify we're at the right time
+        const timeDiff = Math.abs(video.currentTime - targetTimeRef.current);
+        if (timeDiff > 0.1) {
+          console.log(`[StaticSection ${videoSrc.split('/').pop()}] ⚠️ Seek mismatch! Retrying...`);
+          // Try seeking again
+          video.currentTime = targetTimeRef.current;
+          return;
+        }
+        
+        // Wait a frame to ensure the video frame is actually rendered
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            captureFrame();
+          });
+        });
       };
       
-      // Load the video
-      video.load();
+      const handleLoadedMetadata = () => {
+        console.log(`[StaticSection ${videoSrc.split('/').pop()}] 📊 Metadata loaded, duration: ${video.duration.toFixed(3)}s`);
+        if (video.duration) {
+          seekToLastFrame();
+        }
+      };
+      
       video.addEventListener('loadedmetadata', handleLoadedMetadata);
       video.addEventListener('seeked', handleSeeked);
       
-      // If metadata is already loaded
-      if (video.readyState >= 1) {
-        seekToEnd();
+      // Check if already loaded
+      if (video.readyState >= 1 && video.duration && !captureAttemptedRef.current) {
+        console.log(`[StaticSection ${videoSrc.split('/').pop()}] 📺 Video already loaded`);
+        seekToLastFrame();
+      } else if (video.readyState === 0) {
+        video.load();
       }
       
       return () => {
+        if (seekTimeout) clearTimeout(seekTimeout);
         video.removeEventListener('loadedmetadata', handleLoadedMetadata);
         video.removeEventListener('seeked', handleSeeked);
       };
     }
-  }, [videoRef, isVisible, videoSrc]);
+  }, [videoRef, videoSrc]);
+  
+  // Reset capture state when video source changes
+  useEffect(() => {
+    captureAttemptedRef.current = false;
+    setIsFrameCaptured(false);
+  }, [videoSrc]);
 
   return (
     <section 
@@ -61,15 +127,23 @@ export function StaticSection({
         isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
-      {/* Video Background - paused at last frame */}
+      {/* Hidden video for frame extraction */}
       <video
         ref={videoRef}
         src={videoSrc}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="hidden"
         playsInline
         muted
         preload="auto"
-        autoPlay={false}
+      />
+
+      {/* Canvas showing the last frame */}
+      <canvas
+        ref={canvasRef}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+          isFrameCaptured ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ objectFit: 'cover' }}
       />
 
       {/* Content Overlay */}
