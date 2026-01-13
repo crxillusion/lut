@@ -2,7 +2,7 @@ import { Instagram, Linkedin } from 'lucide-react';
 
 export function SocialLinks() {
   return (
-    <div className="absolute bottom-8 left-8 flex gap-4">
+    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
       <a 
         href="https://instagram.com" 
         target="_blank" 

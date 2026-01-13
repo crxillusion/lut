@@ -31,14 +31,17 @@ export function AboutSection({
       />
 
       {/* Content Overlay */}
-      <div className="relative z-10 flex flex-col h-full p-8 md:p-16">
-        <Navigation 
-          currentSection={currentSection}
-          onHeroClick={onHeroClick}
-        />
+      <div className="relative z-10 h-full">
+        {/* Navigation - 390px from top */}
+        <div className="absolute top-[390px] left-0 right-0 flex justify-center">
+          <Navigation 
+            currentSection={currentSection}
+            onHeroClick={onHeroClick}
+          />
+        </div>
 
-        {/* About Content */}
-        <div className="flex-1 flex items-center justify-center">
+        {/* About Content - Below Navigation */}
+        <div className="absolute inset-0 flex items-center justify-center pt-32">
           <div className="max-w-4xl text-center text-white">
             <h1 className="text-5xl md:text-7xl font-bold mb-8">About Us</h1>
             <p className="text-lg md:text-xl leading-relaxed opacity-90">

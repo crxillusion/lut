@@ -33,15 +33,19 @@ export function HeroSection({
       />
 
       {/* Overlay Content */}
-      <div className="relative z-10 flex flex-col h-full">
-        <Navigation 
-          currentSection={currentSection}
-          onAboutClick={onAboutClick}
-        />
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white text-xs tracking-wider">
-          Scroll down ↓
+      <div className="relative z-10 h-full">
+        {/* Navigation - 390px from top */}
+        <div className="absolute top-[390px] left-0 right-0">
+          <div className="flex flex-col items-center">
+            <Navigation 
+              currentSection={currentSection}
+              onAboutClick={onAboutClick}
+            />
+            {/* Scroll Indicator - Right below navigation */}
+            <div className="mt-4 text-white text-xs tracking-wider">
+              *scroll to discover
+            </div>
+          </div>
         </div>
 
         <SocialLinks />

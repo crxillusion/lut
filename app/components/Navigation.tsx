@@ -8,27 +8,23 @@ interface NavigationProps {
 
 export function Navigation({ currentSection, onAboutClick, onHeroClick }: NavigationProps) {
   return (
-    <nav className="flex justify-center items-center gap-12 pt-8 md:pt-12">
+    <nav className="flex justify-center items-center gap-12 -mt-30">
       <button 
         onClick={onHeroClick}
-        className={`text-white text-sm md:text-base tracking-[0.3em] hover:opacity-70 transition-opacity ${
-          currentSection === 'hero' ? 'opacity-100 border-b-2 border-white' : ''
-        }`}
+        className={`font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity`}
       >
         SHOWREEL
       </button>
       <button 
         onClick={onAboutClick}
-        className={`text-white text-sm md:text-base tracking-[0.3em] hover:opacity-70 transition-opacity ${
-          currentSection === 'about' ? 'opacity-100 border-b-2 border-white' : ''
-        }`}
+        className={`font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity`}
       >
         ABOUT
       </button>
-      <button className="text-white text-sm md:text-base tracking-[0.3em] hover:opacity-70 transition-opacity">
+      <button className="font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity">
         CASES
       </button>
-      <button className="text-white text-sm md:text-base tracking-[0.3em] hover:opacity-70 transition-opacity">
+      <button className="font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity">
         CONTACT
       </button>
     </nav>
