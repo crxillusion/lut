@@ -26,11 +26,13 @@ export function useScrollTransition({
       const now = Date.now();
       if (now - lastScrollTime.current < SCROLL_COOLDOWN) return;
       
-      if (e.deltaY > 0 && currentSection === 'hero') {
-        lastScrollTime.current = now;
+      lastScrollTime.current = now;
+      
+      if (e.deltaY > 0) {
+        // Scrolling down
         onScrollDown();
-      } else if (e.deltaY < 0 && currentSection === 'about') {
-        lastScrollTime.current = now;
+      } else if (e.deltaY < 0) {
+        // Scrolling up
         onScrollUp();
       }
     };

@@ -25,8 +25,7 @@ export default function Home() {
   const showreelVideoRef = useRef<HTMLVideoElement>(null);
   const aboutStartVideoRef = useRef<HTMLVideoElement>(null);
   const aboutVideoRef = useRef<HTMLVideoElement>(null);
-  const team1VideoRef = useRef<HTMLVideoElement>(null);
-  const team2VideoRef = useRef<HTMLVideoElement>(null);
+  const teamVideoRef = useRef<HTMLVideoElement>(null);
   const offerVideoRef = useRef<HTMLVideoElement>(null);
   const partnerVideoRef = useRef<HTMLVideoElement>(null);
   const casesVideoRef = useRef<HTMLVideoElement>(null);
@@ -48,7 +47,7 @@ export default function Home() {
     return () => {
       const refs = [
         heroVideoRef, transitionVideoRef, showreelVideoRef, aboutStartVideoRef,
-        aboutVideoRef, team1VideoRef, team2VideoRef, offerVideoRef, partnerVideoRef, casesVideoRef, contactVideoRef
+        aboutVideoRef, teamVideoRef, offerVideoRef, partnerVideoRef, casesVideoRef, contactVideoRef
       ];
       refs.forEach(ref => {
         if (ref.current) {
@@ -64,7 +63,7 @@ export default function Home() {
   const handleTransition = useCallback((
     targetSection: Section,
     transitionVideo: string,
-    targetVideoRef: React.RefObject<HTMLVideoElement | null>
+    targetVideoRef: React.RefObject<HTMLVideoElement>
   ) => {
     if (isTransitioningRef.current) return;
     
@@ -134,60 +133,6 @@ export default function Home() {
     handleTransition('contact', VIDEO_PATHS.heroToContact, contactVideoRef);
   }, [handleTransition]);
 
-  // Additional transition functions for the full flow
-  const transitionToAbout = useCallback(() => {
-    handleTransition('about', VIDEO_PATHS.aboutStartToAbout, aboutVideoRef);
-  }, [handleTransition]);
-
-  const transitionToTeam1 = useCallback(() => {
-    handleTransition('team1', VIDEO_PATHS.aboutToTeam, team1VideoRef);
-  }, [handleTransition]);
-
-  const transitionTeam1ToTeam2 = useCallback(() => {
-    handleTransition('team2', VIDEO_PATHS.team1ToTeam2, team2VideoRef);
-  }, [handleTransition]);
-
-  const transitionToOffer = useCallback(() => {
-    handleTransition('offer', VIDEO_PATHS.team2ToOffer, offerVideoRef);
-  }, [handleTransition]);
-
-  const transitionToPartner = useCallback(() => {
-    handleTransition('partner', VIDEO_PATHS.offerToPartner, partnerVideoRef);
-  }, [handleTransition]);
-
-  const transitionPartnerToCases = useCallback(() => {
-    handleTransition('cases', VIDEO_PATHS.partnerToCases, casesVideoRef);
-  }, [handleTransition]);
-
-  const transitionCasesToContact = useCallback(() => {
-    handleTransition('contact', VIDEO_PATHS.casesToContact, contactVideoRef);
-  }, [handleTransition]);
-
-  // Reverse transitions
-  const transitionAboutToAboutStart = useCallback(() => {
-    handleTransition('aboutStart', VIDEO_PATHS.aboutToAboutStart, aboutStartVideoRef);
-  }, [handleTransition]);
-
-  const transitionTeam1ToAbout = useCallback(() => {
-    handleTransition('about', VIDEO_PATHS.teamToAbout, aboutVideoRef);
-  }, [handleTransition]);
-
-  const transitionTeam2ToTeam1 = useCallback(() => {
-    handleTransition('team1', VIDEO_PATHS.team2ToTeam1, team1VideoRef);
-  }, [handleTransition]);
-
-  const transitionOfferToTeam2 = useCallback(() => {
-    handleTransition('team2', VIDEO_PATHS.offerToTeam2, team2VideoRef);
-  }, [handleTransition]);
-
-  const transitionPartnerToOffer = useCallback(() => {
-    handleTransition('offer', VIDEO_PATHS.partnerToOffer, offerVideoRef);
-  }, [handleTransition]);
-
-  const transitionCasesToPartner = useCallback(() => {
-    handleTransition('partner', VIDEO_PATHS.casesToPartner, partnerVideoRef);
-  }, [handleTransition]);
-
   // Transition back to Hero
   const transitionToHero = useCallback(() => {
     let reverseVideo = '';
@@ -210,99 +155,12 @@ export default function Home() {
     handleTransition('hero', reverseVideo, heroVideoRef);
   }, [currentSection, handleTransition]);
 
-  // Scroll handling - Full navigation flow
-  // Hero -> AboutStart -> About -> Team1 -> Team2 -> Offer -> Partner -> Cases -> Contact -> Hero
-  const handleScrollDown = useCallback(() => {
-    switch(currentSection) {
-      case 'hero': 
-        transitionToAboutStart();
-        break;
-      case 'aboutStart': 
-        transitionToAbout();
-        break;
-      case 'about': 
-        transitionToTeam1();
-        break;
-      case 'team1': 
-        transitionTeam1ToTeam2();
-        break;
-      case 'team2': 
-        transitionToOffer();
-        break;
-      case 'offer': 
-        transitionToPartner();
-        break;
-      case 'partner': 
-        transitionPartnerToCases();
-        break;
-      case 'cases': 
-        transitionCasesToContact();
-        break;
-      case 'contact': 
-        transitionToHero();
-        break;
-      default: 
-        break;
-    }
-  }, [
-    currentSection, 
-    transitionToAboutStart, 
-    transitionToAbout,
-    transitionToTeam1,
-    transitionTeam1ToTeam2,
-    transitionToOffer,
-    transitionToPartner,
-    transitionPartnerToCases,
-    transitionCasesToContact,
-    transitionToHero
-  ]);
-
-  const handleScrollUp = useCallback(() => {
-    switch(currentSection) {
-      case 'aboutStart': 
-        transitionToHero();
-        break;
-      case 'about': 
-        transitionAboutToAboutStart();
-        break;
-      case 'team1': 
-        transitionTeam1ToAbout();
-        break;
-      case 'team2': 
-        transitionTeam2ToTeam1();
-        break;
-      case 'offer': 
-        transitionOfferToTeam2();
-        break;
-      case 'partner': 
-        transitionPartnerToOffer();
-        break;
-      case 'cases': 
-        transitionCasesToPartner();
-        break;
-      case 'contact': 
-        transitionToCases();
-        break;
-      default: 
-        break;
-    }
-  }, [
-    currentSection, 
-    transitionToHero, 
-    transitionAboutToAboutStart,
-    transitionTeam1ToAbout,
-    transitionTeam2ToTeam1,
-    transitionOfferToTeam2,
-    transitionPartnerToOffer,
-    transitionCasesToPartner,
-    transitionToCases
-  ]);
-
+  // Scroll handling - only works on hero and aboutStart sections
   useScrollTransition({
     currentSection,
     isTransitioning,
-    onScrollDown: handleScrollDown,
-    onScrollUp: handleScrollUp,
+    onScrollDown: currentSection === 'hero' ? transitionToAboutStart : undefined,
+    onScrollUp: currentSection === 'aboutStart' ? transitionToHero : undefined,
   });
 
   return (
@@ -349,64 +207,14 @@ export default function Home() {
           onHeroClick={transitionToHero}
         />
 
-        {/* About Section */}
-        <StaticSection
-          videoRef={aboutVideoRef}
-          videoSrc={VIDEO_PATHS.aboutStartToAbout}
-          isVisible={currentSection === 'about'}
-          title="About Us"
-          content="We transform brands through creative excellence."
-          onBackClick={transitionAboutToAboutStart}
-        />
-
-        {/* Team 1 Section */}
-        <StaticSection
-          videoRef={team1VideoRef}
-          videoSrc={VIDEO_PATHS.aboutToTeam}
-          isVisible={currentSection === 'team1'}
-          title="Our Team"
-          content="Meet the talented people behind our work."
-          onBackClick={transitionTeam1ToAbout}
-        />
-
-        {/* Team 2 Section */}
-        <StaticSection
-          videoRef={team2VideoRef}
-          videoSrc={VIDEO_PATHS.team1ToTeam2}
-          isVisible={currentSection === 'team2'}
-          title="Our Team"
-          content="Continued..."
-          onBackClick={transitionTeam2ToTeam1}
-        />
-
-        {/* Offer Section */}
-        <StaticSection
-          videoRef={offerVideoRef}
-          videoSrc={VIDEO_PATHS.team2ToOffer}
-          isVisible={currentSection === 'offer'}
-          title="What We Offer"
-          content="Comprehensive creative solutions for your brand."
-          onBackClick={transitionOfferToTeam2}
-        />
-
-        {/* Partner Section */}
-        <StaticSection
-          videoRef={partnerVideoRef}
-          videoSrc={VIDEO_PATHS.offerToPartner}
-          isVisible={currentSection === 'partner'}
-          title="Our Partners"
-          content="Collaborating with industry leaders."
-          onBackClick={transitionPartnerToOffer}
-        />
-
         {/* Cases Section */}
         <StaticSection
           videoRef={casesVideoRef}
-          videoSrc={VIDEO_PATHS.partnerToCases}
+          videoSrc={VIDEO_PATHS.heroToCases}
           isVisible={currentSection === 'cases'}
           title="Cases"
           content="Our portfolio of exceptional work."
-          onBackClick={transitionCasesToPartner}
+          onBackClick={transitionToHero}
         />
 
         {/* Contact Section */}

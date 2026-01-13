@@ -9,7 +9,10 @@ interface HeroSectionProps {
   videoSrc: string;
   isVisible: boolean;
   currentSection: Section;
+  onShowreelClick: () => void;
   onAboutClick: () => void;
+  onCasesClick: () => void;
+  onContactClick: () => void;
 }
 
 export function HeroSection({ 
@@ -17,7 +20,10 @@ export function HeroSection({
   videoSrc, 
   isVisible, 
   currentSection,
-  onAboutClick 
+  onShowreelClick,
+  onAboutClick,
+  onCasesClick,
+  onContactClick
 }: HeroSectionProps) {
   return (
     <section 
@@ -39,7 +45,10 @@ export function HeroSection({
           <div className="flex flex-col items-center">
             <Navigation 
               currentSection={currentSection}
+              onShowreelClick={onShowreelClick}
               onAboutClick={onAboutClick}
+              onCasesClick={onCasesClick}
+              onContactClick={onContactClick}
             />
             {/* Scroll Indicator - Right below navigation */}
             <div className="mt-4 text-white text-xs tracking-wider">

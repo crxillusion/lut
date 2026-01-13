@@ -2,15 +2,23 @@ import type { Section } from '../constants/config';
 
 interface NavigationProps {
   currentSection: Section;
+  onShowreelClick?: () => void;
   onAboutClick?: () => void;
-  onHeroClick?: () => void;
+  onCasesClick?: () => void;
+  onContactClick?: () => void;
 }
 
-export function Navigation({ currentSection, onAboutClick, onHeroClick }: NavigationProps) {
+export function Navigation({ 
+  currentSection, 
+  onShowreelClick,
+  onAboutClick,
+  onCasesClick,
+  onContactClick
+}: NavigationProps) {
   return (
     <nav className="flex justify-center items-center gap-12 -mt-30">
       <button 
-        onClick={onHeroClick}
+        onClick={onShowreelClick}
         className={`font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity`}
       >
         SHOWREEL
@@ -21,10 +29,16 @@ export function Navigation({ currentSection, onAboutClick, onHeroClick }: Naviga
       >
         ABOUT
       </button>
-      <button className="font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity">
+      <button 
+        onClick={onCasesClick}
+        className="font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity"
+      >
         CASES
       </button>
-      <button className="font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity">
+      <button 
+        onClick={onContactClick}
+        className="font-outfit font-bold text-[18px] leading-[100%] tracking-[0.28em] text-center align-middle text-white hover:opacity-70 transition-opacity"
+      >
         CONTACT
       </button>
     </nav>
