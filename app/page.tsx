@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { HeroSection } from './components/HeroSection';
-import { AboutSection } from './components/AboutSection';
+import { AboutStartSection } from './components/AboutSection';
 import { TransitionVideo } from './components/TransitionVideo';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useScrollTransition } from './hooks/useScrollTransition';
@@ -189,12 +189,11 @@ export default function Home() {
           isVisible={isTransitioning}
         />
 
-        {/* About Section */}
-        <AboutSection
+        {/* About Start Section */}
+        <AboutStartSection
           videoRef={aboutLoopVideoRef}
           videoSrc={VIDEO_PATHS.aboutLoop}
           isVisible={currentSection === 'about'}
-          currentSection={currentSection}
           onHeroClick={transitionToHero}
         />
       </main>

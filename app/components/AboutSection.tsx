@@ -1,23 +1,20 @@
 import { RefObject } from 'react';
-import { Navigation } from './Navigation';
 import { VideoBackground } from './VideoBackground';
-import type { Section } from '../constants/config';
+import { RotateCcw, Instagram, Linkedin } from 'lucide-react';
 
-interface AboutSectionProps {
+interface AboutStartSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   videoSrc: string;
   isVisible: boolean;
-  currentSection: Section;
   onHeroClick: () => void;
 }
 
-export function AboutSection({ 
+export function AboutStartSection({ 
   videoRef, 
   videoSrc, 
   isVisible,
-  currentSection,
   onHeroClick 
-}: AboutSectionProps) {
+}: AboutStartSectionProps) {
   return (
     <section 
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
@@ -32,23 +29,48 @@ export function AboutSection({
 
       {/* Content Overlay */}
       <div className="relative z-10 h-full">
-        {/* Navigation - 390px from top */}
-        <div className="absolute top-[390px] left-0 right-0 flex justify-center">
-          <Navigation 
-            currentSection={currentSection}
-            onHeroClick={onHeroClick}
-          />
-        </div>
-
-        {/* About Content - Below Navigation */}
-        <div className="absolute inset-0 flex items-center justify-center pt-32">
-          <div className="max-w-4xl text-center text-white">
-            <h1 className="text-5xl md:text-7xl font-bold mb-8">About Us</h1>
-            <p className="text-lg md:text-xl leading-relaxed opacity-90">
-              We are LUT Studios, crafting exceptional visual experiences
-              through architecture, design, and storytelling.
+        {/* About Content - 500px width, left-aligned, starting from center */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full max-w-[500px] ml-[50%] mb-50">
+            <p className="text-left text-white font-outfit font-medium text-[18px] leading-[150%] tracking-[-0.011em]">
+              What sets us apart is our belief that every project is like a painting, where every frame is crafted with care and precision.
             </p>
           </div>
+        </div>
+
+        {/* Bottom Section - Back Button and Social Links */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+          {/* Back Button */}
+          <button
+            onClick={onHeroClick}
+            className="text-white hover:opacity-70 transition-opacity"
+            aria-label="Go back"
+          >
+            <RotateCcw size={24} strokeWidth={1.5} />
+          </button>
+          
+          {/* Divider */}
+          <div className="w-px h-6 bg-white opacity-30"></div>
+          
+          {/* Social Links Inline */}
+          <a 
+            href="https://instagram.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-white hover:opacity-70 transition-opacity"
+            aria-label="Instagram"
+          >
+            <Instagram size={24} />
+          </a>
+          <a 
+            href="https://linkedin.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-white hover:opacity-70 transition-opacity"
+            aria-label="LinkedIn"
+          >
+            <Linkedin size={24} />
+          </a>
         </div>
       </div>
     </section>
