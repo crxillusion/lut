@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { HeroSection } from './components/HeroSection';
-import { AboutStartSection } from './components/AboutSection';
+import { AboutStartSection } from './components/AboutStartSection';
 import { TransitionVideo } from './components/TransitionVideo';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useScrollTransition } from './hooks/useScrollTransition';
