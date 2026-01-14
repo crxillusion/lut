@@ -3,7 +3,7 @@
 export const BASE_PATH = process.env.NODE_ENV === 'production' ? '/lut' : '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
-export const LOADING_TIMEOUT = 10000; // milliseconds
+export const LOADING_TIMEOUT = 30000; // 30 seconds - enough time to load all 25 videos (52MB total)
 export const LOADING_DELAY = 500; // milliseconds
 
 export const VIDEO_PATHS = {
