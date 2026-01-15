@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
+import { OpeningTransition } from './components/OpeningTransition';
 import { HeroSection } from './components/HeroSection';
 import { AboutStartSection } from './components/AboutStartSection';
 import { StaticSection } from './components/StaticSection';
@@ -17,6 +18,8 @@ export default function Home() {
   const [currentSection, setCurrentSection] = useState<Section>('hero');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionVideoSrc, setTransitionVideoSrc] = useState('');
+  const [showOpening, setShowOpening] = useState(false);
+  const [showHero, setShowHero] = useState(false);
   const isTransitioningRef = useRef(false);
 
   // Video refs for each section
@@ -34,6 +37,7 @@ export default function Home() {
 
   // Preload essential videos - including all transition videos to prevent black flashes
   const { isLoading, loadingProgress } = useVideoPreloader([
+    `${VIDEO_PATHS.heroLoop.split('/videos/')[0]}/videos/loading_to_homepage.mp4`, // Opening video
     VIDEO_PATHS.heroLoop,
     VIDEO_PATHS.heroToShowreel,
     VIDEO_PATHS.showreelToHero,
@@ -59,6 +63,20 @@ export default function Home() {
     VIDEO_PATHS.casesToContact,
     VIDEO_PATHS.contactLoop,
   ]);
+
+  // Handle opening sequence after loading completes
+  useEffect(() => {
+    if (!isLoading && !showOpening && !showHero) {
+      console.log('[Home] Loading complete, starting opening animation');
+      setShowOpening(true);
+    }
+  }, [isLoading, showOpening, showHero]);
+
+  const handleOpeningComplete = useCallback(() => {
+    console.log('[Home] Opening animation complete, showing hero');
+    setShowOpening(false);
+    setShowHero(true);
+  }, []);
 
   // Cleanup videos on unmount
   useEffect(() => {
@@ -327,13 +345,19 @@ export default function Home() {
       {/* Loading Screen */}
       {isLoading && <LoadingScreen progress={loadingProgress} />}
 
+      {/* Opening Transition */}
+      <OpeningTransition 
+        isPlaying={showOpening} 
+        onComplete={handleOpeningComplete} 
+      />
+
       {/* Main Content */}
       <main className="fixed inset-0 w-full h-screen overflow-hidden">
         {/* Hero Section */}
         <HeroSection
           videoRef={heroVideoRef}
           videoSrc={VIDEO_PATHS.heroLoop}
-          isVisible={currentSection === 'hero' && !isTransitioning}
+          isVisible={currentSection === 'hero' && !isTransitioning && showHero}
           currentSection={currentSection}
           onShowreelClick={transitionToShowreel}
           onAboutClick={transitionToAboutStart}
@@ -347,14 +371,14 @@ export default function Home() {
           forwardSrc={transitionVideoSrc}
           reverseSrc={transitionVideoSrc}
           direction="forward"
-          isVisible={isTransitioning}
+          isVisible={isTransitioning && showHero}
         />
 
         {/* Showreel Section */}
         <StaticSection
           videoRef={showreelVideoRef}
           videoSrc={VIDEO_PATHS.heroToShowreel}
-          isVisible={currentSection === 'showreel'}
+          isVisible={currentSection === 'showreel' && showHero}
           onBackClick={transitionToHero}
         />
 
@@ -362,7 +386,7 @@ export default function Home() {
         <AboutStartSection
           videoRef={aboutStartVideoRef}
           videoSrc={VIDEO_PATHS.aboutStartLoop}
-          isVisible={currentSection === 'aboutStart'}
+          isVisible={currentSection === 'aboutStart' && showHero}
           onHeroClick={transitionToHero}
         />
 
@@ -370,7 +394,7 @@ export default function Home() {
         <StaticSection
           videoRef={aboutVideoRef}
           videoSrc={VIDEO_PATHS.aboutStartToAbout}
-          isVisible={currentSection === 'about'}
+          isVisible={currentSection === 'about' && showHero}
           title="About Us"
           content="We transform brands through creative excellence."
           onBackClick={transitionAboutToAboutStart}
@@ -380,7 +404,7 @@ export default function Home() {
         <StaticSection
           videoRef={team1VideoRef}
           videoSrc={VIDEO_PATHS.aboutToTeam}
-          isVisible={currentSection === 'team1'}
+          isVisible={currentSection === 'team1' && showHero}
           title="Our Team"
           content="Meet the talented people behind our work."
           onBackClick={transitionTeam1ToAbout}
@@ -390,7 +414,7 @@ export default function Home() {
         <StaticSection
           videoRef={team2VideoRef}
           videoSrc={VIDEO_PATHS.team1ToTeam2}
-          isVisible={currentSection === 'team2'}
+          isVisible={currentSection === 'team2' && showHero}
           title="Our Team"
           content="Continued..."
           onBackClick={transitionTeam2ToTeam1}
@@ -400,7 +424,7 @@ export default function Home() {
         <StaticSection
           videoRef={offerVideoRef}
           videoSrc={VIDEO_PATHS.team2ToOffer}
-          isVisible={currentSection === 'offer'}
+          isVisible={currentSection === 'offer' && showHero}
           title="What We Offer"
           content="Comprehensive creative solutions for your brand."
           onBackClick={transitionOfferToTeam2}
@@ -410,7 +434,7 @@ export default function Home() {
         <StaticSection
           videoRef={partnerVideoRef}
           videoSrc={VIDEO_PATHS.offerToPartner}
-          isVisible={currentSection === 'partner'}
+          isVisible={currentSection === 'partner' && showHero}
           title="Our Partners"
           content="Collaborating with industry leaders."
           onBackClick={transitionPartnerToOffer}
@@ -420,7 +444,7 @@ export default function Home() {
         <StaticSection
           videoRef={casesVideoRef}
           videoSrc={VIDEO_PATHS.partnerToCases}
-          isVisible={currentSection === 'cases'}
+          isVisible={currentSection === 'cases' && showHero}
           title="Cases"
           content="Our portfolio of exceptional work."
           onBackClick={transitionCasesToPartner}
@@ -430,7 +454,7 @@ export default function Home() {
         <ContactSection
           videoRef={contactVideoRef}
           videoSrc={VIDEO_PATHS.contactLoop}
-          isVisible={currentSection === 'contact'}
+          isVisible={currentSection === 'contact' && showHero}
         />
       </main>
     </>
