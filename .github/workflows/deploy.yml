@@ -22,12 +22,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: false
+          lfs: true
       
-      - name: Checkout LFS objects
+      - name: Verify LFS files are checked out
         run: |
-          git lfs install
-          git lfs pull
+          echo "Checking LFS files..."
+          git lfs ls-files
+          echo "Checking logo file..."
+          ls -lh public/logo-animation.gif
+          file public/logo-animation.gif
       
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,8 +50,10 @@ jobs:
         run: |
           echo "Checking if out directory exists..."
           ls -la out/ | head -20
+          echo "Checking logo in out directory..."
+          ls -lh out/logo-animation.gif 2>/dev/null || echo "Logo not found in out/"
           echo "Checking videos in out directory..."
-          ls -lh out/videos/*.mp4 2>/dev/null | head -5 || echo "No videos found in out/"
+          ls -lh out/lut/videos/*.mp4 2>/dev/null | head -5 || echo "No videos found in out/lut/videos/"
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
