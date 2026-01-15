@@ -9,7 +9,7 @@ export function LoadingScreen({ progress }: LoadingScreenProps) {
     <div 
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
       style={{
-        backgroundImage: `url(${BASE_PATH}/loading-bg.png)`,
+        backgroundImage: `url(${BASE_PATH}/loading-bg.jpg)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
