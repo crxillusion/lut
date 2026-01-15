@@ -8,17 +8,22 @@ export function useVideoPreloader(videoPaths: string[]) {
   useEffect(() => {
     let isCancelled = false;
     let loadedCount = 0;
-    const totalVideos = videoPaths.length;
-    const minLoadTime = 3000; // Minimum 2 seconds for branding
+    
+    // Only preload ESSENTIAL videos for the initial experience
+    // Priority: opening video, hero loop, and first few transitions
+    const essentialVideos = videoPaths.slice(0, 5); // First 5 videos
+    const totalVideos = essentialVideos.length;
+    
+    const minLoadTime = 2000; // Minimum 2 seconds for branding
     const startTime = Date.now();
 
-    console.log(`[VideoPreloader] Starting to preload ${totalVideos} videos...`);
+    console.log(`[VideoPreloader] Preloading ${totalVideos} essential videos (${videoPaths.length - totalVideos} will load in background)...`);
 
     // Create video elements and preload them
     const videoElements: HTMLVideoElement[] = [];
     const loadPromises: Promise<void>[] = [];
 
-    videoPaths.forEach((path, index) => {
+    essentialVideos.forEach((path, index) => {
       const video = document.createElement('video');
       video.preload = 'auto';
       video.muted = true;
@@ -52,7 +57,7 @@ export function useVideoPreloader(videoPaths: string[]) {
         const timeoutId = setTimeout(() => {
           console.warn(`[VideoPreloader] Timeout loading: ${path}`);
           handleError(new Event('timeout'));
-        }, LOADING_TIMEOUT / 2);
+        }, 8000); // Shorter timeout for essential videos only
 
         const cleanup = () => {
           clearTimeout(timeoutId);
@@ -70,26 +75,29 @@ export function useVideoPreloader(videoPaths: string[]) {
       video.load();
     });
 
-    // Wait for all videos to load or timeout
+    // Wait for essential videos to load
     Promise.all(loadPromises).then(() => {
       if (isCancelled) return;
 
       const elapsed = Date.now() - startTime;
       const remainingTime = Math.max(0, minLoadTime - elapsed);
 
-      console.log(`[VideoPreloader] All videos loaded in ${elapsed}ms, waiting ${remainingTime}ms for minimum display time`);
+      console.log(`[VideoPreloader] Essential videos loaded in ${elapsed}ms, waiting ${remainingTime}ms for minimum display time`);
 
       // Ensure minimum loading time for branding
       setTimeout(() => {
         if (!isCancelled) {
           setLoadingProgress(100);
-          console.log('[VideoPreloader] ✅ Loading complete!');
+          console.log('[VideoPreloader] ✅ Loading complete! Starting background preload of remaining videos...');
           
           // Small delay for smooth transition
           setTimeout(() => {
             setIsLoading(false);
             // Clean up video elements
             videoElements.forEach(v => v.remove());
+            
+            // Start background preloading of remaining videos
+            preloadRemainingVideos(videoPaths.slice(5));
           }, 300);
         }
       }, remainingTime);
@@ -114,4 +122,44 @@ export function useVideoPreloader(videoPaths: string[]) {
   }, []);
 
   return { isLoading, loadingProgress };
+}
+
+// Background preloader - loads remaining videos without blocking UI
+function preloadRemainingVideos(videoPaths: string[]) {
+  console.log(`[BackgroundPreloader] Starting to load ${videoPaths.length} additional videos...`);
+  
+  let loadedCount = 0;
+  
+  videoPaths.forEach((path, index) => {
+    // Stagger the loading to avoid overwhelming the connection
+    setTimeout(() => {
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.muted = true;
+      video.playsInline = true;
+      video.src = path;
+      
+      const handleCanPlay = () => {
+        loadedCount++;
+        console.log(`[BackgroundPreloader] ${loadedCount}/${videoPaths.length} loaded: ${path.split('/').pop()}`);
+        cleanup();
+      };
+      
+      const handleError = () => {
+        console.warn(`[BackgroundPreloader] Failed: ${path.split('/').pop()}`);
+        loadedCount++;
+        cleanup();
+      };
+      
+      const cleanup = () => {
+        video.removeEventListener('canplaythrough', handleCanPlay);
+        video.removeEventListener('error', handleError);
+        video.remove();
+      };
+      
+      video.addEventListener('canplaythrough', handleCanPlay);
+      video.addEventListener('error', handleError);
+      video.load();
+    }, index * 500); // Stagger by 500ms each
+  });
 }
