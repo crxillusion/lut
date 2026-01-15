@@ -4,7 +4,7 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ progress }: LoadingScreenProps) {
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center">
       <div className="text-center">
         {/* Logo Animation */}
         <div className="mb-8 flex justify-center">
@@ -16,15 +16,15 @@ export function LoadingScreen({ progress }: LoadingScreenProps) {
         </div>
         
         {/* Progress Bar */}
-        <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-white transition-all duration-300 ease-out"
+            className="h-full bg-black transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
         
         {/* Progress Text */}
-        <p className="text-white text-sm mt-4 tracking-wider opacity-70">
+        <p className="text-black text-sm mt-4 tracking-wider opacity-70">
           Loading {Math.round(progress)}%
         </p>
       </div>
