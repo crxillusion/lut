@@ -1,3 +1,5 @@
+import { BASE_PATH } from '../constants/config';
+
 interface LoadingScreenProps {
   progress: number;
 }
@@ -9,7 +11,7 @@ export function LoadingScreen({ progress }: LoadingScreenProps) {
         {/* Logo Animation */}
         <div className="mb-8 flex justify-center">
           <img 
-            src="/logo-animation.gif" 
+            src={`${BASE_PATH}/logo-animation.gif`}
             alt="LUT Studios" 
             className="w-48 h-48 md:w-128 md:h-128 object-contain"
           />
