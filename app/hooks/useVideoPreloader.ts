@@ -9,7 +9,7 @@ export function useVideoPreloader(videoPaths: string[]) {
     let isCancelled = false;
     let loadedCount = 0;
     const totalVideos = videoPaths.length;
-    const minLoadTime = 2000; // Minimum 2 seconds for branding
+    const minLoadTime = 3000; // Minimum 2 seconds for branding
     const startTime = Date.now();
 
     console.log(`[VideoPreloader] Starting to preload ${totalVideos} videos...`);
