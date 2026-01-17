@@ -8,13 +8,14 @@ export function useVideoPreloader(videoPaths: string[]) {
   useEffect(() => {
     let isCancelled = false;
     let loadedCount = 0;
+    let successfullyLoadedCount = 0;
     
     // Only preload ESSENTIAL videos for the initial experience
     // Priority: opening video, hero loop, and first few transitions
     const essentialVideos = videoPaths.slice(0, 5); // First 5 videos
     const totalVideos = essentialVideos.length;
     
-    const minLoadTime = 3000; // Minimum 3 seconds for branding
+    const minLoadTime = 5000; // Minimum 5 seconds to allow videos to load on slow connections
     const startTime = Date.now();
 
     console.log(`[VideoPreloader] Preloading ${totalVideos} essential videos (${videoPaths.length - totalVideos} will load in background)...`);
@@ -35,16 +36,17 @@ export function useVideoPreloader(videoPaths: string[]) {
         const handleCanPlay = () => {
           if (!isCancelled) {
             loadedCount++;
+            successfullyLoadedCount++;
             const progress = Math.floor((loadedCount / totalVideos) * 100);
             setLoadingProgress(progress);
-            console.log(`[VideoPreloader] ${loadedCount}/${totalVideos} videos loaded (${progress}%): ${path.split('/').pop()}`);
+            console.log(`[VideoPreloader] ✅ ${loadedCount}/${totalVideos} videos loaded (${progress}%): ${path.split('/').pop()}`);
           }
           cleanup();
           resolve();
         };
 
         const handleError = (e: Event) => {
-          console.error(`[VideoPreloader] Failed to load: ${path}`, e);
+          console.error(`[VideoPreloader] ❌ Failed to load: ${path}`, e);
           if (!isCancelled) {
             loadedCount++;
             const progress = Math.floor((loadedCount / totalVideos) * 100);
@@ -55,9 +57,9 @@ export function useVideoPreloader(videoPaths: string[]) {
         };
 
         const timeoutId = setTimeout(() => {
-          console.warn(`[VideoPreloader] Timeout loading: ${path}`);
+          console.warn(`[VideoPreloader] ⏱️ Timeout loading (15s): ${path}`);
           handleError(new Event('timeout'));
-        }, 8000); // Shorter timeout for essential videos only
+        }, LOADING_TIMEOUT); // Use full timeout for essential videos on slow connections
 
         const cleanup = () => {
           clearTimeout(timeoutId);
@@ -82,13 +84,21 @@ export function useVideoPreloader(videoPaths: string[]) {
       const elapsed = Date.now() - startTime;
       const remainingTime = Math.max(0, minLoadTime - elapsed);
 
-      console.log(`[VideoPreloader] Essential videos loaded in ${elapsed}ms, waiting ${remainingTime}ms for minimum display time`);
+      console.log(`[VideoPreloader] Videos processed: ${loadedCount}/${totalVideos}, Successfully loaded: ${successfullyLoadedCount}/${totalVideos}`);
+      console.log(`[VideoPreloader] Time elapsed: ${elapsed}ms, waiting ${remainingTime}ms for minimum display time`);
 
       // Ensure minimum loading time for branding
       setTimeout(() => {
         if (!isCancelled) {
           setLoadingProgress(100);
-          console.log('[VideoPreloader] ✅ Loading complete! Starting background preload of remaining videos...');
+          
+          if (successfullyLoadedCount >= 1) {
+            // At least 1 video loaded successfully - proceed
+            console.log('[VideoPreloader] ✅ Loading complete! Starting background preload of remaining videos...');
+          } else {
+            // No videos loaded - still proceed but warn user
+            console.warn('[VideoPreloader] ⚠️ No videos loaded successfully, but proceeding anyway...');
+          }
           
           // Small delay for smooth transition
           setTimeout(() => {
