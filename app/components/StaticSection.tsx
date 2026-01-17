@@ -8,6 +8,7 @@ interface StaticSectionProps {
   title?: string;
   content?: string;
   onBackClick: () => void;
+  frameOffsetFromEnd?: number; // Custom offset in seconds from video end (default: 0.05)
 }
 
 export function StaticSection({ 
@@ -16,7 +17,8 @@ export function StaticSection({
   isVisible,
   title,
   content,
-  onBackClick 
+  onBackClick,
+  frameOffsetFromEnd = 0.05 // Default to 50ms before end
 }: StaticSectionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isFrameCaptured, setIsFrameCaptured] = useState(false);
@@ -51,10 +53,10 @@ export function StaticSection({
       
       const seekToLastFrame = () => {
         if (video.duration && !isNaN(video.duration) && video.duration > 0) {
-          targetTimeRef.current = video.duration - 0.05;
+          targetTimeRef.current = video.duration - frameOffsetFromEnd;
           video.currentTime = targetTimeRef.current;
           
-          console.log(`[StaticSection ${videoSrc.split('/').pop()}] 🎯 Seeking to ${targetTimeRef.current.toFixed(3)}s`);
+          console.log(`[StaticSection ${videoSrc.split('/').pop()}] 🎯 Seeking to ${targetTimeRef.current.toFixed(3)}s (offset: ${frameOffsetFromEnd}s)`);
           
           // Fallback: if seeked event doesn't fire within 500ms, try capturing anyway
           seekTimeout = setTimeout(() => {
@@ -113,7 +115,7 @@ export function StaticSection({
         video.removeEventListener('seeked', handleSeeked);
       };
     }
-  }, [videoRef, videoSrc]);
+  }, [videoRef, videoSrc, frameOffsetFromEnd]);
   
   // Reset capture state when video source changes
   useEffect(() => {

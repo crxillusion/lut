@@ -14,7 +14,7 @@ export function useVideoPreloader(videoPaths: string[]) {
     const essentialVideos = videoPaths.slice(0, 5); // First 5 videos
     const totalVideos = essentialVideos.length;
     
-    const minLoadTime = 2000; // Minimum 2 seconds for branding
+    const minLoadTime = 3000; // Minimum 3 seconds for branding
     const startTime = Date.now();
 
     console.log(`[VideoPreloader] Preloading ${totalVideos} essential videos (${videoPaths.length - totalVideos} will load in background)...`);

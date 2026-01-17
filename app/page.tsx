@@ -37,7 +37,7 @@ export default function Home() {
 
   // Preload essential videos - including all transition videos to prevent black flashes
   const { isLoading, loadingProgress } = useVideoPreloader([
-    `${VIDEO_PATHS.heroLoop.split('/videos/')[0]}/videos/loading_to_homepage.mp4`, // Opening video
+    VIDEO_PATHS.opening, // Opening video
     VIDEO_PATHS.heroLoop,
     VIDEO_PATHS.heroToShowreel,
     VIDEO_PATHS.showreelToHero,
@@ -398,6 +398,7 @@ export default function Home() {
           title="About Us"
           content="We transform brands through creative excellence."
           onBackClick={transitionAboutToAboutStart}
+          frameOffsetFromEnd={0.01}
         />
 
         {/* Team 1 Section */}

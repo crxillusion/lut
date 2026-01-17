@@ -4,9 +4,12 @@ export const BASE_PATH = process.env.NODE_ENV === 'production' ? '/lut' : '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
 export const LOADING_TIMEOUT = 15000; // 15 seconds - only for essential videos
-export const LOADING_DELAY = 500; // milliseconds
+export const LOADING_DELAY = 3000; // milliseconds
 
 export const VIDEO_PATHS = {
+  // Opening
+  opening: `${BASE_PATH}/videos/loading_to_homepage.mp4`,
+  
   // Hero/Homepage
   heroLoop: `${BASE_PATH}/videos/Homepage_loop[0000-0150].mp4`,
   heroToShowreel: `${BASE_PATH}/videos/Homepage_showreel.mp4`,

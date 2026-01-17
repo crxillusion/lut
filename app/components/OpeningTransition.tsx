@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { BASE_PATH } from '../constants/config';
+import { VIDEO_PATHS } from '../constants/config';
 
 interface OpeningTransitionProps {
   isPlaying: boolean;
@@ -41,7 +41,7 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
     <div className="fixed inset-0 z-[90] bg-black">
       <video
         ref={videoRef}
-        src={`${BASE_PATH}/videos/loading_to_homepage.mp4`}
+        src={VIDEO_PATHS.opening}
         className="w-full h-full object-cover"
         playsInline
         muted
