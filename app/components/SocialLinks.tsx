@@ -1,4 +1,5 @@
-import { Instagram, Linkedin } from 'lucide-react';
+import { BASE_PATH } from '../constants/config';
+import Image from 'next/image';
 
 export function SocialLinks() {
   return (
@@ -10,7 +11,7 @@ export function SocialLinks() {
         className="text-white hover:opacity-70 transition-opacity"
         aria-label="Instagram"
       >
-        <Instagram size={24} />
+        <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={24} height={24} />
       </a>
       <a 
         href="https://linkedin.com" 
@@ -19,7 +20,7 @@ export function SocialLinks() {
         className="text-white hover:opacity-70 transition-opacity"
         aria-label="LinkedIn"
       >
-        <Linkedin size={24} />
+        <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={24} height={24} />
       </a>
     </div>
   );
