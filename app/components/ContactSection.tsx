@@ -1,7 +1,6 @@
 import { RefObject } from 'react';
 import { VideoBackground } from './VideoBackground';
-import { BASE_PATH } from '../constants/config';
-import Image from 'next/image';
+import { SocialLinks } from './SocialLinks';
 
 interface ContactSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -48,26 +47,7 @@ export function ContactSection({
         </div>
 
         {/* Bottom Section - Social Links Only */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-          <a 
-            href="https://instagram.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-white hover:opacity-70 transition-opacity"
-            aria-label="Instagram"
-          >
-            <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={24} height={24} />
-          </a>
-          <a 
-            href="https://linkedin.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-white hover:opacity-70 transition-opacity"
-            aria-label="LinkedIn"
-          >
-            <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={24} height={24} />
-          </a>
-        </div>
+        <SocialLinks />
       </div>
     </section>
   );

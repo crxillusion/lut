@@ -1,6 +1,5 @@
 import { RefObject, useEffect, useRef, useState } from 'react';
-import { BASE_PATH } from '../constants/config';
-import Image from 'next/image';
+import { SocialLinks } from './SocialLinks';
 
 interface StaticSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -170,39 +169,7 @@ export function StaticSection({
         )}
 
         {/* Bottom Section - Back Button and Social Links */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-          {/* Back Button */}
-          <button
-            onClick={onBackClick}
-            className="text-white hover:opacity-70 transition-opacity"
-            aria-label="Go back"
-          >
-            <Image src={`${BASE_PATH}/back-arrow.svg`} alt="Back" width={24} height={24} />
-          </button>
-          
-          {/* Divider */}
-          <div className="w-px h-6 bg-white opacity-30"></div>
-          
-          {/* Social Links Inline */}
-          <a 
-            href="https://instagram.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-white hover:opacity-70 transition-opacity"
-            aria-label="Instagram"
-          >
-            <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={24} height={24} />
-          </a>
-          <a 
-            href="https://linkedin.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-white hover:opacity-70 transition-opacity"
-            aria-label="LinkedIn"
-          >
-            <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={24} height={24} />
-          </a>
-        </div>
+        <SocialLinks showBackButton onBackClick={onBackClick} />
       </div>
     </section>
   );
