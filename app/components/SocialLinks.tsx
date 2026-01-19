@@ -28,7 +28,7 @@ export function SocialLinks({ showBackButton = false, onBackClick, iconSize = 45
       
       {/* Social Links */}
       <a 
-        href="https://instagram.com" 
+        href="https://www.instagram.com/lutstudios" 
         target="_blank" 
         rel="noopener noreferrer"
         className="text-white hover:opacity-70 transition-opacity"
@@ -37,7 +37,7 @@ export function SocialLinks({ showBackButton = false, onBackClick, iconSize = 45
         <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={iconSize} height={iconSize} />
       </a>
       <a 
-        href="https://linkedin.com" 
+        href="https://www.linkedin.com/company/lutstudios/" 
         target="_blank" 
         rel="noopener noreferrer"
         className="text-white hover:opacity-70 transition-opacity"
