@@ -21,6 +21,7 @@ export default function Home() {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const isTransitioningRef = useRef(false);
+  const previousSectionRef = useRef<Section>('hero'); // Track where user came from
 
   // Video refs for each section
   const heroVideoRef = useRef<HTMLVideoElement>(null);
@@ -99,9 +100,15 @@ export default function Home() {
   const handleTransition = useCallback((
     targetSection: Section,
     transitionVideo: string,
-    targetVideoRef: React.RefObject<HTMLVideoElement | null>
+    targetVideoRef: React.RefObject<HTMLVideoElement | null>,
+    isDirectNavigation: boolean = false // Track if this is a button click vs scroll
   ) => {
     if (isTransitioningRef.current) return;
+    
+    // Store previous section before transitioning (only for direct navigation from hero)
+    if (isDirectNavigation && currentSection === 'hero') {
+      previousSectionRef.current = 'hero';
+    }
     
     isTransitioningRef.current = true;
     setIsTransitioning(true);
@@ -152,21 +159,21 @@ export default function Home() {
     }, 50);
   }, []);
 
-  // Transition functions from Hero
+  // Transition functions from Hero (button clicks - direct navigation)
   const transitionToShowreel = useCallback(() => {
-    handleTransition('showreel', VIDEO_PATHS.heroToShowreel, showreelVideoRef);
+    handleTransition('showreel', VIDEO_PATHS.heroToShowreel, showreelVideoRef, true);
   }, [handleTransition]);
 
   const transitionToAboutStart = useCallback(() => {
-    handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, aboutStartVideoRef);
+    handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, aboutStartVideoRef, true);
   }, [handleTransition]);
 
   const transitionToCases = useCallback(() => {
-    handleTransition('cases', VIDEO_PATHS.heroToCases, casesVideoRef);
+    handleTransition('cases', VIDEO_PATHS.heroToCases, casesVideoRef, true);
   }, [handleTransition]);
 
   const transitionToContact = useCallback(() => {
-    handleTransition('contact', VIDEO_PATHS.heroToContact, contactVideoRef);
+    handleTransition('contact', VIDEO_PATHS.heroToContact, contactVideoRef, true);
   }, [handleTransition]);
 
   // Additional transition functions for the full flow
@@ -242,6 +249,8 @@ export default function Home() {
       default:
         return;
     }
+    // Reset the previous section tracker when returning to hero
+    previousSectionRef.current = 'hero';
     handleTransition('hero', reverseVideo, heroVideoRef);
   }, [currentSection, handleTransition]);
 
@@ -268,9 +277,12 @@ export default function Home() {
         transitionToPartner();
         break;
       case 'partner': 
+        // When scrolling from partner to cases, reset the tracker
+        previousSectionRef.current = 'partner';
         transitionPartnerToCases();
         break;
       case 'cases': 
+        // When scrolling from cases to contact, maintain the tracker
         transitionCasesToContact();
         break;
       case 'contact': 
@@ -313,10 +325,22 @@ export default function Home() {
         transitionPartnerToOffer();
         break;
       case 'cases': 
-        transitionCasesToPartner();
+        // If user came directly from hero, go back to hero
+        if (previousSectionRef.current === 'hero') {
+          transitionToHero();
+        } else {
+          // Reset tracker when scrolling back to partner
+          previousSectionRef.current = 'partner';
+          transitionCasesToPartner();
+        }
         break;
       case 'contact': 
-        transitionToCases();
+        // If user came directly from hero, go back to hero
+        if (previousSectionRef.current === 'hero') {
+          transitionToHero();
+        } else {
+          transitionToCases();
+        }
         break;
       default: 
         break;
