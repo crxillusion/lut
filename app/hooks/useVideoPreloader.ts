@@ -10,15 +10,16 @@ export function useVideoPreloader(videoPaths: string[]) {
     let loadedCount = 0;
     let successfullyLoadedCount = 0;
     
-    // Only preload ESSENTIAL videos for the initial experience
-    // Priority: opening video, hero loop, and first few transitions
-    const essentialVideos = videoPaths.slice(0, 5); // First 5 videos
+    // Preload 80% of videos (20 out of 25) for smooth scrolling experience
+    // This prevents black flashes during transitions
+    const videosToPreload = Math.ceil(videoPaths.length * 0.8); // 80% of total videos
+    const essentialVideos = videoPaths.slice(0, videosToPreload); // First 80% of videos
     const totalVideos = essentialVideos.length;
     
     const minLoadTime = 5000; // Minimum 5 seconds to allow videos to load on slow connections
     const startTime = Date.now();
 
-    console.log(`[VideoPreloader] Preloading ${totalVideos} essential videos (${videoPaths.length - totalVideos} will load in background)...`);
+    console.log(`[VideoPreloader] Preloading ${totalVideos} videos (80% of ${videoPaths.length}) for smooth experience, ${videoPaths.length - totalVideos} will load in background...`);
 
     // Create video elements and preload them
     const videoElements: HTMLVideoElement[] = [];
@@ -106,8 +107,8 @@ export function useVideoPreloader(videoPaths: string[]) {
             // Clean up video elements
             videoElements.forEach(v => v.remove());
             
-            // Start background preloading of remaining videos
-            preloadRemainingVideos(videoPaths.slice(5));
+            // Start background preloading of remaining videos (the last 20%)
+            preloadRemainingVideos(videoPaths.slice(videosToPreload));
           }, 300);
         }
       }, remainingTime);

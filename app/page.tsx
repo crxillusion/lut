@@ -114,12 +114,26 @@ export default function Home() {
     setIsTransitioning(true);
     setTransitionVideoSrc(transitionVideo);
     
+    // Prepare target video BEFORE starting transition
+    if (targetVideoRef.current) {
+      const targetVideo = targetVideoRef.current;
+      targetVideo.currentTime = 0;
+      // Preload the target video so it's ready when transition ends
+      if (targetVideo.readyState < 2) {
+        targetVideo.load();
+      }
+    }
+    
     setTimeout(() => {
       try {
         if (transitionVideoRef.current) {
           const video = transitionVideoRef.current;
           video.currentTime = 0;
-          video.load();
+          
+          // Only call load() if video is not already loaded to prevent black flash
+          if (video.readyState < 2) {
+            video.load();
+          }
           
           const handleCanPlay = () => {
             video.play().catch(err => {
@@ -134,14 +148,20 @@ export default function Home() {
           };
           
           video.onended = () => {
-            setCurrentSection(targetSection);
-            setIsTransitioning(false);
-            isTransitioningRef.current = false;
-            
+            // Target video should be ready now - play it first
             if (targetVideoRef.current) {
               targetVideoRef.current.currentTime = 0;
               targetVideoRef.current.play().catch(() => {});
             }
+            
+            // Small delay to ensure target video is playing before showing section
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                setCurrentSection(targetSection);
+                setIsTransitioning(false);
+                isTransitioningRef.current = false;
+              });
+            });
           };
           
           if (video.readyState >= 3) {

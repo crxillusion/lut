@@ -1,4 +1,4 @@
-import { RefObject } from 'react';
+import { RefObject, useEffect } from 'react';
 import { VideoBackground } from './VideoBackground';
 import { SocialLinks } from './SocialLinks';
 
@@ -15,6 +15,30 @@ export function AboutStartSection({
   isVisible,
   onHeroClick 
 }: AboutStartSectionProps) {
+  // Preload the first frame of the video to prevent black flash
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      const handleLoadedData = () => {
+        if (!isVisible && video.paused) {
+          // Preload first frame when not visible
+          video.currentTime = 0;
+        }
+      };
+      
+      video.addEventListener('loadeddata', handleLoadedData);
+      
+      // If already loaded, seek to first frame
+      if (video.readyState >= 2) {
+        handleLoadedData();
+      }
+      
+      return () => {
+        video.removeEventListener('loadeddata', handleLoadedData);
+      };
+    }
+  }, [videoRef, isVisible]);
+  
   return (
     <section 
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
@@ -24,6 +48,7 @@ export function AboutStartSection({
       <VideoBackground 
         videoRef={videoRef}
         src={videoSrc}
+        autoPlay
         loop
       />
 
