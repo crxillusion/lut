@@ -439,8 +439,6 @@ export default function Home() {
           videoRef={aboutVideoRef}
           videoSrc={VIDEO_PATHS.aboutStartToAbout}
           isVisible={currentSection === 'about' && showHero}
-          title="About Us"
-          content="We transform brands through creative excellence."
           onBackClick={transitionAboutToAboutStart}
           frameOffsetFromEnd={0.01}
         />
@@ -450,8 +448,6 @@ export default function Home() {
           videoRef={team1VideoRef}
           videoSrc={VIDEO_PATHS.aboutToTeam}
           isVisible={currentSection === 'team1' && showHero}
-          title="Our Team"
-          content="Meet the talented people behind our work."
           onBackClick={transitionTeam1ToAbout}
         />
 
@@ -460,8 +456,6 @@ export default function Home() {
           videoRef={team2VideoRef}
           videoSrc={VIDEO_PATHS.team1ToTeam2}
           isVisible={currentSection === 'team2' && showHero}
-          title="Our Team"
-          content="Continued..."
           onBackClick={transitionTeam2ToTeam1}
         />
 
@@ -470,8 +464,6 @@ export default function Home() {
           videoRef={offerVideoRef}
           videoSrc={VIDEO_PATHS.team2ToOffer}
           isVisible={currentSection === 'offer' && showHero}
-          title="What We Offer"
-          content="Comprehensive creative solutions for your brand."
           onBackClick={transitionOfferToTeam2}
         />
 
@@ -480,8 +472,6 @@ export default function Home() {
           videoRef={partnerVideoRef}
           videoSrc={VIDEO_PATHS.offerToPartner}
           isVisible={currentSection === 'partner' && showHero}
-          title="Our Partners"
-          content="Collaborating with industry leaders."
           onBackClick={transitionPartnerToOffer}
         />
 
@@ -490,8 +480,6 @@ export default function Home() {
           videoRef={casesVideoRef}
           videoSrc={VIDEO_PATHS.partnerToCases}
           isVisible={currentSection === 'cases' && showHero}
-          title="Cases"
-          content="Our portfolio of exceptional work."
           onBackClick={transitionCasesToPartner}
         />
 
