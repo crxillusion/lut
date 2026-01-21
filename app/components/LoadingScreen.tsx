@@ -18,7 +18,7 @@ export function LoadingScreen({ progress }: LoadingScreenProps) {
       <img 
         src={`${BASE_PATH}/logo-animation.gif`}
         alt="LUT Studios" 
-        className="w-48 h-48 md:w-128 md:h-128 object-contain"
+        className="w-48 h-48 md:w-96 md:h-96 object-contain"
       />
     </div>
   );
