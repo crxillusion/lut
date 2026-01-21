@@ -1,0 +1,92 @@
+'use client';
+
+import { motion, Variants } from 'framer-motion';
+import { useEffect, useState } from 'react';
+
+interface BlurTextProps {
+  text: string;
+  className?: string;
+  delay?: number;
+  duration?: number;
+  shouldAnimate?: boolean;
+}
+
+export function BlurText({ 
+  text, 
+  className = '', 
+  delay = 0,
+  duration = 0.5,
+  shouldAnimate = false
+}: BlurTextProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const words = text.split(' ');
+
+  useEffect(() => {
+    console.log('[BlurText] shouldAnimate changed:', { 
+      text: text.substring(0, 20) + '...', 
+      shouldAnimate, 
+      isVisible,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (shouldAnimate) {
+      console.log('[BlurText] Fading in:', text.substring(0, 20) + '...');
+      setIsVisible(true);
+    } else {
+      console.log('[BlurText] Fading out:', text.substring(0, 20) + '...');
+      setIsVisible(false);
+    }
+  }, [shouldAnimate, text]);
+
+  const container: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.04,
+        delayChildren: isVisible ? delay : 0,
+      },
+    },
+  };
+
+  const item: Variants = {
+    hidden: {
+      filter: 'blur(10px)',
+      opacity: 0,
+      y: 20,
+    },
+    visible: {
+      filter: 'blur(0px)',
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: isVisible ? duration : 0.4,
+        ease: [0.23, 1, 0.32, 1],
+      },
+    },
+  };
+
+  return (
+    <motion.span
+      className={className}
+      variants={container}
+      initial="hidden"
+      animate={isVisible ? "visible" : "hidden"}
+      style={{ display: 'inline-block' }}
+    >
+      {words.map((word, index) => (
+        <motion.span
+          key={`${word}-${index}`}
+          variants={item}
+          style={{ 
+            display: 'inline-block',
+            whiteSpace: 'pre',
+          }}
+        >
+          {word}
+          {index < words.length - 1 ? ' ' : ''}
+        </motion.span>
+      ))}
+    </motion.span>
+  );
+}

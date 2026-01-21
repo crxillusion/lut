@@ -20,6 +20,12 @@ export default function Home() {
   const [transitionVideoSrc, setTransitionVideoSrc] = useState('');
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
+  const [heroVisible, setHeroVisible] = useState(false); // Controls hero animations - starts false, then animates to true
+  const [pendingTransition, setPendingTransition] = useState<{
+    section: Section;
+    video: string;
+    ref: React.RefObject<HTMLVideoElement | null>;
+  } | null>(null);
   const isTransitioningRef = useRef(false);
   const previousSectionRef = useRef<Section>('hero'); // Track where user came from
 
@@ -77,7 +83,31 @@ export default function Home() {
     console.log('[Home] Opening animation complete, showing hero');
     setShowOpening(false);
     setShowHero(true);
+    // Delay heroVisible to trigger animations after hero section mounts
+    setTimeout(() => {
+      console.log('[Home] Setting heroVisible to true to trigger animations');
+      setHeroVisible(true);
+    }, 50); // Small delay to ensure component is mounted
   }, []);
+
+  // Handle pending transition after fade-out animation completes
+  useEffect(() => {
+    if (pendingTransition && !heroVisible) {
+      console.log('[Home] Hero fade-out complete, starting transition to:', pendingTransition.section);
+      // Wait for fade-out animation to complete (400ms)
+      const timeoutId = setTimeout(() => {
+        handleTransition(
+          pendingTransition.section,
+          pendingTransition.video,
+          pendingTransition.ref,
+          false
+        );
+        setPendingTransition(null);
+      }, 500); // 400ms animation + 100ms buffer
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [pendingTransition, heroVisible]);
 
   // Cleanup videos on unmount
   useEffect(() => {
@@ -104,6 +134,8 @@ export default function Home() {
     isDirectNavigation: boolean = false // Track if this is a button click vs scroll
   ) => {
     if (isTransitioningRef.current) return;
+    
+    console.log('[Home] Starting transition to:', targetSection, 'from:', currentSection);
     
     // Store previous section before transitioning (only for direct navigation from hero)
     if (isDirectNavigation && currentSection === 'hero') {
@@ -148,6 +180,7 @@ export default function Home() {
           };
           
           video.onended = () => {
+            console.log('[Home] Transition video ended, switching to:', targetSection);
             // Target video should be ready now - play it first
             if (targetVideoRef.current) {
               targetVideoRef.current.currentTime = 0;
@@ -160,6 +193,10 @@ export default function Home() {
                 setCurrentSection(targetSection);
                 setIsTransitioning(false);
                 isTransitioningRef.current = false;
+                // Restore hero visibility if going back to hero
+                if (targetSection === 'hero') {
+                  setHeroVisible(true);
+                }
               });
             });
           };
@@ -184,9 +221,21 @@ export default function Home() {
     handleTransition('showreel', VIDEO_PATHS.heroToShowreel, showreelVideoRef, true);
   }, [handleTransition]);
 
-  const transitionToAboutStart = useCallback(() => {
-    handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, aboutStartVideoRef, true);
-  }, [handleTransition]);
+  const transitionToAboutStart = useCallback((viaScroll: boolean = false) => {
+    if (viaScroll && currentSection === 'hero') {
+      // When scrolling from hero, fade out elements first
+      console.log('[Home] Scroll detected from hero, fading out elements before transition');
+      setHeroVisible(false);
+      setPendingTransition({
+        section: 'aboutStart',
+        video: VIDEO_PATHS.heroToAboutStart,
+        ref: aboutStartVideoRef
+      });
+    } else {
+      // Direct navigation (button click)
+      handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, aboutStartVideoRef, true);
+    }
+  }, [handleTransition, currentSection]);
 
   const transitionToCases = useCallback(() => {
     handleTransition('cases', VIDEO_PATHS.heroToCases, casesVideoRef, true);
@@ -277,9 +326,10 @@ export default function Home() {
   // Scroll handling - Full navigation flow
   // Hero -> AboutStart -> About -> Team1 -> Team2 -> Offer -> Partner -> Cases -> Contact -> Hero
   const handleScrollDown = useCallback(() => {
+    console.log('[Home] handleScrollDown called, currentSection:', currentSection);
     switch(currentSection) {
       case 'hero': 
-        transitionToAboutStart();
+        transitionToAboutStart(true); // Pass true to indicate scroll
         break;
       case 'aboutStart': 
         transitionToAbout();
@@ -405,9 +455,10 @@ export default function Home() {
           videoRef={heroVideoRef}
           videoSrc={VIDEO_PATHS.heroLoop}
           isVisible={currentSection === 'hero' && !isTransitioning && showHero}
+          showUI={heroVisible}
           currentSection={currentSection}
           onShowreelClick={transitionToShowreel}
-          onAboutClick={transitionToAboutStart}
+          onAboutClick={() => transitionToAboutStart(false)}
           onCasesClick={transitionToCases}
           onContactClick={transitionToContact}
         />

@@ -1,6 +1,7 @@
 import { RefObject, useEffect } from 'react';
 import { VideoBackground } from './VideoBackground';
 import { SocialLinks } from './SocialLinks';
+import { AnimatedText } from './AnimatedText';
 
 interface AboutStartSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -57,14 +58,19 @@ export function AboutStartSection({
         {/* About Content - 500px width, left-aligned, starting from center */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-full max-w-[500px] ml-[50%] mb-50">
-            <p className="text-left text-white font-outfit font-medium text-[18px] leading-[150%] tracking-[-0.011em]">
-              What sets us apart is our belief that every project is like a painting, where every frame is crafted with care and precision.
-            </p>
+            <AnimatedText
+              text="What sets us apart is our belief that every project is like a painting, where every frame is crafted with care and precision."
+              className="text-left text-white font-outfit font-medium text-[18px] leading-[150%] tracking-[-0.011em]"
+              delay={0.3}
+              duration={0.6}
+              shouldAnimate={isVisible}
+              splitByWords={false}
+            />
           </div>
         </div>
 
         {/* Bottom Section - Back Button and Social Links */}
-        <SocialLinks showBackButton onBackClick={onHeroClick} iconSize={45} />
+        <SocialLinks showBackButton onBackClick={onHeroClick} iconSize={45} isVisible={isVisible} />
       </div>
     </section>
   );
