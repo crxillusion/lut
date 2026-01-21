@@ -326,6 +326,9 @@ export default function Home() {
 
   const handleScrollUp = useCallback(() => {
     switch(currentSection) {
+      case 'showreel':
+        transitionToHero();
+        break;
       case 'aboutStart': 
         transitionToHero();
         break;
