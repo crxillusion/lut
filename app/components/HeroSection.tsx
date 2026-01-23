@@ -30,15 +30,6 @@ export function HeroSection({
   onCasesClick,
   onContactClick
 }: HeroSectionProps) {
-  useEffect(() => {
-    console.log('[HeroSection] Visibility changed:', { 
-      isVisible,
-      showUI,
-      currentSection,
-      timestamp: new Date().toISOString()
-    });
-  }, [isVisible, showUI, currentSection]);
-
   return (
     <section 
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
@@ -83,25 +74,14 @@ export function HeroSection({
                 delay: showUI ? 0.7 : 0,
                 ease: [0.23, 1, 0.32, 1],
               }}
-              onAnimationStart={() => {
-                console.log('[ScrollIndicator] Animation started:', { 
-                  showUI, 
-                  direction: showUI ? 'fade-in' : 'fade-out' 
-                });
-              }}
-              onAnimationComplete={() => {
-                console.log('[ScrollIndicator] Animation completed:', { 
-                  showUI,
-                  direction: showUI ? 'fade-in' : 'fade-out'
-                });
-              }}
             >
               *scroll to discover
             </motion.div>
           </div>
         </div>
-
-        <SocialLinks isVisible={showUI} />
+        
+        {/* Social Links - Animate once on hero appear, then stay visible */}
+        <SocialLinks isVisible={isVisible} animateOnce={true} />
 
         {/* Copyright */}
         <motion.div 
@@ -120,18 +100,6 @@ export function HeroSection({
             duration: showUI ? 0.6 : 0.4,
             delay: showUI ? 1.0 : 0,
             ease: [0.23, 1, 0.32, 1],
-          }}
-          onAnimationStart={() => {
-            console.log('[Copyright] Animation started:', { 
-              showUI,
-              direction: showUI ? 'fade-in' : 'fade-out'
-            });
-          }}
-          onAnimationComplete={() => {
-            console.log('[Copyright] Animation completed:', { 
-              showUI,
-              direction: showUI ? 'fade-in' : 'fade-out'
-            });
           }}
         >
           Copyright © 2026. LUT Studios. All rights reserved.

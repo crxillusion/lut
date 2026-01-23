@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 
 interface AnimatedTextProps {
   text: string;
@@ -12,29 +12,20 @@ interface AnimatedTextProps {
   splitByWords?: boolean;
 }
 
-export function AnimatedText({ 
+const AnimatedTextComponent = ({ 
   text, 
   className = '', 
   delay = 0,
   duration = 0.5,
   shouldAnimate = false,
   splitByWords = true
-}: AnimatedTextProps) {
+}: AnimatedTextProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    console.log('[AnimatedText] shouldAnimate changed:', { 
-      text: text.substring(0, 30) + '...', 
-      shouldAnimate, 
-      isVisible,
-      timestamp: new Date().toISOString()
-    });
-    
     if (shouldAnimate) {
-      console.log('[AnimatedText] Setting visible for:', text.substring(0, 30) + '...');
       setIsVisible(true);
     } else {
-      console.log('[AnimatedText] Setting hidden for:', text.substring(0, 30) + '...');
       setIsVisible(false);
     }
   }, [shouldAnimate, text]);
@@ -52,20 +43,6 @@ export function AnimatedText({
           delay: isVisible ? 0 : 0 
         }}
         style={{ display: 'inline-block' }}
-        onAnimationStart={() => {
-          console.log('[AnimatedText-Words] Animation started:', { 
-            isVisible,
-            direction: isVisible ? 'fade-in' : 'fade-out',
-            text: text.substring(0, 30) + '...'
-          });
-        }}
-        onAnimationComplete={() => {
-          console.log('[AnimatedText-Words] Animation completed:', { 
-            isVisible,
-            direction: isVisible ? 'fade-in' : 'fade-out',
-            text: text.substring(0, 30) + '...'
-          });
-        }}
       >
         {words.map((word, index) => (
           <motion.span
@@ -117,22 +94,11 @@ export function AnimatedText({
         delay: isVisible ? delay : 0,
         ease: [0.23, 1, 0.32, 1],
       }}
-      onAnimationStart={() => {
-        console.log('[AnimatedText-Paragraph] Animation started:', { 
-          isVisible,
-          direction: isVisible ? 'fade-in' : 'fade-out',
-          text: text.substring(0, 30) + '...'
-        });
-      }}
-      onAnimationComplete={() => {
-        console.log('[AnimatedText-Paragraph] Animation completed:', { 
-          isVisible,
-          direction: isVisible ? 'fade-in' : 'fade-out',
-          text: text.substring(0, 30) + '...'
-        });
-      }}
     >
       {text}
     </motion.p>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const AnimatedText = memo(AnimatedTextComponent);

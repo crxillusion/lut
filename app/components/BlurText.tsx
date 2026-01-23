@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, Variants } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 
 interface BlurTextProps {
   text: string;
@@ -11,29 +11,20 @@ interface BlurTextProps {
   shouldAnimate?: boolean;
 }
 
-export function BlurText({ 
+const BlurTextComponent = ({ 
   text, 
   className = '', 
   delay = 0,
   duration = 0.5,
   shouldAnimate = false
-}: BlurTextProps) {
+}: BlurTextProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const words = text.split(' ');
 
   useEffect(() => {
-    console.log('[BlurText] shouldAnimate changed:', { 
-      text: text.substring(0, 20) + '...', 
-      shouldAnimate, 
-      isVisible,
-      timestamp: new Date().toISOString()
-    });
-    
     if (shouldAnimate) {
-      console.log('[BlurText] Fading in:', text.substring(0, 20) + '...');
       setIsVisible(true);
     } else {
-      console.log('[BlurText] Fading out:', text.substring(0, 20) + '...');
       setIsVisible(false);
     }
   }, [shouldAnimate, text]);
@@ -89,4 +80,7 @@ export function BlurText({
       ))}
     </motion.span>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const BlurText = memo(BlurTextComponent);

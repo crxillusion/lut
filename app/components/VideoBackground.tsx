@@ -15,6 +15,7 @@ export function VideoBackground({
   loop = false,
   className = ''
 }: VideoBackgroundProps) {
+  // Don't render source if src is empty
   return (
     <video
       ref={videoRef}
@@ -25,7 +26,7 @@ export function VideoBackground({
       preload="auto"
       className={`absolute inset-0 w-full h-full object-cover ${className}`}
     >
-      <source src={src} type="video/mp4" />
+      {src && <source src={src} type="video/mp4" />}
     </video>
   );
 }

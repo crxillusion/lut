@@ -3,26 +3,36 @@
 import { BASE_PATH } from '../constants/config';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { memo, useState, useEffect } from 'react';
 
 interface SocialLinksProps {
   showBackButton?: boolean;
   onBackClick?: () => void;
   iconSize?: number;
   isVisible?: boolean;
+  animateOnce?: boolean; // If true, animate once and stay visible
 }
 
-export function SocialLinks({ 
+const SocialLinksComponent = ({ 
   showBackButton = false, 
   onBackClick, 
   iconSize = 45,
-  isVisible = true 
-}: SocialLinksProps) {
-  console.log('[SocialLinks] Rendered with:', { 
-    showBackButton, 
-    isVisible,
-    timestamp: new Date().toISOString()
-  });
-
+  isVisible = true,
+  animateOnce = false
+}: SocialLinksProps) => {
+  const [hasAnimated, setHasAnimated] = useState(false);
+  
+  // Track if we've animated once
+  useEffect(() => {
+    if (animateOnce && isVisible && !hasAnimated) {
+      setHasAnimated(true);
+    }
+  }, [isVisible, animateOnce, hasAnimated]);
+  
+  // For animateOnce mode: animate in once, then stay visible
+  // For normal mode: follow isVisible prop
+  const shouldBeVisible = animateOnce ? (hasAnimated || isVisible) : isVisible;
+  
   return (
     <motion.div 
       className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4"
@@ -32,28 +42,14 @@ export function SocialLinks({
         y: 20,
       }}
       animate={{
-        filter: isVisible ? 'blur(0px)' : 'blur(10px)',
-        opacity: isVisible ? 1 : 0,
-        y: isVisible ? 0 : 20,
+        filter: shouldBeVisible ? 'blur(0px)' : 'blur(10px)',
+        opacity: shouldBeVisible ? 1 : 0,
+        y: shouldBeVisible ? 0 : 20,
       }}
       transition={{
-        duration: isVisible ? 0.6 : 0.4,
-        delay: isVisible ? 0.85 : 0,
+        duration: shouldBeVisible ? 0.6 : 0.4,
+        delay: shouldBeVisible && !hasAnimated ? 0.85 : 0,
         ease: [0.23, 1, 0.32, 1],
-      }}
-      onAnimationStart={() => {
-        console.log('[SocialLinks] Animation started:', { 
-          isVisible,
-          direction: isVisible ? 'fade-in' : 'fade-out',
-          showBackButton
-        });
-      }}
-      onAnimationComplete={() => {
-        console.log('[SocialLinks] Animation completed:', { 
-          isVisible,
-          direction: isVisible ? 'fade-in' : 'fade-out',
-          showBackButton
-        });
       }}
     >
       {showBackButton && onBackClick && (
@@ -93,4 +89,7 @@ export function SocialLinks({
       </a>
     </motion.div>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const SocialLinks = memo(SocialLinksComponent);

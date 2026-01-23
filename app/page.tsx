@@ -21,6 +21,7 @@ export default function Home() {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false); // Controls hero animations - starts false, then animates to true
+  const [waitingForHeroLoop, setWaitingForHeroLoop] = useState(false); // Waiting for hero video to finish loop
   const [pendingTransition, setPendingTransition] = useState<{
     section: Section;
     video: string;
@@ -74,40 +75,33 @@ export default function Home() {
   // Handle opening sequence after loading completes
   useEffect(() => {
     if (!isLoading && !showOpening && !showHero) {
-      console.log('[Home] Loading complete, starting opening animation');
       setShowOpening(true);
     }
   }, [isLoading, showOpening, showHero]);
 
   const handleOpeningComplete = useCallback(() => {
-    console.log('[Home] Opening animation complete, showing hero');
     setShowOpening(false);
     setShowHero(true);
     // Delay heroVisible to trigger animations after hero section mounts
     setTimeout(() => {
-      console.log('[Home] Setting heroVisible to true to trigger animations');
       setHeroVisible(true);
     }, 50); // Small delay to ensure component is mounted
   }, []);
 
-  // Handle pending transition after fade-out animation completes
+  // Handle pending transition after fade-out animation starts
   useEffect(() => {
-    if (pendingTransition && !heroVisible) {
-      console.log('[Home] Hero fade-out complete, starting transition to:', pendingTransition.section);
-      // Wait for fade-out animation to complete (400ms)
-      const timeoutId = setTimeout(() => {
-        handleTransition(
-          pendingTransition.section,
-          pendingTransition.video,
-          pendingTransition.ref,
-          false
-        );
-        setPendingTransition(null);
-      }, 500); // 400ms animation + 100ms buffer
-      
-      return () => clearTimeout(timeoutId);
+    if (pendingTransition && !heroVisible && !waitingForHeroLoop) {
+      // Start transition immediately after hero loop ends
+      handleTransition(
+        pendingTransition.section,
+        pendingTransition.video,
+        pendingTransition.ref,
+        false
+      );
+      setPendingTransition(null);
     }
-  }, [pendingTransition, heroVisible]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingTransition, heroVisible, waitingForHeroLoop]);
 
   // Cleanup videos on unmount
   useEffect(() => {
@@ -135,15 +129,14 @@ export default function Home() {
   ) => {
     if (isTransitioningRef.current) return;
     
-    console.log('[Home] Starting transition to:', targetSection, 'from:', currentSection);
-    
     // Store previous section before transitioning (only for direct navigation from hero)
     if (isDirectNavigation && currentSection === 'hero') {
       previousSectionRef.current = 'hero';
     }
     
     isTransitioningRef.current = true;
-    setIsTransitioning(true);
+    
+    // Set transition video source but don't show it yet
     setTransitionVideoSrc(transitionVideo);
     
     // Prepare target video BEFORE starting transition
@@ -158,54 +151,59 @@ export default function Home() {
     
     setTimeout(() => {
       try {
-        if (transitionVideoRef.current) {
-          const video = transitionVideoRef.current;
-          video.currentTime = 0;
+        if (!transitionVideoRef.current) {
+          console.error('[Home] transitionVideoRef.current is null!');
+          return;
+        }
+        
+        const video = transitionVideoRef.current;
+        video.currentTime = 0;
+        
+        // Only call load() if video is not already loaded to prevent black flash
+        if (video.readyState < 2) {
+          video.load();
+        }
+        
+        const handleCanPlay = () => {
+          // Only show transition video once it's ready to play
+          setIsTransitioning(true);
           
-          // Only call load() if video is not already loaded to prevent black flash
-          if (video.readyState < 2) {
-            video.load();
+          video.play().catch(err => {
+            console.warn('Transition video play error:', err.name);
+            setCurrentSection(targetSection);
+            setIsTransitioning(false);
+            isTransitioningRef.current = false;
+            if (targetVideoRef.current) {
+              targetVideoRef.current.play().catch(() => {});
+            }
+          });
+        };
+        
+        video.onended = () => {
+          // Target video should be ready now - play it first
+          if (targetVideoRef.current) {
+            targetVideoRef.current.currentTime = 0;
+            targetVideoRef.current.play().catch(() => {});
           }
           
-          const handleCanPlay = () => {
-            video.play().catch(err => {
-              console.warn('Transition video play error:', err.name);
+          // Small delay to ensure target video is playing before showing section
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
               setCurrentSection(targetSection);
               setIsTransitioning(false);
               isTransitioningRef.current = false;
-              if (targetVideoRef.current) {
-                targetVideoRef.current.play().catch(() => {});
+              // Restore hero visibility if going back to hero
+              if (targetSection === 'hero') {
+                setHeroVisible(true);
               }
             });
-          };
-          
-          video.onended = () => {
-            console.log('[Home] Transition video ended, switching to:', targetSection);
-            // Target video should be ready now - play it first
-            if (targetVideoRef.current) {
-              targetVideoRef.current.currentTime = 0;
-              targetVideoRef.current.play().catch(() => {});
-            }
-            
-            // Small delay to ensure target video is playing before showing section
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                setCurrentSection(targetSection);
-                setIsTransitioning(false);
-                isTransitioningRef.current = false;
-                // Restore hero visibility if going back to hero
-                if (targetSection === 'hero') {
-                  setHeroVisible(true);
-                }
-              });
-            });
-          };
-          
-          if (video.readyState >= 3) {
-            handleCanPlay();
-          } else {
-            video.addEventListener('canplay', handleCanPlay, { once: true });
-          }
+          });
+        };
+        
+        if (video.readyState >= 3) {
+          handleCanPlay();
+        } else {
+          video.addEventListener('canplay', handleCanPlay, { once: true });
         }
       } catch (err) {
         console.error('Transition error:', err);
@@ -214,7 +212,7 @@ export default function Home() {
         isTransitioningRef.current = false;
       }
     }, 50);
-  }, []);
+  }, [currentSection]);
 
   // Transition functions from Hero (button clicks - direct navigation)
   const transitionToShowreel = useCallback(() => {
@@ -223,19 +221,51 @@ export default function Home() {
 
   const transitionToAboutStart = useCallback((viaScroll: boolean = false) => {
     if (viaScroll && currentSection === 'hero') {
-      // When scrolling from hero, fade out elements first
-      console.log('[Home] Scroll detected from hero, fading out elements before transition');
-      setHeroVisible(false);
-      setPendingTransition({
-        section: 'aboutStart',
-        video: VIDEO_PATHS.heroToAboutStart,
-        ref: aboutStartVideoRef
-      });
+      // When scrolling from hero, fade out UI immediately and wait for video loop
+      setWaitingForHeroLoop(true);
+      setHeroVisible(false); // Fade out immediately
+      
+      const heroVideo = heroVideoRef.current;
+      if (!heroVideo) {
+        console.warn('[Home] Hero video ref not available');
+        return;
+      }
+      
+      const currentTime = heroVideo.currentTime;
+      let previousTime = currentTime;
+      
+      // Set up timeupdate handler to monitor for loop reset
+      const handleTimeUpdate = () => {
+        if (!heroVideo) return;
+        
+        const current = heroVideo.currentTime;
+        
+        // Detect loop: if current time jumped backwards significantly
+        if (current < previousTime - 1) {
+          setWaitingForHeroLoop(false);
+          setPendingTransition({
+            section: 'aboutStart',
+            video: VIDEO_PATHS.heroToAboutStart,
+            ref: aboutStartVideoRef
+          });
+          heroVideo.removeEventListener('timeupdate', handleTimeUpdate);
+          return;
+        }
+        
+        previousTime = current;
+      };
+      
+      heroVideo.addEventListener('timeupdate', handleTimeUpdate);
+      
+      // Cleanup function
+      return () => {
+        heroVideo.removeEventListener('timeupdate', handleTimeUpdate);
+      };
     } else {
       // Direct navigation (button click)
       handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, aboutStartVideoRef, true);
     }
-  }, [handleTransition, currentSection]);
+  }, [handleTransition, currentSection, heroVisible, waitingForHeroLoop, isTransitioning]);
 
   const transitionToCases = useCallback(() => {
     handleTransition('cases', VIDEO_PATHS.heroToCases, casesVideoRef, true);
@@ -326,7 +356,6 @@ export default function Home() {
   // Scroll handling - Full navigation flow
   // Hero -> AboutStart -> About -> Team1 -> Team2 -> Offer -> Partner -> Cases -> Contact -> Hero
   const handleScrollDown = useCallback(() => {
-    console.log('[Home] handleScrollDown called, currentSection:', currentSection);
     switch(currentSection) {
       case 'hero': 
         transitionToAboutStart(true); // Pass true to indicate scroll
@@ -433,6 +462,7 @@ export default function Home() {
   useScrollTransition({
     currentSection,
     isTransitioning,
+    isWaiting: waitingForHeroLoop,
     onScrollDown: handleScrollDown,
     onScrollUp: handleScrollUp,
   });
@@ -450,11 +480,11 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="fixed inset-0 w-full h-screen overflow-hidden">
-        {/* Hero Section */}
+        {/* Hero Section - Keep visible during transition to prevent black flash */}
         <HeroSection
           videoRef={heroVideoRef}
           videoSrc={VIDEO_PATHS.heroLoop}
-          isVisible={currentSection === 'hero' && !isTransitioning && showHero}
+          isVisible={currentSection === 'hero' && showHero}
           showUI={heroVisible}
           currentSection={currentSection}
           onShowreelClick={transitionToShowreel}
@@ -463,13 +493,13 @@ export default function Home() {
           onContactClick={transitionToContact}
         />
 
-        {/* Transition Video */}
+        {/* Transition Video - Always rendered to keep ref available */}
         <TransitionVideo
           videoRef={transitionVideoRef}
           forwardSrc={transitionVideoSrc}
           reverseSrc={transitionVideoSrc}
           direction="forward"
-          isVisible={isTransitioning && showHero}
+          isVisible={isTransitioning}
         />
 
         {/* Showreel Section */}

@@ -5,6 +5,7 @@ import type { Section } from '../constants/config';
 interface UseScrollTransitionProps {
   currentSection: Section;
   isTransitioning: boolean;
+  isWaiting?: boolean; // Block scrolls while waiting for hero loop to complete
   onScrollDown: () => void;
   onScrollUp: () => void;
 }
@@ -12,6 +13,7 @@ interface UseScrollTransitionProps {
 export function useScrollTransition({
   currentSection,
   isTransitioning,
+  isWaiting = false,
   onScrollDown,
   onScrollUp,
 }: UseScrollTransitionProps) {
@@ -21,7 +23,7 @@ export function useScrollTransition({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       
-      if (isTransitioning) return;
+      if (isTransitioning || isWaiting) return;
       
       const now = Date.now();
       if (now - lastScrollTime.current < SCROLL_COOLDOWN) return;
@@ -38,7 +40,7 @@ export function useScrollTransition({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (isTransitioning) {
+      if (isTransitioning || isWaiting) {
         e.preventDefault();
       }
     };
@@ -50,5 +52,5 @@ export function useScrollTransition({
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('touchmove', handleTouchMove);
     };
-  }, [currentSection, isTransitioning, onScrollDown, onScrollUp]);
+  }, [currentSection, isTransitioning, isWaiting, onScrollDown, onScrollUp]);
 }

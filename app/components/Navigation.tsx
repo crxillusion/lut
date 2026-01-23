@@ -1,6 +1,5 @@
 import type { Section } from '../constants/config';
 import { BlurText } from './BlurText';
-import { useEffect } from 'react';
 
 interface NavigationProps {
   currentSection: Section;
@@ -19,14 +18,6 @@ export function Navigation({
   onContactClick,
   isVisible = true
 }: NavigationProps) {
-  useEffect(() => {
-    console.log('[Navigation] Visibility changed:', { 
-      isVisible, 
-      currentSection,
-      timestamp: new Date().toISOString()
-    });
-  }, [isVisible, currentSection]);
-
   return (
     <nav className="flex justify-center items-center gap-12 -mt-30">
       <button 
