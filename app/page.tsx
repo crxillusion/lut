@@ -292,9 +292,62 @@ export default function Home() {
   }, [handleTransition]);
 
   // Additional transition functions for the full flow
-  const transitionToAbout = useCallback(() => {
-    handleTransition('about', VIDEO_PATHS.aboutStartToAbout, aboutVideoRef);
-  }, [handleTransition]);
+  const transitionToAbout = useCallback((viaScroll: boolean = false) => {
+    if (viaScroll && currentSection === 'aboutStart') {
+      // When scrolling from aboutStart to about, fade out text immediately and speed up video to finish loop
+      setWaitingForAboutStartLoop(true);
+      setAboutStartVisible(false); // Fade out text immediately
+      
+      const aboutStartVideo = aboutStartVideoRef.current;
+      if (!aboutStartVideo) {
+        console.warn('[Home] AboutStart video ref not available');
+        return;
+      }
+      
+      // Speed up the video to finish the loop faster (3x speed)
+      aboutStartVideo.playbackRate = 3.0;
+      
+      const currentTime = aboutStartVideo.currentTime;
+      let previousTime = currentTime;
+      
+      // Set up timeupdate handler to monitor for loop reset
+      const handleTimeUpdate = () => {
+        if (!aboutStartVideo) return;
+        
+        const current = aboutStartVideo.currentTime;
+        
+        // Detect loop: if current time jumped backwards significantly
+        if (current < previousTime - 1) {
+          // Reset playback rate to normal
+          aboutStartVideo.playbackRate = 1.0;
+          setWaitingForAboutStartLoop(false);
+          setPendingTransition({
+            section: 'about',
+            video: VIDEO_PATHS.aboutStartToAbout,
+            ref: aboutVideoRef
+          });
+          aboutStartVideo.removeEventListener('timeupdate', handleTimeUpdate);
+          return;
+        }
+        
+        previousTime = current;
+      };
+      
+      aboutStartVideo.addEventListener('timeupdate', handleTimeUpdate);
+      
+      // Cleanup function
+      return () => {
+        aboutStartVideo.removeEventListener('timeupdate', handleTimeUpdate);
+        // Reset playback rate if cleanup happens before loop completes
+        if (aboutStartVideo) {
+          aboutStartVideo.playbackRate = 1.0;
+        }
+      };
+    } else {
+      // Direct navigation (button click)
+      handleTransition('about', VIDEO_PATHS.aboutStartToAbout, aboutVideoRef);
+    }
+  }, [handleTransition, currentSection]);
 
   const transitionToTeam1 = useCallback(() => {
     handleTransition('team1', VIDEO_PATHS.aboutToTeam, team1VideoRef);
@@ -436,7 +489,7 @@ export default function Home() {
         transitionToAboutStart(true); // Pass true to indicate scroll
         break;
       case 'aboutStart': 
-        transitionToAbout();
+        transitionToAbout(true); // Pass true to indicate scroll
         break;
       case 'about': 
         transitionToTeam1();
