@@ -2,7 +2,7 @@
 
 import { BASE_PATH } from '../constants/config';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { memo, useState, useEffect } from 'react';
 
 interface SocialLinksProps {
@@ -52,21 +52,45 @@ const SocialLinksComponent = ({
         ease: [0.23, 1, 0.32, 1],
       }}
     >
-      {showBackButton && onBackClick && (
-        <>
-          {/* Back Button */}
-          <button
-            onClick={onBackClick}
-            className="text-white hover:opacity-70 transition-opacity"
-            aria-label="Go back"
+      <AnimatePresence mode="wait">
+        {showBackButton && onBackClick && (
+          <motion.div
+            key="back-button-group"
+            className="flex items-center gap-4"
+            initial={{
+              opacity: 0,
+              x: -10,
+              filter: 'blur(8px)',
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              filter: 'blur(0px)',
+            }}
+            exit={{
+              opacity: 0,
+              x: -10,
+              filter: 'blur(8px)',
+            }}
+            transition={{
+              duration: 0.4,
+              ease: [0.23, 1, 0.32, 1],
+            }}
           >
-            <Image src={`${BASE_PATH}/back-arrow.svg`} alt="Back" width={iconSize} height={iconSize} />
-          </button>
-          
-          {/* Divider */}
-          <div className="w-px h-6 bg-white opacity-30"></div>
-        </>
-      )}
+            {/* Back Button */}
+            <button
+              onClick={onBackClick}
+              className="text-white hover:opacity-70 transition-opacity"
+              aria-label="Go back"
+            >
+              <Image src={`${BASE_PATH}/back-arrow.svg`} alt="Back" width={iconSize} height={iconSize} />
+            </button>
+            
+            {/* Divider */}
+            <div className="w-px h-6 bg-white opacity-30"></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Social Links */}
       <a 
