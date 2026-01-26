@@ -3,7 +3,6 @@
 import { RefObject, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navigation } from './Navigation';
-import { SocialLinks } from './SocialLinks';
 import { VideoBackground } from './VideoBackground';
 import type { Section } from '../constants/config';
 
@@ -79,9 +78,6 @@ export function HeroSection({
             </motion.div>
           </div>
         </div>
-        
-        {/* Social Links - Animate once on hero appear, then stay visible */}
-        <SocialLinks isVisible={isVisible} animateOnce={true} />
 
         {/* Copyright */}
         <motion.div 

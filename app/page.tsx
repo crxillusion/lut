@@ -8,6 +8,7 @@ import { AboutStartSection } from './components/AboutStartSection';
 import { StaticSection } from './components/StaticSection';
 import { ContactSection } from './components/ContactSection';
 import { TransitionVideo } from './components/TransitionVideo';
+import { SocialLinks } from './components/SocialLinks';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useScrollTransition } from './hooks/useScrollTransition';
 import { VIDEO_PATHS } from './constants/config';
@@ -574,6 +575,44 @@ export default function Home() {
           isVisible={currentSection === 'contact' && showHero}
         />
       </main>
+        
+      {/* Persistent Social Links - Always visible across all sections, above everything */}
+      {showHero && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          <div className="pointer-events-auto">
+            <SocialLinks 
+              showBackButton={currentSection !== 'hero' && currentSection !== 'contact'}
+              onBackClick={() => {
+                // Determine which back transition to use based on current section
+                switch(currentSection) {
+                  case 'showreel':
+                  case 'aboutStart':
+                  case 'cases':
+                    transitionToHero();
+                    break;
+                  case 'about':
+                    transitionAboutToAboutStart();
+                    break;
+                  case 'team1':
+                    transitionTeam1ToAbout();
+                    break;
+                  case 'team2':
+                    transitionTeam2ToTeam1();
+                    break;
+                  case 'offer':
+                    transitionOfferToTeam2();
+                    break;
+                  case 'partner':
+                    transitionPartnerToOffer();
+                    break;
+                }
+              }}
+              isVisible={showHero}
+              animateOnce={true}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }

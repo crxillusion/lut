@@ -1,5 +1,4 @@
 import { RefObject, useEffect, useRef, useState } from 'react';
-import { SocialLinks } from './SocialLinks';
 
 interface StaticSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -167,9 +166,6 @@ export function StaticSection({
             </div>
           </div>
         )}
-
-        {/* Bottom Section - Back Button and Social Links */}
-        <SocialLinks showBackButton onBackClick={onBackClick} />
       </div>
     </section>
   );

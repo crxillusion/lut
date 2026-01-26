@@ -1,6 +1,5 @@
 import { RefObject } from 'react';
 import { VideoBackground } from './VideoBackground';
-import { SocialLinks } from './SocialLinks';
 
 interface ContactSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -45,9 +44,6 @@ export function ContactSection({
             </a>
           </div>
         </div>
-
-        {/* Bottom Section - Social Links Only */}
-        <SocialLinks />
       </div>
     </section>
   );

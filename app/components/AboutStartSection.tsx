@@ -1,6 +1,5 @@
 import { RefObject, useEffect } from 'react';
 import { VideoBackground } from './VideoBackground';
-import { SocialLinks } from './SocialLinks';
 import { AnimatedText } from './AnimatedText';
 
 interface AboutStartSectionProps {
@@ -68,9 +67,6 @@ export function AboutStartSection({
             />
           </div>
         </div>
-
-        {/* Bottom Section - Back Button and Social Links */}
-        <SocialLinks showBackButton onBackClick={onHeroClick} iconSize={45} isVisible={isVisible} />
       </div>
     </section>
   );
