@@ -228,7 +228,7 @@ export default function Home() {
 
   const transitionToAboutStart = useCallback((viaScroll: boolean = false) => {
     if (viaScroll && currentSection === 'hero') {
-      // When scrolling from hero, fade out UI immediately and wait for video loop
+      // When scrolling from hero, fade out UI immediately and speed up video to finish loop
       setWaitingForHeroLoop(true);
       setHeroVisible(false); // Fade out immediately
       
@@ -237,6 +237,9 @@ export default function Home() {
         console.warn('[Home] Hero video ref not available');
         return;
       }
+      
+      // Speed up the video to finish the loop faster (3x speed)
+      heroVideo.playbackRate = 3.0;
       
       const currentTime = heroVideo.currentTime;
       let previousTime = currentTime;
@@ -249,6 +252,8 @@ export default function Home() {
         
         // Detect loop: if current time jumped backwards significantly
         if (current < previousTime - 1) {
+          // Reset playback rate to normal
+          heroVideo.playbackRate = 1.0;
           setWaitingForHeroLoop(false);
           setPendingTransition({
             section: 'aboutStart',
@@ -267,6 +272,10 @@ export default function Home() {
       // Cleanup function
       return () => {
         heroVideo.removeEventListener('timeupdate', handleTimeUpdate);
+        // Reset playback rate if cleanup happens before loop completes
+        if (heroVideo) {
+          heroVideo.playbackRate = 1.0;
+        }
       };
     } else {
       // Direct navigation (button click)
@@ -363,7 +372,7 @@ export default function Home() {
   // Transition back to Hero from AboutStart with loop-waiting logic
   const transitionBackToHeroFromAboutStart = useCallback((viaScroll: boolean = false) => {
     if (viaScroll && currentSection === 'aboutStart') {
-      // When scrolling back from aboutStart, fade out text immediately and wait for video loop
+      // When scrolling back from aboutStart, fade out text immediately and speed up video to finish loop
       setWaitingForAboutStartLoop(true);
       setAboutStartVisible(false); // Fade out text immediately
       
@@ -372,6 +381,9 @@ export default function Home() {
         console.warn('[Home] AboutStart video ref not available');
         return;
       }
+      
+      // Speed up the video to finish the loop faster (3x speed)
+      aboutStartVideo.playbackRate = 3.0;
       
       const currentTime = aboutStartVideo.currentTime;
       let previousTime = currentTime;
@@ -384,6 +396,8 @@ export default function Home() {
         
         // Detect loop: if current time jumped backwards significantly
         if (current < previousTime - 1) {
+          // Reset playback rate to normal
+          aboutStartVideo.playbackRate = 1.0;
           setWaitingForAboutStartLoop(false);
           setPendingTransition({
             section: 'hero',
@@ -402,6 +416,10 @@ export default function Home() {
       // Cleanup function
       return () => {
         aboutStartVideo.removeEventListener('timeupdate', handleTimeUpdate);
+        // Reset playback rate if cleanup happens before loop completes
+        if (aboutStartVideo) {
+          aboutStartVideo.playbackRate = 1.0;
+        }
       };
     } else {
       // Direct navigation (button click) - use normal transition
