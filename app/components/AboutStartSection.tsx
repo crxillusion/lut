@@ -6,6 +6,7 @@ interface AboutStartSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   videoSrc: string;
   isVisible: boolean;
+  showUI: boolean; // Controls text visibility for fade out during transitions
   onHeroClick: () => void;
 }
 
@@ -13,6 +14,7 @@ export function AboutStartSection({
   videoRef, 
   videoSrc, 
   isVisible,
+  showUI,
   onHeroClick 
 }: AboutStartSectionProps) {
   // Preload the first frame of the video to prevent black flash
@@ -62,7 +64,7 @@ export function AboutStartSection({
               className="text-left text-white font-outfit font-medium text-[18px] leading-[150%] tracking-[-0.011em]"
               delay={0.3}
               duration={0.6}
-              shouldAnimate={isVisible}
+              shouldAnimate={showUI}
               splitByWords={false}
             />
           </div>

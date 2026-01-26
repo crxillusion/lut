@@ -22,7 +22,9 @@ export default function Home() {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false); // Controls hero animations - starts false, then animates to true
+  const [aboutStartVisible, setAboutStartVisible] = useState(true); // Controls aboutStart text visibility
   const [waitingForHeroLoop, setWaitingForHeroLoop] = useState(false); // Waiting for hero video to finish loop
+  const [waitingForAboutStartLoop, setWaitingForAboutStartLoop] = useState(false); // Waiting for aboutStart video to finish loop
   const [pendingTransition, setPendingTransition] = useState<{
     section: Section;
     video: string;
@@ -91,8 +93,8 @@ export default function Home() {
 
   // Handle pending transition after fade-out animation starts
   useEffect(() => {
-    if (pendingTransition && !heroVisible && !waitingForHeroLoop) {
-      // Start transition immediately after hero loop ends
+    if (pendingTransition && !heroVisible && !waitingForHeroLoop && !waitingForAboutStartLoop) {
+      // Start transition immediately after loop ends
       handleTransition(
         pendingTransition.section,
         pendingTransition.video,
@@ -102,7 +104,7 @@ export default function Home() {
       setPendingTransition(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingTransition, heroVisible, waitingForHeroLoop]);
+  }, [pendingTransition, heroVisible, waitingForHeroLoop, waitingForAboutStartLoop]);
 
   // Cleanup videos on unmount
   useEffect(() => {
@@ -196,6 +198,10 @@ export default function Home() {
               // Restore hero visibility if going back to hero
               if (targetSection === 'hero') {
                 setHeroVisible(true);
+              }
+              // Restore aboutStart visibility when entering aboutStart
+              if (targetSection === 'aboutStart') {
+                setAboutStartVisible(true);
               }
             });
           });
@@ -354,6 +360,56 @@ export default function Home() {
     handleTransition('hero', reverseVideo, heroVideoRef);
   }, [currentSection, handleTransition]);
 
+  // Transition back to Hero from AboutStart with loop-waiting logic
+  const transitionBackToHeroFromAboutStart = useCallback((viaScroll: boolean = false) => {
+    if (viaScroll && currentSection === 'aboutStart') {
+      // When scrolling back from aboutStart, fade out text immediately and wait for video loop
+      setWaitingForAboutStartLoop(true);
+      setAboutStartVisible(false); // Fade out text immediately
+      
+      const aboutStartVideo = aboutStartVideoRef.current;
+      if (!aboutStartVideo) {
+        console.warn('[Home] AboutStart video ref not available');
+        return;
+      }
+      
+      const currentTime = aboutStartVideo.currentTime;
+      let previousTime = currentTime;
+      
+      // Set up timeupdate handler to monitor for loop reset
+      const handleTimeUpdate = () => {
+        if (!aboutStartVideo) return;
+        
+        const current = aboutStartVideo.currentTime;
+        
+        // Detect loop: if current time jumped backwards significantly
+        if (current < previousTime - 1) {
+          setWaitingForAboutStartLoop(false);
+          setPendingTransition({
+            section: 'hero',
+            video: VIDEO_PATHS.aboutStartToHero,
+            ref: heroVideoRef
+          });
+          aboutStartVideo.removeEventListener('timeupdate', handleTimeUpdate);
+          return;
+        }
+        
+        previousTime = current;
+      };
+      
+      aboutStartVideo.addEventListener('timeupdate', handleTimeUpdate);
+      
+      // Cleanup function
+      return () => {
+        aboutStartVideo.removeEventListener('timeupdate', handleTimeUpdate);
+      };
+    } else {
+      // Direct navigation (button click) - use normal transition
+      previousSectionRef.current = 'hero';
+      handleTransition('hero', VIDEO_PATHS.aboutStartToHero, heroVideoRef);
+    }
+  }, [handleTransition, currentSection]);
+
   // Scroll handling - Full navigation flow
   // Hero -> AboutStart -> About -> Team1 -> Team2 -> Offer -> Partner -> Cases -> Contact -> Hero
   const handleScrollDown = useCallback(() => {
@@ -410,7 +466,7 @@ export default function Home() {
         transitionToHero();
         break;
       case 'aboutStart': 
-        transitionToHero();
+        transitionBackToHeroFromAboutStart(true); // Pass true to indicate scroll
         break;
       case 'about': 
         transitionAboutToAboutStart();
@@ -451,6 +507,7 @@ export default function Home() {
   }, [
     currentSection, 
     transitionToHero, 
+    transitionBackToHeroFromAboutStart,
     transitionAboutToAboutStart,
     transitionTeam1ToAbout,
     transitionTeam2ToTeam1,
@@ -463,7 +520,7 @@ export default function Home() {
   useScrollTransition({
     currentSection,
     isTransitioning,
-    isWaiting: waitingForHeroLoop,
+    isWaiting: waitingForHeroLoop || waitingForAboutStartLoop,
     onScrollDown: handleScrollDown,
     onScrollUp: handleScrollUp,
   });
@@ -516,6 +573,7 @@ export default function Home() {
           videoRef={aboutStartVideoRef}
           videoSrc={VIDEO_PATHS.aboutStartLoop}
           isVisible={currentSection === 'aboutStart' && showHero}
+          showUI={aboutStartVisible}
           onHeroClick={transitionToHero}
         />
 
@@ -586,9 +644,11 @@ export default function Home() {
                 // Determine which back transition to use based on current section
                 switch(currentSection) {
                   case 'showreel':
-                  case 'aboutStart':
                   case 'cases':
                     transitionToHero();
+                    break;
+                  case 'aboutStart':
+                    transitionBackToHeroFromAboutStart(false); // Button click, not scroll
                     break;
                   case 'about':
                     transitionAboutToAboutStart();
