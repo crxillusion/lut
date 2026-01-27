@@ -16,7 +16,7 @@ export function useVideoPreloader(videoPaths: string[]) {
     const essentialVideos = videoPaths.slice(0, videosToPreload); // First 80% of videos
     const totalVideos = essentialVideos.length;
     
-    const minLoadTime = 5000; // Minimum 5 seconds to allow videos to load on slow connections
+    const gifDuration = 7000; // Target display time in ms (7 seconds) - shorter than full GIF loop
     const startTime = Date.now();
 
     console.log(`[VideoPreloader] Preloading ${totalVideos} videos (80% of ${videoPaths.length}) for smooth experience, ${videoPaths.length - totalVideos} will load in background...`);
@@ -38,7 +38,8 @@ export function useVideoPreloader(videoPaths: string[]) {
           if (!isCancelled) {
             loadedCount++;
             successfullyLoadedCount++;
-            const progress = Math.floor((loadedCount / totalVideos) * 100);
+            // Cap progress at 99% until minimum wait time completes
+            const progress = Math.min(99, Math.floor((loadedCount / totalVideos) * 100));
             setLoadingProgress(progress);
             console.log(`[VideoPreloader] ✅ ${loadedCount}/${totalVideos} videos loaded (${progress}%): ${path.split('/').pop()}`);
           }
@@ -83,14 +84,22 @@ export function useVideoPreloader(videoPaths: string[]) {
       if (isCancelled) return;
 
       const elapsed = Date.now() - startTime;
-      const remainingTime = Math.max(0, minLoadTime - elapsed);
+      
+      // Calculate how long to wait to align with GIF loop completion
+      // We want to transition right when the GIF completes a full loop
+      const currentGifPosition = elapsed % gifDuration; // Where we are in the current GIF loop
+      const timeToNextGifLoop = gifDuration - currentGifPosition; // Time until GIF completes current loop
+      
+      // Ensure we wait at least until the next GIF loop completes
+      const remainingTime = timeToNextGifLoop;
 
       console.log(`[VideoPreloader] Videos processed: ${loadedCount}/${totalVideos}, Successfully loaded: ${successfullyLoadedCount}/${totalVideos}`);
-      console.log(`[VideoPreloader] Time elapsed: ${elapsed}ms, waiting ${remainingTime}ms for minimum display time`);
+      console.log(`[VideoPreloader] Time elapsed: ${elapsed}ms, GIF position: ${currentGifPosition.toFixed(0)}ms/${gifDuration}ms, waiting ${remainingTime.toFixed(0)}ms for GIF loop to complete`);
 
       // Ensure minimum loading time for branding
       setTimeout(() => {
         if (!isCancelled) {
+          console.log('[VideoPreloader] Minimum wait time complete, setting progress to 100%');
           setLoadingProgress(100);
           
           if (successfullyLoadedCount >= 1) {

@@ -21,6 +21,7 @@ export default function Home() {
   const [transitionVideoSrc, setTransitionVideoSrc] = useState('');
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
+  const [loadingScreenVisible, setLoadingScreenVisible] = useState(true); // Controls loading screen fade
   const [heroVisible, setHeroVisible] = useState(false); // Controls hero animations - starts false, then animates to true
   const [aboutStartVisible, setAboutStartVisible] = useState(true); // Controls aboutStart text visibility
   const [waitingForHeroLoop, setWaitingForHeroLoop] = useState(false); // Waiting for hero video to finish loop
@@ -75,20 +76,28 @@ export default function Home() {
     VIDEO_PATHS.contactLoop,
   ]);
 
-  // Handle opening sequence after loading completes
+  // Start opening transition when loading reaches 100% (before isLoading becomes false)
+  // First fade out loading screen, then start the opening transition video
   useEffect(() => {
-    if (!isLoading && !showOpening && !showHero) {
+    if (loadingProgress === 100 && !showOpening && !showHero) {
+      console.log('[Home] Loading at 100%, starting opening transition and fading out loading screen');
+      // Start rendering the opening transition immediately (but invisible behind loading screen)
       setShowOpening(true);
+      
+      // Fade out loading screen after a brief delay to ensure video is ready
+      setTimeout(() => {
+        console.log('[Home] Fading out loading screen to reveal opening transition');
+        setLoadingScreenVisible(false);
+      }, 100);
     }
-  }, [isLoading, showOpening, showHero]);
+  }, [loadingProgress, showOpening, showHero]);
 
   const handleOpeningComplete = useCallback(() => {
+    console.log('[Home] Opening transition complete, showing hero');
     setShowOpening(false);
     setShowHero(true);
-    // Delay heroVisible to trigger animations after hero section mounts
-    setTimeout(() => {
-      setHeroVisible(true);
-    }, 50); // Small delay to ensure component is mounted
+    setHeroVisible(true); // Set immediately, no delay needed
+    setAboutStartVisible(true); // Reset for future transitions
   }, []);
 
   // Handle pending transition after fade-out animation starts
@@ -596,12 +605,14 @@ export default function Home() {
     onScrollUp: handleScrollUp,
   });
 
+  console.log('[Home] Render state:', { isLoading, showOpening, showHero, currentSection });
+
   return (
     <>
-      {/* Loading Screen */}
-      {isLoading && <LoadingScreen progress={loadingProgress} />}
+      {/* Loading Screen - fades out when loading completes */}
+      {isLoading && <LoadingScreen progress={loadingProgress} isVisible={loadingScreenVisible} />}
 
-      {/* Opening Transition */}
+      {/* Opening Transition - plays after loading screen fades out */}
       <OpeningTransition 
         isPlaying={showOpening} 
         onComplete={handleOpeningComplete} 
@@ -609,11 +620,11 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="fixed inset-0 w-full h-screen overflow-hidden">
-        {/* Hero Section - Keep visible during transition to prevent black flash */}
+        {/* Hero Section - Render early (behind opening transition) to prevent black flash */}
         <HeroSection
           videoRef={heroVideoRef}
           videoSrc={VIDEO_PATHS.heroLoop}
-          isVisible={currentSection === 'hero' && showHero}
+          isVisible={currentSection === 'hero' && (showHero || showOpening)}
           showUI={heroVisible}
           currentSection={currentSection}
           onShowreelClick={transitionToShowreel}

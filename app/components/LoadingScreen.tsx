@@ -2,16 +2,17 @@ import { BASE_PATH } from '../constants/config';
 
 interface LoadingScreenProps {
   progress: number;
+  isVisible: boolean;
 }
 
-export function LoadingScreen({ progress }: LoadingScreenProps) {
+export function LoadingScreen({ progress, isVisible }: LoadingScreenProps) {
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-cover bg-center transition-opacity duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
       style={{
         backgroundImage: `url(${BASE_PATH}/loading-bg.jpg)`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
       }}
     >
       {/* Logo Animation - Centered */}

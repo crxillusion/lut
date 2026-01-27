@@ -4,7 +4,7 @@ export const BASE_PATH = process.env.NODE_ENV === 'production' ? '/lut' : '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
 export const LOADING_TIMEOUT = 20000; // 20 seconds - for slow GitHub Pages LFS downloads
-export const LOADING_DELAY = 5000; // 5 seconds minimum - gives videos time to load on slow connections
+export const LOADING_DELAY = 7000; // 7 seconds - balanced loading time for branding
 
 export const VIDEO_PATHS = {
   // Opening
