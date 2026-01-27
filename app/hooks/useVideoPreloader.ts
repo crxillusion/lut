@@ -110,7 +110,9 @@ export function useVideoPreloader(videoPaths: string[]) {
             console.warn('[VideoPreloader] ⚠️ No videos loaded successfully, but proceeding anyway...');
           }
           
-          // Small delay for smooth transition
+          // Wait longer before setting isLoading to false
+          // This ensures the loading screen stays mounted during its fade-out animation
+          // Loading screen fade (300ms) + opening transition start (100ms) + buffer (100ms) = 500ms
           setTimeout(() => {
             setIsLoading(false);
             // Clean up video elements
@@ -118,7 +120,7 @@ export function useVideoPreloader(videoPaths: string[]) {
             
             // Start background preloading of remaining videos (the last 20%)
             preloadRemainingVideos(videoPaths.slice(videosToPreload));
-          }, 300);
+          }, 500);
         }
       }, remainingTime);
     });
