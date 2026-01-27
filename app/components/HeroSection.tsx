@@ -1,6 +1,6 @@
 'use client';
 
-import { RefObject, useEffect } from 'react';
+import { RefObject } from 'react';
 import { motion } from 'framer-motion';
 import { Navigation } from './Navigation';
 import { VideoBackground } from './VideoBackground';

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, Variants } from 'framer-motion';
-import { useEffect, useState, memo } from 'react';
+import { memo } from 'react';
 
 interface BlurTextProps {
   text: string;
@@ -18,16 +18,9 @@ const BlurTextComponent = ({
   duration = 0.5,
   shouldAnimate = false
 }: BlurTextProps) => {
-  const [isVisible, setIsVisible] = useState(false);
+  // Directly use shouldAnimate prop instead of local state
+  const isVisible = shouldAnimate;
   const words = text.split(' ');
-
-  useEffect(() => {
-    if (shouldAnimate) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [shouldAnimate, text]);
 
   const container: Variants = {
     hidden: { opacity: 0 },

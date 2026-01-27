@@ -7,15 +7,14 @@ interface AboutStartSectionProps {
   videoSrc: string;
   isVisible: boolean;
   showUI: boolean; // Controls text visibility for fade out during transitions
-  onHeroClick: () => void;
+  onHeroClick?: () => void;
 }
 
 export function AboutStartSection({ 
   videoRef, 
   videoSrc, 
   isVisible,
-  showUI,
-  onHeroClick 
+  showUI
 }: AboutStartSectionProps) {
   // Preload the first frame of the video to prevent black flash
   useEffect(() => {

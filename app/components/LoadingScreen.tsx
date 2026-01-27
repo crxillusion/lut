@@ -1,11 +1,11 @@
 import { BASE_PATH } from '../constants/config';
 
 interface LoadingScreenProps {
-  progress: number;
+  progress?: number;
   isVisible: boolean;
 }
 
-export function LoadingScreen({ progress, isVisible }: LoadingScreenProps) {
+export function LoadingScreen({ isVisible }: LoadingScreenProps) {
   return (
     <div 
       className={`fixed inset-0 z-[100] flex items-center justify-center bg-cover bg-center transition-opacity duration-300 ${

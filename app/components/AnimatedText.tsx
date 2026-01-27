@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState, memo } from 'react';
+import { memo } from 'react';
 
 interface AnimatedTextProps {
   text: string;
@@ -20,15 +20,8 @@ const AnimatedTextComponent = ({
   shouldAnimate = false,
   splitByWords = true
 }: AnimatedTextProps) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (shouldAnimate) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [shouldAnimate, text]);
+  // Directly use shouldAnimate prop instead of local state
+  const isVisible = shouldAnimate;
 
   if (splitByWords) {
     const words = text.split(' ');

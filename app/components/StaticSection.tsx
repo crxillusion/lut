@@ -6,7 +6,7 @@ interface StaticSectionProps {
   isVisible: boolean;
   title?: string;
   content?: string;
-  onBackClick: () => void;
+  onBackClick?: () => void;
   frameOffsetFromEnd?: number; // Custom offset in seconds from video end (default: 0.05)
 }
 
@@ -16,7 +16,6 @@ export function StaticSection({
   isVisible,
   title,
   content,
-  onBackClick,
   frameOffsetFromEnd = 0.05 // Default to 50ms before end
 }: StaticSectionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

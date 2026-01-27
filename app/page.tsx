@@ -12,7 +12,7 @@ import { SocialLinks } from './components/SocialLinks';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useScrollTransition } from './hooks/useScrollTransition';
 import { VIDEO_PATHS } from './constants/config';
-import type { Section, TransitionDirection } from './constants/config';
+import type { Section } from './constants/config';
 
 export default function Home() {
   // State management
@@ -290,7 +290,7 @@ export default function Home() {
       // Direct navigation (button click)
       handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, aboutStartVideoRef, true);
     }
-  }, [handleTransition, currentSection, heroVisible, waitingForHeroLoop, isTransitioning]);
+  }, [handleTransition, currentSection]);
 
   const transitionToCases = useCallback(() => {
     handleTransition('cases', VIDEO_PATHS.heroToCases, casesVideoRef, true);

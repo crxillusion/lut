@@ -2,7 +2,7 @@ import type { Section } from '../constants/config';
 import { BlurText } from './BlurText';
 
 interface NavigationProps {
-  currentSection: Section;
+  currentSection?: Section;
   onShowreelClick?: () => void;
   onAboutClick?: () => void;
   onCasesClick?: () => void;
@@ -11,7 +11,6 @@ interface NavigationProps {
 }
 
 export function Navigation({ 
-  currentSection, 
   onShowreelClick,
   onAboutClick,
   onCasesClick,
