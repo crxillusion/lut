@@ -1,5 +1,11 @@
 /* Contact Section Styles */
 
+.titleContainer {
+  position: relative;
+  margin-bottom: -4rem;
+  z-index: 1;
+}
+
 .title {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
@@ -8,7 +14,52 @@
   letter-spacing: 0.28em;
   text-align: center;
   color: white;
-  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+  min-height: 170px;
+}
+
+/* Create a blurred copy of the text for the bottom half */
+.title::before {
+  content: 'READY?';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: clamp(60px, 15vw, 173px);
+  line-height: 100%;
+  letter-spacing: 0.28em;
+  text-align: center;
+  color: white;
+  filter: blur(3px);
+  z-index: 2;
+  /* Clip to show only bottom half */
+  clip-path: inset(61% 0 0 0);
+  pointer-events: none;
+}
+.title::after {
+  content: 'READY?';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: clamp(60px, 15vw, 173px);
+  line-height: 100%;
+  letter-spacing: 0.28em;
+  text-align: center;
+  color: white;
+  z-index: 2;
+  /* Clip to show only bottom half */
+  clip-path: inset(0 0 38% 0);
+  pointer-events: none;
+}
+
+.blurOverlay {
+  display: none;
 }
 
 .contactCard {
@@ -23,6 +74,8 @@
   height: 230px;
   padding: 32px 48px;
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
 .contactHeader {
@@ -90,6 +143,25 @@
   gap: 30px;
 }
 
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.labelInside {
+  position: absolute;
+  left: 24px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 150%;
+  letter-spacing: -0.011em;
+  color: white;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .input,
 .textarea,
 .submitButton {
@@ -98,7 +170,7 @@
   font-size: 20px;
   line-height: 150%;
   letter-spacing: -0.011em;
-  text-align: center;
+  text-align: left;
   color: white;
   border-radius: 20px;
   border: 0.5px solid #FFFFFF;
@@ -126,6 +198,8 @@
   height: 53px;
   padding-top: 18px;
   padding-bottom: 18px;
+  padding-left: 90px;
+  padding-right: 24px;
 }
 
 .inputFullWidth {
@@ -136,7 +210,11 @@
 .textarea {
   width: 100%;
   max-width: 961px;
-  padding: 18px 24px;
+  height: 53px;
+  padding-top: 10px;
+  padding-bottom: 18px;
+  padding-left: 110px;
+  padding-right: 24px;
   resize: none;
 }
 
@@ -147,6 +225,9 @@
   font-weight: 600;
   letter-spacing: 0.28em;
   cursor: pointer;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .submitButton:hover {
@@ -161,13 +242,17 @@
   background: #2563EB;
   border: none;
   font-family: 'Outfit', sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 20px;
   letter-spacing: 0.28em;
   text-align: center;
   color: white;
   cursor: pointer;
   transition: opacity 0.2s;
+  box-shadow: 7px 9px 14.4px 0px #00000047;
+  border: 0.5px solid;
+  border-image-source: linear-gradient(0deg, #FFFFFF, #FFFFFF), linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2));
+  background: radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%), linear-gradient(0deg, rgba(0, 108, 253, 0.54), rgba(0, 108, 253, 0.54));
 }
 
 .scheduleButton:hover {
