@@ -46,6 +46,9 @@ export function ContactSection({
         autoPlay
       />
 
+      {/* Blur Overlay */}
+      <div className={styles.videoBlurOverlay}></div>
+
       {/* Content Overlay */}
       <div className="relative z-10 h-full flex items-center justify-center px-4 md:px-8">
         <div className="w-full max-w-[961px]">
