@@ -24,8 +24,10 @@ export default function Home() {
   const [loadingScreenVisible, setLoadingScreenVisible] = useState(true); // Controls loading screen fade
   const [heroVisible, setHeroVisible] = useState(false); // Controls hero animations - starts false, then animates to true
   const [aboutStartVisible, setAboutStartVisible] = useState(true); // Controls aboutStart text visibility
+  const [contactVisible, setContactVisible] = useState(false); // Controls contact elements visibility - starts false
   const [waitingForHeroLoop, setWaitingForHeroLoop] = useState(false); // Waiting for hero video to finish loop
   const [waitingForAboutStartLoop, setWaitingForAboutStartLoop] = useState(false); // Waiting for aboutStart video to finish loop
+  const [waitingForContactLoop, setWaitingForContactLoop] = useState(false); // Waiting for contact video to finish loop
   const [pendingTransition, setPendingTransition] = useState<{
     section: Section;
     video: string;
@@ -131,6 +133,23 @@ export default function Home() {
       });
     };
   }, []);
+
+  // Show contact elements when entering contact section, hide when leaving
+  useEffect(() => {
+    if (currentSection === 'contact' && showHero && !waitingForContactLoop && !contactVisible) {
+      // Small delay to ensure video is ready
+      // Only set to true if not already visible and not waiting for loop
+      const timer = setTimeout(() => {
+        console.log('[Home] Setting contactVisible to true');
+        setContactVisible(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (currentSection !== 'contact' && contactVisible) {
+      // Reset contactVisible when leaving contact section
+      console.log('[Home] Leaving contact section, resetting contactVisible to false');
+      setContactVisible(false);
+    }
+  }, [currentSection, showHero, contactVisible, waitingForContactLoop]);
 
   // Generic transition handler
   const handleTransition = useCallback((
@@ -490,9 +509,81 @@ export default function Home() {
     }
   }, [handleTransition, currentSection]);
 
+  // Transition back to Hero from Contact with loop-waiting logic
+  const transitionBackToHeroFromContact = useCallback((viaScroll: boolean = false) => {
+    if (viaScroll && currentSection === 'contact') {
+      // When scrolling back from contact, fade out elements immediately and speed up video to finish loop
+      console.log('[Home] Starting contact loop speedup and fade-out');
+      setWaitingForContactLoop(true);
+      setContactVisible(false); // Fade out elements immediately
+      
+      const contactVideo = contactVideoRef.current;
+      if (!contactVideo) {
+        console.warn('[Home] Contact video ref not available');
+        return;
+      }
+      
+      console.log('[Home] Contact video current state:', {
+        currentTime: contactVideo.currentTime,
+        duration: contactVideo.duration,
+        playbackRate: contactVideo.playbackRate,
+        paused: contactVideo.paused
+      });
+      
+      // Speed up the video to finish the loop faster (3x speed)
+      contactVideo.playbackRate = 3.0;
+      console.log('[Home] Contact video playback rate set to 3.0');
+      
+      // Monitor video progress and transition when loop completes
+      let previousTime = contactVideo.currentTime;
+      
+      const handleTimeUpdate = () => {
+        const current = contactVideo.currentTime;
+        
+        // Log every 0.5 seconds for debugging
+        if (Math.floor(current * 2) !== Math.floor(previousTime * 2)) {
+          console.log('[Home] Contact loop progress:', current.toFixed(2), '/', contactVideo.duration.toFixed(2));
+        }
+        
+        // Detect when video loops back to the beginning (currentTime jumps back)
+        if (current < previousTime) {
+          console.log('[Home] Contact loop complete, starting transition to hero');
+          // Loop completed, reset speed and start transition
+          contactVideo.playbackRate = 1.0;
+          setWaitingForContactLoop(false);
+          previousSectionRef.current = 'hero';
+          
+          // Start transition - this will automatically hide contact section via isTransitioning
+          handleTransition('hero', VIDEO_PATHS.contactToHero, heroVideoRef);
+          contactVideo.removeEventListener('timeupdate', handleTimeUpdate);
+          return;
+        }
+        
+        previousTime = current;
+      };
+      
+      contactVideo.addEventListener('timeupdate', handleTimeUpdate);
+      
+      // Cleanup function
+      return () => {
+        contactVideo.removeEventListener('timeupdate', handleTimeUpdate);
+        // Reset playback rate if cleanup happens before loop completes
+        if (contactVideo) {
+          contactVideo.playbackRate = 1.0;
+        }
+      };
+    } else {
+      // Direct navigation (button click) - use normal transition
+      console.log('[Home] Direct navigation to hero from contact');
+      previousSectionRef.current = 'hero';
+      handleTransition('hero', VIDEO_PATHS.contactToHero, heroVideoRef);
+    }
+  }, [handleTransition, currentSection]);
+
   // Scroll handling - Full navigation flow
   // Hero -> AboutStart -> About -> Team1 -> Team2 -> Offer -> Partner -> Cases -> Contact -> Hero
   const handleScrollDown = useCallback(() => {
+    console.log('[Home] handleScrollDown called, currentSection:', currentSection);
     switch(currentSection) {
       case 'hero': 
         transitionToAboutStart(true); // Pass true to indicate scroll
@@ -522,7 +613,7 @@ export default function Home() {
         transitionCasesToContact();
         break;
       case 'contact': 
-        transitionToHero();
+        transitionBackToHeroFromContact(true); // Pass true to indicate scroll
         break;
       default: 
         break;
@@ -537,10 +628,11 @@ export default function Home() {
     transitionToPartner,
     transitionPartnerToCases,
     transitionCasesToContact,
-    transitionToHero
+    transitionBackToHeroFromContact
   ]);
 
   const handleScrollUp = useCallback(() => {
+    console.log('[Home] handleScrollUp called, currentSection:', currentSection);
     switch(currentSection) {
       case 'showreel':
         transitionToHero();
@@ -574,12 +666,8 @@ export default function Home() {
         }
         break;
       case 'contact': 
-        // If user came directly from hero, go back to hero
-        if (previousSectionRef.current === 'hero') {
-          transitionToHero();
-        } else {
-          transitionToCases();
-        }
+        // Always use loop speedup logic when scrolling away from contact
+        transitionBackToHeroFromContact(true); // Pass true to indicate scroll
         break;
       default: 
         break;
@@ -594,13 +682,14 @@ export default function Home() {
     transitionOfferToTeam2,
     transitionPartnerToOffer,
     transitionCasesToPartner,
-    transitionToCases
+    transitionToCases,
+    transitionBackToHeroFromContact
   ]);
 
   useScrollTransition({
     currentSection,
     isTransitioning,
-    isWaiting: waitingForHeroLoop || waitingForAboutStartLoop,
+    isWaiting: waitingForHeroLoop || waitingForAboutStartLoop || waitingForContactLoop,
     onScrollDown: handleScrollDown,
     onScrollUp: handleScrollUp,
   });
@@ -713,6 +802,8 @@ export default function Home() {
           videoRef={contactVideoRef}
           videoSrc={VIDEO_PATHS.contactLoop}
           isVisible={currentSection === 'contact' && showHero}
+          isTransitioning={isTransitioning}
+          showUI={contactVisible}
         />
       </main>
         
@@ -746,6 +837,9 @@ export default function Home() {
                     break;
                   case 'partner':
                     transitionPartnerToOffer();
+                    break;
+                  case 'contact':
+                    transitionBackToHeroFromContact(false); // Button click, not scroll
                     break;
                 }
               }}

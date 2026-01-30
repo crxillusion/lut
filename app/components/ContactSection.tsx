@@ -1,4 +1,5 @@
-import { RefObject, useState } from 'react';
+import { RefObject, useState, useEffect } from 'react';
+import { motion, useAnimation } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
 import styles from './ContactSection.module.css';
 
@@ -6,12 +7,16 @@ interface ContactSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   videoSrc: string;
   isVisible: boolean;
+  isTransitioning?: boolean; // Hide immediately during transitions
+  showUI: boolean; // Controls UI elements visibility for fade out during transitions
 }
 
 export function ContactSection({ 
   videoRef, 
   videoSrc, 
-  isVisible
+  isVisible,
+  isTransitioning = false,
+  showUI
 }: ContactSectionProps) {
   const [formData, setFormData] = useState({
     email: '',
@@ -19,6 +24,30 @@ export function ContactSection({
     name: '',
     message: ''
   });
+  
+  // Preload the first frame of the video to prevent black flash
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      const handleLoadedData = () => {
+        if (!isVisible && video.paused) {
+          // Preload first frame when not visible
+          video.currentTime = 0;
+        }
+      };
+      
+      video.addEventListener('loadeddata', handleLoadedData);
+      
+      // If already loaded, seek to first frame
+      if (video.readyState >= 2) {
+        handleLoadedData();
+      }
+      
+      return () => {
+        video.removeEventListener('loadeddata', handleLoadedData);
+      };
+    }
+  }, [videoRef, isVisible]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,12 +62,16 @@ export function ContactSection({
     }));
   };
 
+  // Simplified visibility logic: show with high z-index when visible, hide completely during transitions
+  const shouldShow = isVisible && !isTransitioning;
+
   return (
     <section 
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
-        isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
+        shouldShow ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
+      {/* Video Background - stays visible during loop speedup */}
       <VideoBackground 
         videoRef={videoRef}
         src={videoSrc}
@@ -46,22 +79,64 @@ export function ContactSection({
         autoPlay
       />
 
-      {/* Blur Overlay */}
-      <div className={styles.videoBlurOverlay}></div>
+      {/* Blur Overlay - fades with UI */}
+      <motion.div
+        className={styles.videoBlurOverlay}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showUI ? 1 : 0 }}
+        transition={{
+          duration: showUI ? 0.6 : 0.4,
+          ease: [0.23, 1, 0.32, 1],
+        }}
+      />
 
       {/* Content Overlay */}
       <div className="relative z-10 h-full flex items-center justify-center px-4 md:px-8">
         <div className="w-full max-w-[961px]">
           {/* Title with blur effect container */}
-          <div className={styles.titleContainer}>
+          <motion.div 
+            className={styles.titleContainer}
+            initial={{
+              filter: 'blur(10px)',
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              filter: showUI ? 'blur(0px)' : 'blur(10px)',
+              opacity: showUI ? 1 : 0,
+              y: showUI ? 0 : 20,
+            }}
+            transition={{
+              duration: showUI ? 0.6 : 0.4,
+              delay: showUI ? 0 : 0,
+              ease: [0.23, 1, 0.32, 1],
+            }}
+          >
             <h1 className={styles.title}>
             </h1>
             {/* Blur overlay - creates the blur effect on bottom half */}
             <div className={styles.blurOverlay}></div>
-          </div>
+          </motion.div>
 
           {/* Contact Us Card */}
-          <div className={styles.contactCard}>
+          <motion.div 
+            className={styles.contactCard}
+            initial={{
+              filter: 'blur(10px)',
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              filter: showUI ? 'blur(0px)' : 'blur(10px)',
+              opacity: showUI ? 1 : 0,
+              y: showUI ? 0 : 20,
+            }}
+            transition={{
+              duration: showUI ? 0.6 : 0.4,
+              delay: showUI ? 0.2 : 0,
+              ease: [0.23, 1, 0.32, 1],
+            }}
+          >
             {/* Contact Us Header */}
             <h2 className={styles.contactHeader}>
               CONTACT US
@@ -94,10 +169,27 @@ export function ContactSection({
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Form Container - No background, just container */}
-          <div className={styles.formContainer}>
+          <motion.div 
+            className={styles.formContainer}
+            initial={{
+              filter: 'blur(10px)',
+              opacity: 0,
+              y: 20,
+            }}
+            animate={{
+              filter: showUI ? 'blur(0px)' : 'blur(10px)',
+              opacity: showUI ? 1 : 0,
+              y: showUI ? 0 : 20,
+            }}
+            transition={{
+              duration: showUI ? 0.6 : 0.4,
+              delay: showUI ? 0.4 : 0,
+              ease: [0.23, 1, 0.32, 1],
+            }}
+          >
             {/* Form */}
             <form onSubmit={handleSubmit} className={styles.form}>
               {/* Email and Phone Row */}
@@ -170,7 +262,7 @@ export function ContactSection({
                 SCHEDULE A MEETING
               </button>
             </form>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
