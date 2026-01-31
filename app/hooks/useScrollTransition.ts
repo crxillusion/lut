@@ -23,6 +23,9 @@ export function useScrollTransition({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       
+      // Disable all scrolling on contact section
+      if (currentSection === 'contact') return;
+      
       if (isTransitioning || isWaiting) return;
       
       const now = Date.now();

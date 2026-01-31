@@ -833,7 +833,7 @@ export default function Home() {
         <div className="fixed inset-0 pointer-events-none z-50">
           <div className="pointer-events-auto">
             <SocialLinks 
-              showBackButton={currentSection !== 'hero' && currentSection !== 'contact'}
+              showBackButton={currentSection !== 'hero'}
               onBackClick={() => {
                 // Determine which back transition to use based on current section
                 switch(currentSection) {
