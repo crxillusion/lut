@@ -266,8 +266,8 @@ export default function Home() {
         return;
       }
       
-      // Speed up the video to finish the loop faster (3x speed)
-      heroVideo.playbackRate = 3.0;
+      // Speed up the video to finish the loop faster (5x speed)
+      heroVideo.playbackRate = 5.0;
       
       const currentTime = heroVideo.currentTime;
       let previousTime = currentTime;
@@ -333,8 +333,8 @@ export default function Home() {
         return;
       }
       
-      // Speed up the video to finish the loop faster (3x speed)
-      aboutStartVideo.playbackRate = 3.0;
+      // Speed up the video to finish the loop faster (5x speed)
+      aboutStartVideo.playbackRate = 5.0;
       
       const currentTime = aboutStartVideo.currentTime;
       let previousTime = currentTime;
@@ -465,8 +465,8 @@ export default function Home() {
         return;
       }
       
-      // Speed up the video to finish the loop faster (3x speed)
-      aboutStartVideo.playbackRate = 3.0;
+      // Speed up the video to finish the loop faster (5x speed)
+      aboutStartVideo.playbackRate = 5.0;
       
       const currentTime = aboutStartVideo.currentTime;
       let previousTime = currentTime;
@@ -534,8 +534,8 @@ export default function Home() {
         paused: contactVideo.paused
       });
       
-      // Speed up the video to finish the loop faster (3x speed)
-      contactVideo.playbackRate = 3.0;
+      // Speed up the video to finish the loop faster (5x speed)
+      contactVideo.playbackRate = 5.0;
       console.log('[Home] Contact video playback rate set to 3.0');
       
       // Monitor video progress and transition when loop completes
