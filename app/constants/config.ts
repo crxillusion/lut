@@ -46,6 +46,7 @@ export const VIDEO_PATHS = {
   
   // Cases
   casesToContact: `${BASE_PATH}/videos/CasestoContact.mp4`,
+  contactToCases: `${BASE_PATH}/videos/CasestoContact_reverse.mp4`,
   
   // Contact
   contactLoop: `${BASE_PATH}/videos/Contact_loop.mp4`,
