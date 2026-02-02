@@ -79,17 +79,6 @@ export function ContactSection({
         autoPlay
       />
 
-      {/* Blur Overlay - fades with UI */}
-      <motion.div
-        className={styles.videoBlurOverlay}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showUI ? 1 : 0 }}
-        transition={{
-          duration: showUI ? 0.6 : 0.4,
-          ease: [0.23, 1, 0.32, 1],
-        }}
-      />
-
       {/* Content Overlay */}
       <div className="relative z-10 h-full flex items-center justify-center px-4 md:px-8">
         <div className="w-full max-w-[961px]">
