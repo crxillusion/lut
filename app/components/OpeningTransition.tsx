@@ -11,13 +11,19 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
   const [shouldRender, setShouldRender] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
+  // Derive shouldRender and isVisible from isPlaying
+  // Only set them once when isPlaying becomes true
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && !shouldRender) {
       console.log('[OpeningTransition] isPlaying is true, rendering component');
-      setShouldRender(true);
-      setIsVisible(true); // Set visible immediately, no requestAnimationFrame delay
+      // Use setTimeout to avoid setState during render
+      const timer = setTimeout(() => {
+        setShouldRender(true);
+        setIsVisible(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isPlaying]);
+  }, [isPlaying, shouldRender]);
 
   useEffect(() => {
     if (isPlaying && shouldRender && videoRef.current) {

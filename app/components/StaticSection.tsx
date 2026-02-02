@@ -118,7 +118,11 @@ export function StaticSection({
   // Reset capture state when video source changes
   useEffect(() => {
     captureAttemptedRef.current = false;
-    setIsFrameCaptured(false);
+    // Use setTimeout to avoid setState during render
+    const timer = setTimeout(() => {
+      setIsFrameCaptured(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [videoSrc]);
 
   return (

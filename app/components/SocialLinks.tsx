@@ -22,10 +22,13 @@ const SocialLinksComponent = ({
 }: SocialLinksProps) => {
   const [hasAnimated, setHasAnimated] = useState(false);
   
-  // Track if we've animated once
+  // Track if we've animated once - use setTimeout to avoid setState during render
   useEffect(() => {
     if (animateOnce && isVisible && !hasAnimated) {
-      setHasAnimated(true);
+      const timer = setTimeout(() => {
+        setHasAnimated(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [isVisible, animateOnce, hasAnimated]);
   

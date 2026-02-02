@@ -39,6 +39,36 @@ export function AboutStartSection({
       };
     }
   }, [videoRef, isVisible]);
+
+  // Play/pause video based on visibility
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isVisible) {
+      // Wait for video to be ready before playing
+      const attemptPlay = () => {
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or better
+          console.log('[AboutStartSection] Video ready, playing...');
+          video.play().catch(err => {
+            console.error('[AboutStartSection] Error playing video:', err);
+          });
+        } else {
+          console.log('[AboutStartSection] Waiting for video to load... readyState:', video.readyState);
+          video.addEventListener('loadeddata', attemptPlay, { once: true });
+        }
+      };
+      
+      attemptPlay();
+      
+      return () => {
+        video.removeEventListener('loadeddata', attemptPlay);
+      };
+    } else {
+      console.log('[AboutStartSection] Becoming hidden, pausing video');
+      video.pause();
+    }
+  }, [isVisible, videoRef]);
   
   return (
     <section 
@@ -51,6 +81,7 @@ export function AboutStartSection({
         src={videoSrc}
         autoPlay
         loop
+        isVisible={isVisible}
       />
 
       {/* Content Overlay */}

@@ -25,7 +25,7 @@ export function useVideoPreloader(videoPaths: string[]) {
     const videoElements: HTMLVideoElement[] = [];
     const loadPromises: Promise<void>[] = [];
 
-    essentialVideos.forEach((path, index) => {
+    essentialVideos.forEach((path) => {
       const video = document.createElement('video');
       video.preload = 'auto';
       video.muted = true;

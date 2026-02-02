@@ -1,5 +1,5 @@
 import { RefObject, useState, useEffect } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
 import styles from './ContactSection.module.css';
 
@@ -49,6 +49,36 @@ export function ContactSection({
     }
   }, [videoRef, isVisible]);
 
+  // Play/pause video based on visibility
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isVisible) {
+      // Wait for video to be ready before playing
+      const attemptPlay = () => {
+        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or better
+          console.log('[ContactSection] Video ready, playing...');
+          video.play().catch(err => {
+            console.error('[ContactSection] Error playing video:', err);
+          });
+        } else {
+          console.log('[ContactSection] Waiting for video to load... readyState:', video.readyState);
+          video.addEventListener('loadeddata', attemptPlay, { once: true });
+        }
+      };
+      
+      attemptPlay();
+      
+      return () => {
+        video.removeEventListener('loadeddata', attemptPlay);
+      };
+    } else {
+      console.log('[ContactSection] Becoming hidden, pausing video');
+      video.pause();
+    }
+  }, [isVisible, videoRef]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement form submission
@@ -77,6 +107,7 @@ export function ContactSection({
         src={videoSrc}
         loop
         autoPlay
+        isVisible={shouldShow}
       />
 
       {/* Content Overlay */}

@@ -18,6 +18,11 @@ export function CasesSection({
   isVisible,
   onBackClick
 }: CasesSectionProps) {
+  // Props are preserved for consistency with other sections
+  // They're used by the parent component to manage video state
+  void videoRef; // Acknowledge unused
+  void videoSrc; // Acknowledge unused  
+  void onBackClick; // Acknowledge unused
   // No need for showImage state - just use isVisible directly to prevent black flash
   // The transition video is handled by the TransitionVideo component in page.tsx
 
