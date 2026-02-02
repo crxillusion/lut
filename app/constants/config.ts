@@ -11,18 +11,18 @@ export const VIDEO_PATHS = {
   opening: `${BASE_PATH}/videos/loading_to_homepage.mp4`,
   
   // Hero/Homepage
-  heroLoop: `${BASE_PATH}/videos/Homepage_loop[0000-0150].mp4`,
+  heroLoop: `${BASE_PATH}/videos/Homepage_loop.mp4`,
   heroToShowreel: `${BASE_PATH}/videos/Homepage_showreel.mp4`,
   showreelToHero: `${BASE_PATH}/videos/Homepage_showreel_reverse.mp4`,
-  heroToAboutStart: `${BASE_PATH}/videos/Homepage_aboutstart[0150-0180].mp4`,
-  aboutStartToHero: `${BASE_PATH}/videos/aboutstart_homepage_reverse[0180-0150].mp4`,
+  heroToAboutStart: `${BASE_PATH}/videos/Homepage_aboutstart.mp4`,
+  aboutStartToHero: `${BASE_PATH}/videos/Homepage_aboutstart_reverse.mp4`,
   heroToCases: `${BASE_PATH}/videos/Homepage_cases.mp4`,
   casesToHero: `${BASE_PATH}/videos/Homepage_cases_reverse.mp4`,
-  heroToContact: `${BASE_PATH}/videos/Homepage_contact[0150-0180].mp4`,
+  heroToContact: `${BASE_PATH}/videos/Homepage_contact.mp4`,
   contactToHero: `${BASE_PATH}/videos/Homepage_contact_reverse.mp4`,
   
   // About Start
-  aboutStartLoop: `${BASE_PATH}/videos/aboutstart_loop[0000-0150].mp4`,
+  aboutStartLoop: `${BASE_PATH}/videos/aboutstart_loop.mp4`,
   aboutStartToAbout: `${BASE_PATH}/videos/aboutstarttoabout.mp4`,
   aboutToAboutStart: `${BASE_PATH}/videos/aboutstarttoaboutreverse.mp4`,
   
