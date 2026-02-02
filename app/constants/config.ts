@@ -24,7 +24,7 @@ export const VIDEO_PATHS = {
   // About Start
   aboutStartLoop: `${BASE_PATH}/videos/aboutstart_loop.mp4`,
   aboutStartToAbout: `${BASE_PATH}/videos/aboutstarttoabout.mp4`,
-  aboutToAboutStart: `${BASE_PATH}/videos/aboutstarttoaboutreverse.mp4`,
+  aboutToAboutStart: `${BASE_PATH}/videos/aboutstarttoabout_reverse.mp4`,
   
   // About
   aboutToTeam: `${BASE_PATH}/videos/abouttoteam.mp4`,

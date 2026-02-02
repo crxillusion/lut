@@ -103,9 +103,10 @@ export default function Home() {
     setAboutStartVisible(true); // Reset for future transitions
   }, []);
 
-  // Handle pending transition after fade-out animation starts
+  // Handle pending transition after fade-out animation starts and loop completes
   useEffect(() => {
-    if (pendingTransition && !heroVisible && !waitingForHeroLoop && !waitingForAboutStartLoop) {
+    if (pendingTransition && !waitingForHeroLoop && !waitingForAboutStartLoop && !waitingForContactLoop) {
+      console.log('[Home] Pending transition ready, starting transition to:', pendingTransition.section);
       // Start transition immediately after loop ends
       handleTransition(
         pendingTransition.section,
@@ -116,7 +117,7 @@ export default function Home() {
       setPendingTransition(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingTransition, heroVisible, waitingForHeroLoop, waitingForAboutStartLoop]);
+  }, [pendingTransition, waitingForHeroLoop, waitingForAboutStartLoop, waitingForContactLoop]);
 
   // Cleanup videos on unmount
   useEffect(() => {
@@ -323,8 +324,10 @@ export default function Home() {
 
   // Additional transition functions for the full flow
   const transitionToAbout = useCallback((viaScroll: boolean = false) => {
+    console.log('[Home] transitionToAbout called, viaScroll:', viaScroll, 'currentSection:', currentSection);
     if (viaScroll && currentSection === 'aboutStart') {
       // When scrolling from aboutStart to about, fade out text immediately and speed up video to finish loop
+      console.log('[Home] Starting aboutStart loop speedup and fade-out');
       setWaitingForAboutStartLoop(true);
       setAboutStartVisible(false); // Fade out text immediately
       
@@ -334,11 +337,23 @@ export default function Home() {
         return;
       }
       
+      console.log('[Home] AboutStart video current state:', {
+        currentTime: aboutStartVideo.currentTime,
+        duration: aboutStartVideo.duration,
+        playbackRate: aboutStartVideo.playbackRate,
+        paused: aboutStartVideo.paused,
+        loop: aboutStartVideo.loop
+      });
+      
       // Speed up the video to finish the loop faster (5x speed)
       aboutStartVideo.playbackRate = 5.0;
+      console.log('[Home] AboutStart video playback rate set to 5.0');
+      console.log('[Home] AboutStart video playback rate set to 5.0');
       
       const currentTime = aboutStartVideo.currentTime;
       let previousTime = currentTime;
+      
+      console.log('[Home] Starting timeupdate monitoring from:', currentTime);
       
       // Set up timeupdate handler to monitor for loop reset
       const handleTimeUpdate = () => {
@@ -346,11 +361,18 @@ export default function Home() {
         
         const current = aboutStartVideo.currentTime;
         
+        // Log every 0.5 seconds for debugging
+        if (Math.floor(current * 2) !== Math.floor(previousTime * 2)) {
+          console.log('[Home] AboutStart loop progress:', current.toFixed(2), '/', aboutStartVideo.duration.toFixed(2));
+        }
+        
         // Detect loop: if current time jumped backwards significantly
         if (current < previousTime - 1) {
+          console.log('[Home] AboutStart loop detected! Time jumped from', previousTime.toFixed(2), 'to', current.toFixed(2));
           // Reset playback rate to normal
           aboutStartVideo.playbackRate = 1.0;
           setWaitingForAboutStartLoop(false);
+          console.log('[Home] Setting pending transition to about section');
           setPendingTransition({
             section: 'about',
             video: VIDEO_PATHS.aboutStartToAbout,
