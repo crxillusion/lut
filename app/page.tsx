@@ -6,6 +6,7 @@ import { OpeningTransition } from './components/OpeningTransition';
 import { HeroSection } from './components/HeroSection';
 import { AboutStartSection } from './components/AboutStartSection';
 import { StaticSection } from './components/StaticSection';
+import { CasesSection } from './components/CasesSection';
 import { ContactSection } from './components/ContactSection';
 import { TransitionVideo } from './components/TransitionVideo';
 import { SocialLinks } from './components/SocialLinks';
@@ -811,7 +812,7 @@ export default function Home() {
         />
 
         {/* Cases Section */}
-        <StaticSection
+        <CasesSection
           videoRef={casesVideoRef}
           videoSrc={VIDEO_PATHS.partnerToCases}
           isVisible={currentSection === 'cases' && showHero}
