@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { BASE_PATH } from '../constants/config';
 
 interface LoadingScreenProps {
@@ -15,12 +16,17 @@ export function LoadingScreen({ isVisible }: LoadingScreenProps) {
         backgroundImage: `url(${BASE_PATH}/loading-bg.jpg)`,
       }}
     >
-      {/* Logo Animation - Centered */}
-      <img 
-        src={`${BASE_PATH}/logo-animation.gif`}
-        alt="LUT Studios" 
-        className="w-48 h-48 md:w-96 md:h-96 object-contain"
-      />
+      <div className="relative w-48 h-48 md:w-96 md:h-96">
+        <Image
+          src={`${BASE_PATH}/logo-animation.gif`}
+          alt="LUT Studios"
+          fill
+          unoptimized
+          priority
+          sizes="(min-width: 768px) 384px, 192px"
+          className="object-contain"
+        />
+      </div>
     </div>
   );
 }
