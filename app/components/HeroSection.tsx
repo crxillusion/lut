@@ -1,9 +1,10 @@
 'use client';
 
-import { RefObject, useEffect } from 'react';
+import { RefObject } from 'react';
 import { motion } from 'framer-motion';
 import { Navigation } from './Navigation';
 import { VideoBackground } from './VideoBackground';
+import { useManagedVideoPlayback } from '../hooks/useManagedVideoPlayback';
 import type { Section } from '../constants/config';
 
 interface HeroSectionProps {
@@ -18,61 +19,38 @@ interface HeroSectionProps {
   onContactClick: () => void;
 }
 
-export function HeroSection({ 
-  videoRef, 
-  videoSrc, 
-  isVisible, 
+export function HeroSection({
+  videoRef,
+  videoSrc,
+  isVisible,
   showUI,
   currentSection,
   onShowreelClick,
   onAboutClick,
   onCasesClick,
-  onContactClick
+  onContactClick,
 }: HeroSectionProps) {
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isVisible) {
-      const attemptPlay = () => {
-        if (video.readyState >= 2) {
-          void video.play().catch(() => {
-            // Swallow autoplay errors; UI does not depend on them
-          });
-        } else {
-          video.addEventListener('loadeddata', attemptPlay, { once: true });
-        }
-      };
-
-      attemptPlay();
-
-      return () => {
-        video.removeEventListener('loadeddata', attemptPlay);
-      };
-    } else {
-      video.pause();
-    }
-  }, [isVisible, videoRef]);
+  useManagedVideoPlayback(videoRef, {
+    enabled: isVisible,
+    name: 'Hero',
+    minReadyState: 2,
+    preloadFirstFrame: true,
+  });
 
   return (
-    <section 
+    <section
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
         isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
-      <VideoBackground 
-        videoRef={videoRef}
-        src={videoSrc}
-        autoPlay
-        loop
-      />
+      <VideoBackground videoRef={videoRef} src={videoSrc} autoPlay loop />
 
       {/* Overlay Content */}
       <div className="relative z-10 h-full">
         {/* Navigation - 390px from top */}
         <div className="absolute top-[390px] left-0 right-0">
           <div className="flex flex-col items-center">
-            <Navigation 
+            <Navigation
               currentSection={currentSection}
               onShowreelClick={onShowreelClick}
               onAboutClick={onAboutClick}
@@ -81,7 +59,7 @@ export function HeroSection({
               isVisible={showUI}
             />
             {/* Scroll Indicator - Right below navigation */}
-            <motion.div 
+            <motion.div
               className="mt-4 text-white text-xs tracking-wider"
               initial={{
                 filter: 'blur(10px)',
@@ -105,7 +83,7 @@ export function HeroSection({
         </div>
 
         {/* Copyright */}
-        <motion.div 
+        <motion.div
           className="absolute bottom-8 left-8 text-white text-xs"
           initial={{
             filter: 'blur(10px)',

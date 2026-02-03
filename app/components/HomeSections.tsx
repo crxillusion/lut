@@ -1,7 +1,7 @@
 'use client';
 
-import { RefObject } from 'react';
 import { VIDEO_PATHS } from '../constants/config';
+import type { VideoRefs } from '../hooks/useVideoRefs';
 import { HeroSection } from './HeroSection';
 import { AboutStartSection } from './AboutStartSection';
 import { StaticSection } from './StaticSection';
@@ -11,18 +11,7 @@ import { TransitionVideo } from './TransitionVideo';
 import type { UseHomeNavigationResult } from '../hooks/useHomeNavigation';
 
 interface HomeSectionsProps {
-  // refs
-  heroVideoRef: RefObject<HTMLVideoElement | null>;
-  transitionVideoRef: RefObject<HTMLVideoElement | null>;
-  showreelVideoRef: RefObject<HTMLVideoElement | null>;
-  aboutStartVideoRef: RefObject<HTMLVideoElement | null>;
-  aboutVideoRef: RefObject<HTMLVideoElement | null>;
-  team1VideoRef: RefObject<HTMLVideoElement | null>;
-  team2VideoRef: RefObject<HTMLVideoElement | null>;
-  offerVideoRef: RefObject<HTMLVideoElement | null>;
-  partnerVideoRef: RefObject<HTMLVideoElement | null>;
-  casesVideoRef: RefObject<HTMLVideoElement | null>;
-  contactVideoRef: RefObject<HTMLVideoElement | null>;
+  videoRefs: VideoRefs;
 
   // state
   nav: UseHomeNavigationResult;
@@ -33,23 +22,27 @@ interface HomeSectionsProps {
 }
 
 export function HomeSections({
-  heroVideoRef,
-  transitionVideoRef,
-  showreelVideoRef,
-  aboutStartVideoRef,
-  aboutVideoRef,
-  team1VideoRef,
-  team2VideoRef,
-  offerVideoRef,
-  partnerVideoRef,
-  casesVideoRef,
-  contactVideoRef,
+  videoRefs,
   nav,
   showHero,
   showOpening,
   heroVisible,
   aboutStartVisible,
 }: HomeSectionsProps) {
+  const {
+    hero: heroVideoRef,
+    transition: transitionVideoRef,
+    showreel: showreelVideoRef,
+    aboutStart: aboutStartVideoRef,
+    about: aboutVideoRef,
+    team1: team1VideoRef,
+    team2: team2VideoRef,
+    offer: offerVideoRef,
+    partner: partnerVideoRef,
+    cases: casesVideoRef,
+    contact: contactVideoRef,
+  } = videoRefs;
+
   return (
     <main className="fixed inset-0 w-full h-screen overflow-hidden">
       <HeroSection

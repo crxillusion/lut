@@ -95,17 +95,7 @@ export default function Home() {
       <OpeningTransition isPlaying={showOpening} onComplete={handleOpeningComplete} />
 
       <HomeSections
-        heroVideoRef={heroVideoRef}
-        transitionVideoRef={transitionVideoRef}
-        showreelVideoRef={showreelVideoRef}
-        aboutStartVideoRef={aboutStartVideoRef}
-        aboutVideoRef={aboutVideoRef}
-        team1VideoRef={team1VideoRef}
-        team2VideoRef={team2VideoRef}
-        offerVideoRef={offerVideoRef}
-        partnerVideoRef={partnerVideoRef}
-        casesVideoRef={casesVideoRef}
-        contactVideoRef={contactVideoRef}
+        videoRefs={videoRefs}
         nav={nav}
         showHero={showHero}
         showOpening={showOpening}
