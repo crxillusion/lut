@@ -1,6 +1,7 @@
-import { RefObject, useEffect } from 'react';
+import { RefObject } from 'react';
 import { VideoBackground } from './VideoBackground';
 import { AnimatedText } from './AnimatedText';
+import { useManagedVideoPlayback } from '../hooks/useManagedVideoPlayback';
 
 interface AboutStartSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -16,60 +17,12 @@ export function AboutStartSection({
   isVisible,
   showUI
 }: AboutStartSectionProps) {
-  // Preload the first frame of the video to prevent black flash
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      const handleLoadedData = () => {
-        if (!isVisible && video.paused) {
-          // Preload first frame when not visible
-          video.currentTime = 0;
-        }
-      };
-      
-      video.addEventListener('loadeddata', handleLoadedData);
-      
-      // If already loaded, seek to first frame
-      if (video.readyState >= 2) {
-        handleLoadedData();
-      }
-      
-      return () => {
-        video.removeEventListener('loadeddata', handleLoadedData);
-      };
-    }
-  }, [videoRef, isVisible]);
+  useManagedVideoPlayback(videoRef, {
+    enabled: isVisible,
+    name: 'AboutStartLoop',
+    preloadFirstFrame: true,
+  });
 
-  // Play/pause video based on visibility
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isVisible) {
-      // Wait for video to be ready before playing
-      const attemptPlay = () => {
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or better
-          console.log('[AboutStartSection] Video ready, playing...');
-          video.play().catch(err => {
-            console.error('[AboutStartSection] Error playing video:', err);
-          });
-        } else {
-          console.log('[AboutStartSection] Waiting for video to load... readyState:', video.readyState);
-          video.addEventListener('loadeddata', attemptPlay, { once: true });
-        }
-      };
-      
-      attemptPlay();
-      
-      return () => {
-        video.removeEventListener('loadeddata', attemptPlay);
-      };
-    } else {
-      console.log('[AboutStartSection] Becoming hidden, pausing video');
-      video.pause();
-    }
-  }, [isVisible, videoRef]);
-  
   return (
     <section 
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
@@ -81,7 +34,6 @@ export function AboutStartSection({
         src={videoSrc}
         autoPlay
         loop
-        isVisible={isVisible}
       />
 
       {/* Content Overlay */}

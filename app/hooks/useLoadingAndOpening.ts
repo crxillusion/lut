@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { homeLogger } from '../utils/logger';
 
-export function useLoadingAndOpening(loadingProgress: number, isLoading: boolean) {
+export function useLoadingAndOpening(loadingProgress: number) {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const [loadingScreenVisible, setLoadingScreenVisible] = useState(true);

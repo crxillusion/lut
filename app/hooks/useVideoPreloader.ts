@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LOADING_TIMEOUT } from '../constants/config';
+import { videoLogger } from '../utils/logger';
 
 export function useVideoPreloader(videoPaths: string[]) {
   const [isLoading, setIsLoading] = useState(true);
@@ -19,7 +20,9 @@ export function useVideoPreloader(videoPaths: string[]) {
     const gifDuration = 7000; // Target display time in ms (7 seconds) - shorter than full GIF loop
     const startTime = Date.now();
 
-    console.log(`[VideoPreloader] Preloading ${totalVideos} videos (80% of ${videoPaths.length}) for smooth experience, ${videoPaths.length - totalVideos} will load in background...`);
+    videoLogger.info(
+      `Preloading ${totalVideos} videos (80% of ${videoPaths.length}) for smooth experience, ${videoPaths.length - totalVideos} will load in background...`
+    );
 
     // Create video elements and preload them
     const videoElements: HTMLVideoElement[] = [];
@@ -41,14 +44,16 @@ export function useVideoPreloader(videoPaths: string[]) {
             // Cap progress at 99% until minimum wait time completes
             const progress = Math.min(99, Math.floor((loadedCount / totalVideos) * 100));
             setLoadingProgress(progress);
-            console.log(`[VideoPreloader] ✅ ${loadedCount}/${totalVideos} videos loaded (${progress}%): ${path.split('/').pop()}`);
+            videoLogger.debug(
+              `✅ ${loadedCount}/${totalVideos} loaded (${progress}%): ${path.split('/').pop()}`
+            );
           }
           cleanup();
           resolve();
         };
 
         const handleError = (e: Event) => {
-          console.error(`[VideoPreloader] ❌ Failed to load: ${path}`, e);
+          videoLogger.error(`❌ Failed to load: ${path}`, e);
           if (!isCancelled) {
             loadedCount++;
             const progress = Math.floor((loadedCount / totalVideos) * 100);
@@ -59,7 +64,7 @@ export function useVideoPreloader(videoPaths: string[]) {
         };
 
         const timeoutId = setTimeout(() => {
-          console.warn(`[VideoPreloader] ⏱️ Timeout loading (15s): ${path}`);
+          videoLogger.warn(`⏱️ Timeout loading (${LOADING_TIMEOUT}ms): ${path}`);
           handleError(new Event('timeout'));
         }, LOADING_TIMEOUT); // Use full timeout for essential videos on slow connections
 
@@ -93,21 +98,25 @@ export function useVideoPreloader(videoPaths: string[]) {
       // Ensure we wait at least until the next GIF loop completes
       const remainingTime = timeToNextGifLoop;
 
-      console.log(`[VideoPreloader] Videos processed: ${loadedCount}/${totalVideos}, Successfully loaded: ${successfullyLoadedCount}/${totalVideos}`);
-      console.log(`[VideoPreloader] Time elapsed: ${elapsed}ms, GIF position: ${currentGifPosition.toFixed(0)}ms/${gifDuration}ms, waiting ${remainingTime.toFixed(0)}ms for GIF loop to complete`);
+      videoLogger.info(
+        `Videos processed: ${loadedCount}/${totalVideos}. Successfully loaded: ${successfullyLoadedCount}/${totalVideos}.`
+      );
+      videoLogger.debug(
+        `Time elapsed: ${elapsed}ms; waiting ${remainingTime.toFixed(0)}ms for GIF loop alignment.`
+      );
 
       // Ensure minimum loading time for branding
       setTimeout(() => {
         if (!isCancelled) {
-          console.log('[VideoPreloader] Minimum wait time complete, setting progress to 100%');
+          videoLogger.info('Loading complete. Starting background preload of remaining videos...');
           setLoadingProgress(100);
           
           if (successfullyLoadedCount >= 1) {
             // At least 1 video loaded successfully - proceed
-            console.log('[VideoPreloader] ✅ Loading complete! Starting background preload of remaining videos...');
+            videoLogger.info('✅ Loading complete! Starting background preload of remaining videos...');
           } else {
             // No videos loaded - still proceed but warn user
-            console.warn('[VideoPreloader] ⚠️ No videos loaded successfully, but proceeding anyway...');
+            videoLogger.warn('No videos loaded successfully, but proceeding anyway...');
           }
           
           // Wait longer before setting isLoading to false
@@ -128,7 +137,7 @@ export function useVideoPreloader(videoPaths: string[]) {
     // Maximum timeout fallback
     const maxTimeout = setTimeout(() => {
       if (!isCancelled) {
-        console.warn('[VideoPreloader] Maximum timeout reached, forcing load complete');
+        videoLogger.warn('Maximum timeout reached, forcing load complete');
         setIsLoading(false);
         videoElements.forEach(v => v.remove());
       }
@@ -148,7 +157,7 @@ export function useVideoPreloader(videoPaths: string[]) {
 
 // Background preloader - loads remaining videos without blocking UI
 function preloadRemainingVideos(videoPaths: string[]) {
-  console.log(`[BackgroundPreloader] Starting to load ${videoPaths.length} additional videos...`);
+  videoLogger.debug(`Background preload: ${videoPaths.length} additional videos...`);
   
   let loadedCount = 0;
   
@@ -163,13 +172,15 @@ function preloadRemainingVideos(videoPaths: string[]) {
       
       const handleCanPlay = () => {
         loadedCount++;
-        console.log(`[BackgroundPreloader] ${loadedCount}/${videoPaths.length} loaded: ${path.split('/').pop()}`);
+        videoLogger.debug(
+          `Background: ${loadedCount}/${videoPaths.length} loaded: ${path.split('/').pop()}`
+        );
         cleanup();
       };
       
       const handleError = () => {
-        console.warn(`[BackgroundPreloader] Failed: ${path.split('/').pop()}`);
         loadedCount++;
+        videoLogger.warn(`Background failed: ${path.split('/').pop()}`);
         cleanup();
       };
       

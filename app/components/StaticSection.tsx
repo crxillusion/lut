@@ -1,4 +1,5 @@
 import { RefObject, useEffect, useRef, useState } from 'react';
+import { videoLogger } from '../utils/logger';
 
 interface StaticSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -45,7 +46,9 @@ export function StaticSection({
           setIsFrameCaptured(true);
           captureAttemptedRef.current = true;
           
-          console.log(`[StaticSection ${videoSrc.split('/').pop()}] ✅ Frame captured at ${video.currentTime.toFixed(3)}s / ${video.duration.toFixed(3)}s`);
+          videoLogger.debug(
+            `[StaticSection ${videoSrc.split('/').pop()}] Frame captured at ${video.currentTime.toFixed(3)}s / ${video.duration.toFixed(3)}s`
+          );
         }
       };
       
@@ -54,11 +57,15 @@ export function StaticSection({
           targetTimeRef.current = video.duration - frameOffsetFromEnd;
           video.currentTime = targetTimeRef.current;
           
-          console.log(`[StaticSection ${videoSrc.split('/').pop()}] 🎯 Seeking to ${targetTimeRef.current.toFixed(3)}s (offset: ${frameOffsetFromEnd}s)`);
+          videoLogger.debug(
+            `[StaticSection ${videoSrc.split('/').pop()}] Seeking to ${targetTimeRef.current.toFixed(3)}s (offset: ${frameOffsetFromEnd}s)`
+          );
           
           // Fallback: if seeked event doesn't fire within 500ms, try capturing anyway
           seekTimeout = setTimeout(() => {
-            console.log(`[StaticSection ${videoSrc.split('/').pop()}] ⚠️ Seeked event timeout, capturing current frame`);
+            videoLogger.debug(
+              `[StaticSection ${videoSrc.split('/').pop()}] Seek timeout; capturing current frame`
+            );
             captureFrame();
           }, 500);
         }
@@ -70,12 +77,16 @@ export function StaticSection({
           seekTimeout = null;
         }
         
-        console.log(`[StaticSection ${videoSrc.split('/').pop()}] 📍 Seeked event fired, currentTime: ${video.currentTime.toFixed(3)}s, target: ${targetTimeRef.current.toFixed(3)}s`);
+        videoLogger.debug(
+          `[StaticSection ${videoSrc.split('/').pop()}] Seeked currentTime=${video.currentTime.toFixed(3)}s target=${targetTimeRef.current.toFixed(3)}s`
+        );
         
         // Verify we're at the right time
         const timeDiff = Math.abs(video.currentTime - targetTimeRef.current);
         if (timeDiff > 0.1) {
-          console.log(`[StaticSection ${videoSrc.split('/').pop()}] ⚠️ Seek mismatch! Retrying...`);
+          videoLogger.debug(
+            `[StaticSection ${videoSrc.split('/').pop()}] Seek mismatch; retrying`
+          );
           // Try seeking again
           video.currentTime = targetTimeRef.current;
           return;
@@ -90,7 +101,9 @@ export function StaticSection({
       };
       
       const handleLoadedMetadata = () => {
-        console.log(`[StaticSection ${videoSrc.split('/').pop()}] 📊 Metadata loaded, duration: ${video.duration.toFixed(3)}s`);
+        videoLogger.debug(
+          `[StaticSection ${videoSrc.split('/').pop()}] Metadata loaded, duration=${video.duration.toFixed(3)}s`
+        );
         if (video.duration) {
           seekToLastFrame();
         }
@@ -101,7 +114,9 @@ export function StaticSection({
       
       // Check if already loaded
       if (video.readyState >= 1 && video.duration && !captureAttemptedRef.current) {
-        console.log(`[StaticSection ${videoSrc.split('/').pop()}] 📺 Video already loaded`);
+        videoLogger.debug(
+          `[StaticSection ${videoSrc.split('/').pop()}] Video already loaded`
+        );
         seekToLastFrame();
       } else if (video.readyState === 0) {
         video.load();

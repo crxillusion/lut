@@ -1,5 +1,5 @@
 // Centralized video ref management
-import { useRef, RefObject } from 'react';
+import { useRef, RefObject, useMemo } from 'react';
 import { Section } from '../constants/config';
 
 export interface VideoRefs {
@@ -29,19 +29,22 @@ export function useVideoRefs(): VideoRefs {
   const casesVideoRef = useRef<HTMLVideoElement>(null);
   const contactVideoRef = useRef<HTMLVideoElement>(null);
 
-  return {
-    hero: heroVideoRef,
-    transition: transitionVideoRef,
-    showreel: showreelVideoRef,
-    aboutStart: aboutStartVideoRef,
-    about: aboutVideoRef,
-    team1: team1VideoRef,
-    team2: team2VideoRef,
-    offer: offerVideoRef,
-    partner: partnerVideoRef,
-    cases: casesVideoRef,
-    contact: contactVideoRef,
-  };
+  return useMemo(
+    () => ({
+      hero: heroVideoRef,
+      transition: transitionVideoRef,
+      showreel: showreelVideoRef,
+      aboutStart: aboutStartVideoRef,
+      about: aboutVideoRef,
+      team1: team1VideoRef,
+      team2: team2VideoRef,
+      offer: offerVideoRef,
+      partner: partnerVideoRef,
+      cases: casesVideoRef,
+      contact: contactVideoRef,
+    }),
+    []
+  );
 }
 
 /**

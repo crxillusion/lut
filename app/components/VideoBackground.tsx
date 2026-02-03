@@ -6,7 +6,6 @@ interface VideoBackgroundProps {
   autoPlay?: boolean;
   loop?: boolean;
   className?: string;
-  isVisible?: boolean; // kept for API compatibility, not used
 }
 
 export function VideoBackground({
@@ -16,9 +15,6 @@ export function VideoBackground({
   loop = false,
   className = '',
 }: VideoBackgroundProps) {
-  // ...no effects, no manual src mutation...
-  // Just render a <video> with src bound directly so video.src is always correct.
-
   return (
     <video
       ref={videoRef}

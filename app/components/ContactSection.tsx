@@ -1,7 +1,8 @@
-import { RefObject, useState, useEffect } from 'react';
+import { RefObject, useState } from 'react';
 import { motion } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
 import styles from './ContactSection.module.css';
+import { useManagedVideoPlayback } from '../hooks/useManagedVideoPlayback';
 
 interface ContactSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -24,65 +25,18 @@ export function ContactSection({
     name: '',
     message: ''
   });
-  
-  // Preload the first frame of the video to prevent black flash
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      const handleLoadedData = () => {
-        if (!isVisible && video.paused) {
-          // Preload first frame when not visible
-          video.currentTime = 0;
-        }
-      };
-      
-      video.addEventListener('loadeddata', handleLoadedData);
-      
-      // If already loaded, seek to first frame
-      if (video.readyState >= 2) {
-        handleLoadedData();
-      }
-      
-      return () => {
-        video.removeEventListener('loadeddata', handleLoadedData);
-      };
-    }
-  }, [videoRef, isVisible]);
 
-  // Play/pause video based on visibility
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+  const shouldShow = isVisible && !isTransitioning;
 
-    if (isVisible) {
-      // Wait for video to be ready before playing
-      const attemptPlay = () => {
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or better
-          console.log('[ContactSection] Video ready, playing...');
-          video.play().catch(err => {
-            console.error('[ContactSection] Error playing video:', err);
-          });
-        } else {
-          console.log('[ContactSection] Waiting for video to load... readyState:', video.readyState);
-          video.addEventListener('loadeddata', attemptPlay, { once: true });
-        }
-      };
-      
-      attemptPlay();
-      
-      return () => {
-        video.removeEventListener('loadeddata', attemptPlay);
-      };
-    } else {
-      console.log('[ContactSection] Becoming hidden, pausing video');
-      video.pause();
-    }
-  }, [isVisible, videoRef]);
+  useManagedVideoPlayback(videoRef, {
+    enabled: shouldShow,
+    name: 'ContactLoop',
+    preloadFirstFrame: true,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement form submission
-    console.log('Form submitted:', formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -92,22 +46,17 @@ export function ContactSection({
     }));
   };
 
-  // Simplified visibility logic: show with high z-index when visible, hide completely during transitions
-  const shouldShow = isVisible && !isTransitioning;
-
   return (
     <section 
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
         shouldShow ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
-      {/* Video Background - stays visible during loop speedup */}
       <VideoBackground 
         videoRef={videoRef}
         src={videoSrc}
         loop
         autoPlay
-        isVisible={shouldShow}
       />
 
       {/* Content Overlay */}

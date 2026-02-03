@@ -29,61 +29,27 @@ export function HeroSection({
   onCasesClick,
   onContactClick
 }: HeroSectionProps) {
-  // Play/pause video based on visibility
   useEffect(() => {
     const video = videoRef.current;
-    
-    console.log('[HeroSection] Play/pause effect triggered:', {
-      hasVideo: !!video,
-      isVisible,
-      videoSrc: video?.src || 'none',
-      readyState: video?.readyState,
-      paused: video?.paused,
-      networkState: video?.networkState
-    });
-    
-    if (!video) {
-      console.log('[HeroSection] No video ref, exiting');
-      return;
-    }
+    if (!video) return;
 
     if (isVisible) {
-      // Wait for video to be ready before playing
       const attemptPlay = () => {
-        console.log('[HeroSection] attemptPlay() called - readyState:', video.readyState, 'src:', video.src);
-        
-        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or better
-          console.log('[HeroSection] Video ready (readyState >= 2), calling play()...');
-          video.play()
-            .then(() => {
-              console.log('[HeroSection] play() resolved successfully!', {
-                currentTime: video.currentTime,
-                paused: video.paused,
-                duration: video.duration
-              });
-            })
-            .catch(err => {
-              console.error('[HeroSection] play() rejected:', err, {
-                readyState: video.readyState,
-                networkState: video.networkState,
-                src: video.src,
-                error: video.error
-              });
-            });
+        if (video.readyState >= 2) {
+          void video.play().catch(() => {
+            // Swallow autoplay errors; UI does not depend on them
+          });
         } else {
-          console.log('[HeroSection] Video not ready yet, adding loadeddata listener. readyState:', video.readyState);
           video.addEventListener('loadeddata', attemptPlay, { once: true });
         }
       };
-      
+
       attemptPlay();
-      
+
       return () => {
-        console.log('[HeroSection] Cleanup: removing loadeddata listener');
         video.removeEventListener('loadeddata', attemptPlay);
       };
     } else {
-      console.log('[HeroSection] isVisible=false, pausing video');
       video.pause();
     }
   }, [isVisible, videoRef]);
@@ -99,7 +65,6 @@ export function HeroSection({
         src={videoSrc}
         autoPlay
         loop
-        isVisible={isVisible}
       />
 
       {/* Overlay Content */}
