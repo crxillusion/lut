@@ -13,10 +13,10 @@ import { SocialLinks } from './components/SocialLinks';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useScrollTransition } from './hooks/useScrollTransition';
 import { VIDEO_PATHS } from './constants/config';
-import { homeLogger } from './utils/logger';
 import { useVideoRefs } from './hooks/useVideoRefs';
 import { useLoadingAndOpening } from './hooks/useLoadingAndOpening';
 import { useHomeNavigation } from './hooks/useHomeNavigation';
+import { useContactVisibility } from './hooks/useContactVisibility';
 
 export default function Home() {
   // Consolidated video refs
@@ -104,43 +104,16 @@ export default function Home() {
     };
   }, [videoRefs]);
 
-  // Show contact elements when entering contact section, hide when leaving
-  useEffect(() => {
-    const {
-      currentSection,
-      contactVisible,
-      leavingContact,
-      waitingForContactLoop,
-      setContactVisible,
-      setLeavingContact,
-    } = nav;
-
-    if (currentSection === 'contact' && showHero && !waitingForContactLoop && !contactVisible && !leavingContact) {
-      const timer = setTimeout(() => {
-        homeLogger.debug('Setting contactVisible to true');
-        setContactVisible(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-
-    if (currentSection === 'contact' && showHero && !waitingForContactLoop && !contactVisible && leavingContact) {
-      homeLogger.debug('Resetting leavingContact flag on re-entry to contact');
-      setLeavingContact(false);
-      return;
-    }
-
-    if (currentSection !== 'contact' && contactVisible) {
-      homeLogger.debug('Leaving contact section, resetting contactVisible to false');
-      setContactVisible(false);
-      setLeavingContact(false);
-      return;
-    }
-
-    if (currentSection !== 'contact' && leavingContact) {
-      homeLogger.debug('Resetting leavingContact flag after leaving contact');
-      setLeavingContact(false);
-    }
-  }, [nav, showHero]);
+  // Show/hide Contact UI elements based on section state
+  useContactVisibility({
+    currentSection: nav.currentSection,
+    showHero,
+    waitingForContactLoop: nav.waitingForContactLoop,
+    contactVisible: nav.contactVisible,
+    leavingContact: nav.leavingContact,
+    setContactVisible: nav.setContactVisible,
+    setLeavingContact: nav.setLeavingContact,
+  });
 
   useScrollTransition({
     currentSection: nav.currentSection,
