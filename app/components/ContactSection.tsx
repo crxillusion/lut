@@ -7,7 +7,7 @@ interface ContactSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   videoSrc: string;
   isVisible: boolean;
-  isTransitioning?: boolean; // Hide immediately during transitions
+  isTransitioning?: boolean;
   showUI: boolean; // Controls UI elements visibility for fade out during transitions
 }
 
@@ -116,7 +116,7 @@ export function ContactSection({
                 CONTACT US
               </h2>
 
-              <p className="font-outfit font-medium text-center text-white mb-2 text-[clamp(14px,1.35vw,20px)] leading-[150%] tracking-[-0.011em]">
+              <p className="font-outfit font-medium text-center text-white mb-2 text-[clamp(14px,1.35vw,16px)] leading-[150%] tracking-[-0.011em]">
                 If you&apos;d like to discuss a potential projects and partnership, please email{' '}
                 <a className="underline hover:opacity-70 transition-opacity" href="mailto:info@lutstudios.com">
                   info@lutstudios.com
@@ -156,7 +156,7 @@ export function ContactSection({
                   <div className="relative flex items-center">
                     <label
                       htmlFor="email"
-                      className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)]"
+                      className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)]"
                     >
                       Email:
                     </label>
@@ -166,7 +166,7 @@ export function ContactSection({
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)] px-4 md:px-6 pl-[72px] md:pl-[90px] focus:outline-none focus:border-white transition-[border-color,opacity]"
+                      className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[72px] md:pl-[70px] focus:outline-none focus:border-white transition-[border-color,opacity]"
                       required
                     />
                   </div>
@@ -174,7 +174,7 @@ export function ContactSection({
                   <div className="relative flex items-center">
                     <label
                       htmlFor="phone"
-                      className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)]"
+                      className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)]"
                     >
                       Phone:
                     </label>
@@ -184,7 +184,7 @@ export function ContactSection({
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)] px-4 md:px-6 pl-[72px] md:pl-[90px] focus:outline-none focus:border-white transition-[border-color,opacity]"
+                      className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[72px] md:pl-[70px] focus:outline-none focus:border-white transition-[border-color,opacity]"
                     />
                   </div>
                 </div>
@@ -193,7 +193,7 @@ export function ContactSection({
                 <div className="relative flex items-center">
                   <label
                     htmlFor="name"
-                    className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)]"
+                    className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)]"
                   >
                     Name:
                   </label>
@@ -203,7 +203,7 @@ export function ContactSection({
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)] px-4 md:px-6 pl-[78px] md:pl-[90px] focus:outline-none focus:border-white transition-[border-color,opacity]"
+                    className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[78px] md:pl-[70px] focus:outline-none focus:border-white transition-[border-color,opacity]"
                     required
                   />
                 </div>
@@ -212,7 +212,7 @@ export function ContactSection({
                 <div className="relative flex items-center">
                   <label
                     htmlFor="message"
-                    className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)]"
+                    className="absolute left-4 md:left-6 z-[1] pointer-events-none font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)]"
                   >
                     Message:
                   </label>
@@ -222,14 +222,14 @@ export function ContactSection({
                     value={formData.message}
                     onChange={handleChange}
                     rows={1}
-                    className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] resize-none rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,20px)] px-4 md:px-6 pl-[88px] md:pl-[110px] pt-[10px] max-[885px]:pt-[8px] focus:outline-none focus:border-white transition-[border-color,opacity]"
+                    className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] resize-none rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[88px] md:pl-[90px] pt-[15px] max-[885px]:pt-[8px] focus:outline-none focus:border-white transition-[border-color,opacity]"
                   />
                 </div>
 
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-semibold text-white tracking-[0.22em] md:tracking-[0.28em] text-[clamp(14px,1.35vw,20px)] text-center hover:opacity-80 transition-opacity"
+                  className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-semibold text-white tracking-[0.22em] md:tracking-[0.28em] text-[clamp(14px,1.35vw,16px)] text-center hover:opacity-80 transition-opacity"
                 >
                   SUBMIT
                 </button>
@@ -237,7 +237,7 @@ export function ContactSection({
                 {/* Schedule Meeting Button */}
                 <button
                   type="button"
-                  className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] font-outfit font-bold text-white tracking-[0.22em] md:tracking-[0.28em] text-[clamp(14px,1.35vw,20px)] text-center bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%),linear-gradient(0deg,rgba(0,108,253,0.54),rgba(0,108,253,0.54))] hover:opacity-90 transition-opacity"
+                  className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] font-outfit font-bold text-white tracking-[0.22em] md:tracking-[0.28em] text-[clamp(14px,1.35vw,16px)] text-center bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%),linear-gradient(0deg,rgba(0,108,253,0.54),rgba(0,108,253,0.54))] hover:opacity-90 transition-opacity"
                 >
                   SCHEDULE A MEETING
                 </button>
