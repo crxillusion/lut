@@ -107,9 +107,17 @@ export function useHomeNavigation(
     ) => {
       if (isTransitioningRef.current) return;
 
-      // Hide hero UI while transitioning away so it can animate back in on return.
+      // Hide UI while transitioning away so it can animate back in on return.
       if (currentSection === 'hero' && targetSection !== 'hero') {
         setHeroVisible(false);
+      }
+      if (currentSection === 'aboutStart' && targetSection !== 'aboutStart') {
+        setAboutStartVisible(false);
+      }
+
+      // If we're transitioning *to* aboutStart, ensure its UI starts hidden so it can fade in on arrival.
+      if (targetSection === 'aboutStart') {
+        setAboutStartVisible(false);
       }
 
       if (isDirectNavigation && currentSection === 'hero') {
