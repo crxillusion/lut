@@ -72,7 +72,7 @@ export function ContactSection({
 
       {/* Content Overlay */}
       <div className="relative z-10 h-full flex items-center justify-center px-4 md:px-8">
-        <div className="w-full max-w-[961px]">
+        <div className="w-full max-w-[845px]">
           {/* Title (layered/blurred effect) */}
           <motion.div
             className="relative mb-[-2.5rem] md:mb-[-4rem] z-[1]"
@@ -104,16 +104,16 @@ export function ContactSection({
 
           {/* Contact Us Card */}
           <motion.div
-            className="relative z-[2] w-full max-w-[961px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] py-[18px] md:px-[48px] md:py-[32px] mb-6 xl:mb-8"
+            className="relative z-[2] w-full max-w-[845px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] py-[18px] md:px-[20px] md:py-[42px] mb-6 xl:mb-5"
             initial={motionCommon.initial}
             animate={motionCommon.animate}
             transition={{ ...motionCommon.transitionBase, delay: 0.2 }}
           >
-            <h2 className="font-outfit font-bold tracking-[0.5em] text-center text-white mb-4 text-[clamp(14px,1.4vw,20px)]">
+            <h2 className="font-outfit font-bold tracking-[0.5em] text-center text-white mb-2 text-[clamp(14px,1.4vw,20px)]">
               CONTACT US
             </h2>
 
-            <p className="font-outfit font-medium text-center text-white mb-6 text-[clamp(14px,1.35vw,20px)] leading-[150%] tracking-[-0.011em]">
+            <p className="font-outfit font-medium text-center text-white mb-2 text-[clamp(14px,1.35vw,20px)] leading-[150%] tracking-[-0.011em]">
               If you&apos;d like to discuss a potential projects and partnership, please email{' '}
               <a className="underline hover:opacity-70 transition-opacity" href="mailto:info@lutstudios.com">
                 info@lutstudios.com
@@ -142,12 +142,12 @@ export function ContactSection({
 
           {/* Form */}
           <motion.div
-            className="w-full max-w-[961px] mx-auto"
+            className="w-full max-w-[845px] mx-auto"
             initial={motionCommon.initial}
             animate={motionCommon.animate}
             transition={{ ...motionCommon.transitionBase, delay: 0.4 }}
           >
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-6 xl:gap-[30px]">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-5 xl:gap-[30px]">
               {/* Email and Phone Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 xl:gap-[30px]">
                 <div className="relative flex items-center">
