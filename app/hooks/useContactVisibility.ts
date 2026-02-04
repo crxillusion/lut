@@ -17,8 +17,8 @@ interface UseContactVisibilityOptions {
  *
  * Behavior:
  * - When entering `contact`, waits briefly then shows UI.
- * - When leaving `contact`, hides UI and resets flags.
- * - Prevents re-triggering fade-in when leaving via direct navigation.
+ * - When leaving `contact`, hides UI and keeps `leavingContact` true until section changes.
+ *   This prevents a fade-in glitch where UI re-appears before the transition video starts.
  */
 export function useContactVisibility({
   currentSection,
@@ -30,6 +30,7 @@ export function useContactVisibility({
   setLeavingContact,
 }: UseContactVisibilityOptions) {
   useEffect(() => {
+    // Enter: show UI after a short delay (only when not leaving)
     if (currentSection === 'contact' && showHero && !waitingForContactLoop && !contactVisible && !leavingContact) {
       const timer = setTimeout(() => {
         homeLogger.debug('Setting contactVisible to true');
@@ -38,22 +39,19 @@ export function useContactVisibility({
       return () => clearTimeout(timer);
     }
 
-    if (currentSection === 'contact' && showHero && !waitingForContactLoop && !contactVisible && leavingContact) {
-      homeLogger.debug('Resetting leavingContact flag on re-entry to contact');
-      setLeavingContact(false);
-      return;
-    }
+    // While still on the contact section, do NOT reset leavingContact.
+    // We want to keep it true throughout the exit sequence (loop speed-up + transition).
 
-    if (currentSection !== 'contact' && contactVisible) {
-      homeLogger.debug('Leaving contact section, resetting contactVisible to false');
-      setContactVisible(false);
-      setLeavingContact(false);
-      return;
-    }
-
-    if (currentSection !== 'contact' && leavingContact) {
-      homeLogger.debug('Resetting leavingContact flag after leaving contact');
-      setLeavingContact(false);
+    // After leaving contact section, reset state
+    if (currentSection !== 'contact' && (contactVisible || leavingContact)) {
+      if (contactVisible) {
+        homeLogger.debug('Leaving contact section, resetting contactVisible to false');
+        setContactVisible(false);
+      }
+      if (leavingContact) {
+        homeLogger.debug('Resetting leavingContact flag after leaving contact');
+        setLeavingContact(false);
+      }
     }
   }, [
     contactVisible,

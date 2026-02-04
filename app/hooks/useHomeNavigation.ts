@@ -107,6 +107,11 @@ export function useHomeNavigation(
     ) => {
       if (isTransitioningRef.current) return;
 
+      // Hide hero UI while transitioning away so it can animate back in on return.
+      if (currentSection === 'hero' && targetSection !== 'hero') {
+        setHeroVisible(false);
+      }
+
       if (isDirectNavigation && currentSection === 'hero') {
         previousSectionRef.current = 'hero';
       }
@@ -154,8 +159,12 @@ export function useHomeNavigation(
                 setIsTransitioning(false);
                 isTransitioningRef.current = false;
 
-                if (targetSection === 'hero') setHeroVisible(true);
-                if (targetSection === 'aboutStart') setAboutStartVisible(true);
+                if (targetSection === 'hero') {
+                  setHeroVisible(true);
+                }
+                if (targetSection === 'aboutStart') {
+                  setAboutStartVisible(true);
+                }
               });
             });
           };
