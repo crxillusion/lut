@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createLogger } from '../utils/logger';
 
 const assetLogger = createLogger('Assets');
@@ -32,12 +32,24 @@ export function useAssetPreloader({
 }: AssetPreloaderOptions) {
   const [immediateDone, setImmediateDone] = useState(false);
 
+  // Normalize arrays so dependency changes are based on content, not identity.
+  const uniqueImmediate = useMemo(
+    () => Array.from(new Set(immediate)).filter(Boolean),
+    [immediate]
+  );
+  const uniqueBg = useMemo(
+    () => Array.from(new Set(background)).filter(Boolean),
+    [background]
+  );
+
+  // Ensure background warm only runs once per distinct list.
+  const lastBgKeyRef = useRef<string>('');
+
   useEffect(() => {
     if (!enabled) return;
 
     let isCancelled = false;
 
-    const uniqueImmediate = Array.from(new Set(immediate)).filter(Boolean);
     assetLogger.info(`Immediate image preload: ${uniqueImmediate.length} asset(s)`);
 
     let resolvedCount = 0;
@@ -87,14 +99,20 @@ export function useAssetPreloader({
       isCancelled = true;
       imgEls.length = 0;
     };
-  }, [enabled, immediate]);
+  }, [enabled, uniqueImmediate]);
 
   // Fire-and-forget background warm.
   useEffect(() => {
     if (!enabled) return;
     if (!immediateDone) return;
 
-    const uniqueBg = Array.from(new Set(background)).filter(Boolean);
+    const bgKey = uniqueBg.join('|');
+    if (bgKey && lastBgKeyRef.current === bgKey) {
+      assetLogger.debug('Background image warm: skipping (already requested this set)');
+      return;
+    }
+    lastBgKeyRef.current = bgKey;
+
     assetLogger.info(`Background image warm: ${uniqueBg.length} asset(s)`);
     if (uniqueBg.length === 0) return;
 
@@ -117,7 +135,7 @@ export function useAssetPreloader({
       timers.forEach(t => window.clearTimeout(t));
       imgEls.length = 0;
     };
-  }, [enabled, immediateDone, background, backgroundStaggerMs]);
+  }, [enabled, immediateDone, uniqueBg, backgroundStaggerMs]);
 
   return { immediateDone };
 }

@@ -61,6 +61,7 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
       return;
     }
 
+    const requestAt = performance.now();
     transitionLogger.transition(currentSection, targetSection, isDirectNavigation ? 'click' : 'scroll');
 
     // Store previous section before transitioning (only for direct navigation from hero)
@@ -69,6 +70,9 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
     }
 
     isTransitioningRef.current = true;
+
+    // Show transition overlay immediately so UI responds to click right away.
+    setIsTransitioning(true);
     setTransitionVideoSrc(transitionVideo);
 
     // Prepare target video
@@ -80,10 +84,15 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
       }
     }
 
+    // Small delay to ensure the src swap has committed before we call play/load.
     setTimeout(() => {
       try {
         if (!transitionVideoRef.current) {
           transitionLogger.error('transitionVideoRef.current is null!');
+          // Fail open.
+          setCurrentSection(targetSection);
+          setIsTransitioning(false);
+          isTransitioningRef.current = false;
           return;
         }
 
@@ -94,19 +103,55 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
           video.load();
         }
 
-        const handleCanPlay = () => {
-          setIsTransitioning(true);
+        let didAdvance = false;
+        const ADVANCE_TIMEOUT_MS = 1200;
 
-          video.play().catch(err => {
-            transitionLogger.warn('Transition video play error:', err.name);
-            setCurrentSection(targetSection);
-            setIsTransitioning(false);
-            isTransitioningRef.current = false;
-            targetVideoRef.current?.play().catch(() => {});
+        const advanceToTarget = (reason: string) => {
+          if (didAdvance) return;
+          didAdvance = true;
+
+          transitionLogger.warn(
+            `Advancing transition without waiting (reason=${reason}, readyState=${video.readyState})`
+          );
+
+          // Ensure we end up in the target section even if the transition video wasn't ready.
+          setCurrentSection(targetSection);
+          setIsTransitioning(false);
+          isTransitioningRef.current = false;
+
+          targetVideoRef.current?.play().catch(() => {});
+        };
+
+        const cleanup = () => {
+          video.onended = null;
+          video.onplaying = null;
+          video.onwaiting = null;
+          video.onstalled = null;
+        };
+
+        const canPlayAt = () => Math.round(performance.now() - requestAt);
+
+        // If canplay is slow on GH Pages, we still want instant UI.
+        // Try to start playback immediately; if it fails, fall back.
+        const tryStart = (reason: string) => {
+          transitionLogger.debug(
+            `Transition tryStart (${reason}): readyState=${video.readyState} dt=${canPlayAt()}ms src=${transitionVideo.split('/').pop()}`
+          );
+
+          video.play().then(() => {
+            transitionLogger.debug(
+              `Transition video playing dt=${canPlayAt()}ms`
+            );
+          }).catch(err => {
+            transitionLogger.warn('Transition video play error:', err?.name ?? err);
+            advanceToTarget('play_error');
           });
         };
 
+        // If transition video ends normally, move to target section.
         video.onended = () => {
+          cleanup();
+
           // Play target video first
           if (targetVideoRef.current) {
             targetVideoRef.current.currentTime = 0;
@@ -133,11 +178,40 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
           });
         };
 
+        // Additional logging hooks for diagnosing buffering stalls.
+        video.onwaiting = () => {
+          transitionLogger.debug(`Transition video waiting dt=${canPlayAt()}ms readyState=${video.readyState}`);
+        };
+        video.onstalled = () => {
+          transitionLogger.debug(`Transition video stalled dt=${canPlayAt()}ms readyState=${video.readyState}`);
+        };
+        video.onplaying = () => {
+          transitionLogger.debug(`Transition video onplaying dt=${canPlayAt()}ms readyState=${video.readyState}`);
+        };
+
+        // Start ASAP (even if not canplay yet). This usually renders faster than waiting for canplay.
+        tryStart(video.readyState >= 2 ? 'ready' : 'not_ready');
+
+        // But also attempt again on canplay to recover if the first play() was blocked.
+        const onCanPlay = () => {
+          transitionLogger.debug(`Transition canplay dt=${canPlayAt()}ms readyState=${video.readyState}`);
+          tryStart('canplay');
+        };
+
         if (video.readyState >= 3) {
-          handleCanPlay();
+          // Already good enough.
+          onCanPlay();
         } else {
-          video.addEventListener('canplay', handleCanPlay, { once: true });
+          video.addEventListener('canplay', onCanPlay, { once: true });
         }
+
+        // Fallback: if transition video still hasn't started after a short delay, advance anyway.
+        window.setTimeout(() => {
+          if (didAdvance) return;
+          // If the video has started playing, we should not force-advance.
+          if (!video.paused && video.currentTime > 0) return;
+          advanceToTarget('advance_timeout');
+        }, ADVANCE_TIMEOUT_MS);
       } catch (err) {
         transitionLogger.error('Transition error:', err);
         setCurrentSection(targetSection);
