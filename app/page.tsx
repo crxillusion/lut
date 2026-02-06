@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { OpeningTransition } from './components/OpeningTransition';
 import { HomeSections } from './components/HomeSections';
@@ -56,6 +56,8 @@ export default function Home() {
     backgroundStaggerMs: 300,
   });
 
+  const [openingReady, setOpeningReady] = useState(false);
+
   const {
     showOpening,
     showHero,
@@ -66,7 +68,12 @@ export default function Home() {
     setHeroVisible,
     setAboutStartVisible,
     handleOpeningComplete,
-  } = useLoadingAndOpening(loadingProgress, isLoading);
+  } = useLoadingAndOpening(loadingProgress, isLoading, openingReady);
+
+  // Reset readiness when starting opening
+  useEffect(() => {
+    if (showOpening) setOpeningReady(false);
+  }, [showOpening]);
 
   const nav = useHomeNavigation(
     {
@@ -120,7 +127,11 @@ export default function Home() {
         <LoadingScreen progress={loadingProgress} isVisible={loadingScreenVisible} />
       )}
 
-      <OpeningTransition isPlaying={showOpening} onComplete={handleOpeningComplete} />
+      <OpeningTransition
+        isPlaying={showOpening}
+        onReady={() => setOpeningReady(true)}
+        onComplete={handleOpeningComplete}
+      />
 
       <HomeSections
         videoRefs={videoRefs}

@@ -2,7 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { homeLogger } from '../utils/logger';
 
-export function useLoadingAndOpening(loadingProgress: number, videosAreLoading?: boolean) {
+export function useLoadingAndOpening(
+  loadingProgress: number,
+  videosAreLoading?: boolean,
+  openingReady?: boolean
+) {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const [loadingScreenVisible, setLoadingScreenVisible] = useState(true);
@@ -12,35 +16,53 @@ export function useLoadingAndOpening(loadingProgress: number, videosAreLoading?:
 
   useEffect(() => {
     homeLogger.debug(
-      `Loading state: progress=${loadingProgress}, videosAreLoading=${videosAreLoading}, loadingScreenVisible=${loadingScreenVisible}, loadingScreenMounted=${loadingScreenMounted}, showOpening=${showOpening}, showHero=${showHero}`
+      `Loading state: progress=${loadingProgress}, videosAreLoading=${videosAreLoading}, openingReady=${openingReady}, loadingScreenVisible=${loadingScreenVisible}, loadingScreenMounted=${loadingScreenMounted}, showOpening=${showOpening}, showHero=${showHero}`
     );
-  }, [loadingProgress, videosAreLoading, loadingScreenVisible, loadingScreenMounted, showOpening, showHero]);
+  }, [
+    loadingProgress,
+    videosAreLoading,
+    openingReady,
+    loadingScreenVisible,
+    loadingScreenMounted,
+    showOpening,
+    showHero,
+  ]);
 
-  // Start opening transition when loading reaches 100% and video preloading is actually done.
+  // Start opening transition when loading reaches 100% and video preloading is done.
   useEffect(() => {
     const videosDone = videosAreLoading === undefined ? true : !videosAreLoading;
 
     if (loadingProgress === 100 && videosDone && !showOpening && !showHero) {
-      homeLogger.info('Loading at 100% and videos done, starting opening transition and fading out loading screen');
+      homeLogger.info('Loading at 100% and videos done, starting opening transition');
       const timer = setTimeout(() => {
         setShowOpening(true);
-
-        // Fade out loading screen after the opening has had a moment to mount.
-        setTimeout(() => {
-          homeLogger.debug('Fading out loading screen to reveal opening transition');
-          setLoadingScreenVisible(false);
-
-          // Unmount after fade-out completes (matches LoadingScreen duration-300)
-          setTimeout(() => {
-            homeLogger.debug('Unmounting loading screen');
-            setLoadingScreenMounted(false);
-          }, 350);
-        }, 250);
       }, 0);
 
       return () => clearTimeout(timer);
     }
   }, [loadingProgress, videosAreLoading, showOpening, showHero]);
+
+  // Fade out loading screen ONLY when opening is actually ready to show.
+  useEffect(() => {
+    if (!showOpening) return;
+
+    // If not provided, assume ready (keeps old behavior in dev)
+    const isOpeningReady = openingReady ?? true;
+    if (!isOpeningReady) {
+      homeLogger.debug('Holding loading screen: opening not ready yet');
+      return;
+    }
+
+    homeLogger.info('Opening ready; fading out loading screen');
+    setLoadingScreenVisible(false);
+
+    const t = setTimeout(() => {
+      homeLogger.debug('Unmounting loading screen');
+      setLoadingScreenMounted(false);
+    }, 350);
+
+    return () => clearTimeout(t);
+  }, [showOpening, openingReady]);
 
   const handleOpeningComplete = useCallback(() => {
     homeLogger.info('Opening transition complete, showing hero');

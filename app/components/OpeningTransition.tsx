@@ -7,9 +7,10 @@ const openingLogger = createLogger('Opening');
 interface OpeningTransitionProps {
   isPlaying: boolean;
   onComplete: () => void;
+  onReady?: () => void;
 }
 
-export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionProps) {
+export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTransitionProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [shouldRender, setShouldRender] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -36,6 +37,14 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
 
     const video = videoRef.current;
     let hasCompleted = false;
+    let readyFired = false;
+
+    const fireReadyOnce = () => {
+      if (readyFired) return;
+      readyFired = true;
+      openingLogger.info('OpeningTransition: ready');
+      onReady?.();
+    };
 
     openingLogger.debug('OpeningTransition: starting effect', {
       readyState: video.readyState,
@@ -60,6 +69,7 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
     };
 
     const startPlayback = () => {
+      fireReadyOnce();
       openingLogger.info('OpeningTransition: play()');
       video.currentTime = 0;
       video.playbackRate = 1.0;
@@ -78,23 +88,36 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
         startPlayback();
       };
       video.addEventListener('canplay', handleCanPlay, { once: true });
+
+      const handleLoadedData = () => {
+        // Slightly earlier than canplay on some browsers.
+        openingLogger.debug('OpeningTransition: loadeddata');
+        fireReadyOnce();
+      };
+      video.addEventListener('loadeddata', handleLoadedData, { once: true });
+
       if (video.readyState === 0) {
         openingLogger.debug('OpeningTransition: video.load()');
         video.load();
       }
+
+      return () => {
+        video.removeEventListener('ended', handleEnded);
+        video.removeEventListener('loadeddata', handleLoadedData);
+      };
     }
 
     return () => {
       video.removeEventListener('ended', handleEnded);
     };
-  }, [isPlaying, shouldRender, onComplete]);
+  }, [isPlaying, shouldRender, onComplete, onReady]);
 
   if (!shouldRender) {
     return null;
   }
 
   return (
-    <div 
+    <div
       className={`fixed inset-0 z-[90] bg-black transition-opacity duration-150 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
