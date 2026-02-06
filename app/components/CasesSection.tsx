@@ -2,6 +2,7 @@
 
 import { RefObject, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { BASE_PATH } from '../constants/config';
 
 interface CasesSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -114,7 +115,7 @@ const BG_GRADIENT =
   'bg-[radial-gradient(266.84%_474.58%_at_-81.46%_103.52%,_#392947_6.73%,_#CC927C_27.62%,_#834418_52.88%,_#291B3E_76.92%,_#010103_100%)]';
 
 const INTRO_CARD_CLASS =
-  "relative w-full rounded-[20px] border border-white/60 bg-[length:770px,100%] bg-bottom bg-no-repeat bg-[url('/cases-bg.png'),radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] py-[22px] md:px-[50px] md:py-[42px] md:pb-[20rem]";
+  'relative w-full rounded-[20px] border border-white/60 bg-[length:770px,100%] bg-bottom bg-no-repeat shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] py-[22px] md:px-[50px] md:py-[42px] md:pb-[20rem]';
 
 const GRID_CARD_CLASS =
   'relative w-full h-full rounded-[20px] border-[0.5px] border-white/40 shadow-[7px_9px_14.4px_0px_#00000047] overflow-hidden';
@@ -158,9 +159,10 @@ function VideoPopup({ url, onClose }: { url: string; onClose: () => void }) {
 }
 
 function CaseCard({ item }: { item: CaseItem }) {
+  const bgUrl = `${BASE_PATH}${item.img}`;
   return (
     <div className={GRID_CARD_CLASS}>
-      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${item.img})` }} />
+      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${bgUrl})` }} />
       <div className="absolute inset-0 bg-black/35" />
 
       <div className="relative z-[1] h-full w-full flex flex-col items-center justify-center px-8 py-25 text-white">
@@ -278,6 +280,9 @@ export function CasesSection({
             {/* Intro card */}
             <motion.div
               className={INTRO_CARD_CLASS}
+              style={{
+                backgroundImage: `url(${BASE_PATH}/cases-bg.png), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185,176,155,0.20) 0%, rgba(240,240,240,0.20) 100%)`,
+              }}
               initial={motionCommon.initial}
               animate={motionCommon.animate}
               transition={{ ...motionCommon.transitionBase, delay: 0.2 }}
