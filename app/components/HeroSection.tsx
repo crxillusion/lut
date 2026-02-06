@@ -37,6 +37,9 @@ export function HeroSection({
     preloadFirstFrame: true,
   });
 
+  // Keyed remount so framer-motion initial->animate runs reliably when showUI flips true.
+  const uiKey = showUI ? 'hero-ui-visible' : 'hero-ui-hidden';
+
   return (
     <section
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
@@ -46,7 +49,7 @@ export function HeroSection({
       <VideoBackground videoRef={videoRef} src={videoSrc} autoPlay loop />
 
       {/* Overlay Content */}
-      <div className="relative z-10 h-full">
+      <div className="relative z-10 h-full" key={uiKey}>
         {/* Navigation - 390px from top */}
         <div className="absolute top-[390px] left-0 right-0">
           <div className="flex flex-col items-center">
@@ -60,6 +63,7 @@ export function HeroSection({
             />
             {/* Scroll Indicator - Right below navigation */}
             <motion.div
+              key={`scroll-indicator-${uiKey}`}
               className="mt-4 text-white text-xs tracking-wider"
               initial={{
                 filter: 'blur(10px)',
@@ -84,6 +88,7 @@ export function HeroSection({
 
         {/* Copyright */}
         <motion.div
+          key={`copyright-${uiKey}`}
           className="absolute bottom-8 left-8 text-white text-xs"
           initial={{
             filter: 'blur(10px)',

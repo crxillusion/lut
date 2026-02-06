@@ -48,6 +48,7 @@ export function HomeSections({
       <HeroSection
         videoRef={heroVideoRef}
         videoSrc={VIDEO_PATHS.heroLoop}
+        // Hero background can be visible during the opening, but UI animation is controlled separately via `heroVisible`.
         isVisible={nav.currentSection === 'hero' && (showHero || showOpening)}
         showUI={heroVisible}
         currentSection={nav.currentSection}

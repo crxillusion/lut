@@ -20,6 +20,9 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
   const completedRef = useRef(false);
   const readyFiredRef = useRef(false);
 
+  // Debug state
+  const startedAtMsRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (isPlaying && !shouldRender) {
       openingLogger.info('OpeningTransition: isPlaying=true -> mounting');
@@ -27,6 +30,7 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
       playbackStartedRef.current = false;
       completedRef.current = false;
       readyFiredRef.current = false;
+      startedAtMsRef.current = null;
 
       const timer = setTimeout(() => {
         setShouldRender(true);
@@ -54,11 +58,20 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
       onReady?.();
     };
 
-    const completeTransition = () => {
+    const completeTransition = (reason: string) => {
       if (completedRef.current) return;
       completedRef.current = true;
 
-      openingLogger.info('OpeningTransition: complete');
+      openingLogger.info('OpeningTransition: complete', {
+        reason,
+        currentTime: Number.isFinite(video.currentTime) ? video.currentTime : null,
+        duration: Number.isFinite(video.duration) ? video.duration : null,
+        paused: video.paused,
+        ended: video.ended,
+        readyState: video.readyState,
+        networkState: video.networkState,
+      });
+
       setIsVisible(false);
       setTimeout(() => {
         setShouldRender(false);
@@ -68,7 +81,36 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
 
     const handleEnded = () => {
       openingLogger.info('OpeningTransition: video ended');
-      completeTransition();
+      completeTransition('ended');
+    };
+
+    const handleError = () => {
+      openingLogger.warn('OpeningTransition: video error');
+      completeTransition('error');
+    };
+
+    const handlePlay = () => {
+      openingLogger.debug('OpeningTransition: play event');
+    };
+
+    const handlePause = () => {
+      openingLogger.debug('OpeningTransition: pause event');
+    };
+
+    const handleTimeUpdate = () => {
+      const t0 = startedAtMsRef.current;
+      const dt = t0 ? Math.round(performance.now() - t0) : null;
+      // Throttle via modulo to avoid spamming logs.
+      if (Math.floor(video.currentTime * 10) % 10 === 0) {
+        openingLogger.debug('OpeningTransition: timeupdate', {
+          dtMs: dt,
+          currentTime: Number.isFinite(video.currentTime) ? Number(video.currentTime.toFixed(3)) : null,
+          duration: Number.isFinite(video.duration) ? Number(video.duration.toFixed(3)) : null,
+          paused: video.paused,
+          readyState: video.readyState,
+          networkState: video.networkState,
+        });
+      }
     };
 
     const begin = (reason: string) => {
@@ -77,6 +119,7 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
         return;
       }
       playbackStartedRef.current = true;
+      startedAtMsRef.current = performance.now();
 
       fireReadyOnce();
       openingLogger.info(`OpeningTransition: play() (reason=${reason})`);
@@ -87,11 +130,16 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
         // ignore
       }
       video.playbackRate = 1.0;
+
       video.addEventListener('ended', handleEnded);
+      video.addEventListener('error', handleError);
+      video.addEventListener('play', handlePlay);
+      video.addEventListener('pause', handlePause);
+      video.addEventListener('timeupdate', handleTimeUpdate);
 
       void video.play().catch((err) => {
         openingLogger.warn('OpeningTransition: play() failed, completing immediately', err);
-        completeTransition();
+        completeTransition('play_failed');
       });
     };
 
@@ -125,8 +173,43 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
       }
     }
 
+    // Watchdog: force completion if ended never fires (e.g. autoplay quirks).
+    // Use metadata duration once known; fall back to a safe cap.
+    const MAX_FALLBACK_MS = 10000;
+    const watchdogId = window.setInterval(() => {
+      if (completedRef.current) {
+        window.clearInterval(watchdogId);
+        return;
+      }
+
+      const t0 = startedAtMsRef.current;
+      if (!t0) return;
+
+      const dt = performance.now() - t0;
+      const duration = Number.isFinite(video.duration) ? video.duration : null;
+
+      // If we know duration and we're at/near the end, complete.
+      if (duration && Number.isFinite(video.currentTime) && video.currentTime >= duration - 0.05) {
+        openingLogger.warn('OpeningTransition: watchdog completing near end');
+        completeTransition('watchdog_near_end');
+        window.clearInterval(watchdogId);
+        return;
+      }
+
+      if (dt >= MAX_FALLBACK_MS) {
+        openingLogger.warn('OpeningTransition: watchdog timeout, forcing complete');
+        completeTransition('watchdog_timeout');
+        window.clearInterval(watchdogId);
+      }
+    }, 250);
+
     return () => {
+      window.clearInterval(watchdogId);
       video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('error', handleError);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('loadeddata', handleLoadedData);
     };
@@ -149,6 +232,8 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
         playsInline
         muted
         preload="auto"
+        // Ensure iOS/macOS Safari doesn't attempt fullscreen UI
+        controls={false}
       />
     </div>
   );

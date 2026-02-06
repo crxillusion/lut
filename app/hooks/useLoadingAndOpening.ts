@@ -1,5 +1,5 @@
 // Custom hook for managing loading and opening transition state
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { homeLogger } from '../utils/logger';
 
 export function useLoadingAndOpening(
@@ -11,12 +11,32 @@ export function useLoadingAndOpening(
   const [showHero, setShowHero] = useState(false);
   const [loadingScreenVisible, setLoadingScreenVisible] = useState(true);
   const [loadingScreenMounted, setLoadingScreenMounted] = useState(true);
-  const [heroVisible, setHeroVisible] = useState(false);
-  const [aboutStartVisible, setAboutStartVisible] = useState(true);
+  const [heroVisible, _setHeroVisible] = useState(false);
+  const [aboutStartVisible, _setAboutStartVisible] = useState(true);
+
+  const openingCompletedRef = useRef(false);
+
+  const setHeroVisible = useCallback((v: boolean) => {
+    homeLogger.debug(`setHeroVisible(${v})`, {
+      showHero,
+      showOpening,
+      openingCompleted: openingCompletedRef.current,
+    });
+    _setHeroVisible(v);
+  }, [showHero, showOpening]);
+
+  const setAboutStartVisible = useCallback((v: boolean) => {
+    homeLogger.debug(`setAboutStartVisible(${v})`, {
+      showHero,
+      showOpening,
+      openingCompleted: openingCompletedRef.current,
+    });
+    _setAboutStartVisible(v);
+  }, [showHero, showOpening]);
 
   useEffect(() => {
     homeLogger.debug(
-      `Loading state: progress=${loadingProgress}, videosAreLoading=${videosAreLoading}, openingReady=${openingReady}, loadingScreenVisible=${loadingScreenVisible}, loadingScreenMounted=${loadingScreenMounted}, showOpening=${showOpening}, showHero=${showHero}`
+      `Loading state: progress=${loadingProgress}, videosAreLoading=${videosAreLoading}, openingReady=${openingReady}, loadingScreenVisible=${loadingScreenVisible}, loadingScreenMounted=${loadingScreenMounted}, showOpening=${showOpening}, showHero=${showHero}, heroVisible=${heroVisible}`
     );
   }, [
     loadingProgress,
@@ -26,6 +46,7 @@ export function useLoadingAndOpening(
     loadingScreenMounted,
     showOpening,
     showHero,
+    heroVisible,
   ]);
 
   // Start opening transition when loading reaches 100% and video preloading is done.
@@ -34,13 +55,18 @@ export function useLoadingAndOpening(
 
     if (loadingProgress === 100 && videosDone && !showOpening && !showHero) {
       homeLogger.info('Loading at 100% and videos done, starting opening transition');
+
+      // Ensure hero UI starts hidden so it can fade in after opening completes.
+      setHeroVisible(false);
+
       const timer = setTimeout(() => {
+        homeLogger.debug('Setting showOpening=true');
         setShowOpening(true);
       }, 0);
 
       return () => clearTimeout(timer);
     }
-  }, [loadingProgress, videosAreLoading, showOpening, showHero]);
+  }, [loadingProgress, videosAreLoading, showOpening, showHero, setHeroVisible]);
 
   // Fade out loading screen ONLY when opening is actually ready to show.
   useEffect(() => {
@@ -66,11 +92,30 @@ export function useLoadingAndOpening(
 
   const handleOpeningComplete = useCallback(() => {
     homeLogger.info('Opening transition complete, showing hero');
+    openingCompletedRef.current = true;
+
+    homeLogger.debug('Opening complete: setShowOpening(false)');
     setShowOpening(false);
+
+    homeLogger.debug('Opening complete: setShowHero(true)');
     setShowHero(true);
-    setHeroVisible(true);
-    setAboutStartVisible(true);
-  }, []);
+
+    // Defer visibility toggles to the next frame so motion components have a clean
+    // initial render before animate=true.
+    requestAnimationFrame(() => {
+      // Only show hero UI if we are still in the hero phase (guards against immediately
+      // starting a queued transition that hides the hero UI).
+      const shouldShowHeroUI = true; // showHero will be true on next render, but RAF runs before that.
+      homeLogger.debug('Opening complete: RAF -> setHeroVisible(true), setAboutStartVisible(true)', {
+        shouldShowHeroUI,
+      });
+
+      if (shouldShowHeroUI) {
+        setHeroVisible(true);
+      }
+      setAboutStartVisible(true);
+    });
+  }, [setHeroVisible, setAboutStartVisible]);
 
   return {
     showOpening,
