@@ -24,6 +24,20 @@ const DEFAULT_CONFIG: LoggerConfig = {
   prefix: '',
 };
 
+if (isClient) {
+  // One-time bootstrap log. Useful for verifying GitHub Pages builds baked the env vars.
+  // This uses console directly so it appears even if logging is disabled.
+  // eslint-disable-next-line no-console
+  console.info('[Logger]', {
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_DEBUG_LOGS: process.env.NEXT_PUBLIC_DEBUG_LOGS,
+    NEXT_PUBLIC_DEBUG_LOG_LEVEL: process.env.NEXT_PUBLIC_DEBUG_LOG_LEVEL,
+    forceClientLogs,
+    enabled: DEFAULT_CONFIG.enabled,
+    level: DEFAULT_CONFIG.level,
+  });
+}
+
 class Logger {
   private config: LoggerConfig;
 

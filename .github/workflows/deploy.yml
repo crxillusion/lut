@@ -50,6 +50,8 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          NEXT_PUBLIC_DEBUG_LOGS: "1"
+          NEXT_PUBLIC_DEBUG_LOG_LEVEL: "debug"
       
       - name: Verify build output
         run: |
