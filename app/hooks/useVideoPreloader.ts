@@ -8,89 +8,115 @@ export function useVideoPreloader(videoPaths: string[]) {
 
   useEffect(() => {
     let isCancelled = false;
+
+    const startAt = performance.now();
+
+    // Preload 80% of videos for smooth transitions, but do it with limited concurrency.
+    const videosToPreload = Math.ceil(videoPaths.length * 0.8);
+    const essentialVideos = videoPaths.slice(0, videosToPreload);
+    const totalVideos = essentialVideos.length;
+
+    // On GH Pages, large parallel downloads often stall/timeout.
+    // Keep this intentionally small.
+    const ESSENTIAL_CONCURRENCY = 3;
+
+    // Use a per-video timeout lower than the global LOADING_TIMEOUT; we don't want one file
+    // to block the whole queue for too long.
+    const PER_VIDEO_TIMEOUT_MS = Math.min(15000, LOADING_TIMEOUT);
+
+    const gifDuration = 7000;
+    const startTime = Date.now();
+
     let loadedCount = 0;
     let successfullyLoadedCount = 0;
 
-    const startAt = performance.now();
-    
-    // Preload 80% of videos (20 out of 25) for smooth scrolling experience
-    // This prevents black flashes during transitions
-    const videosToPreload = Math.ceil(videoPaths.length * 0.8); // 80% of total videos
-    const essentialVideos = videoPaths.slice(0, videosToPreload); // First 80% of videos
-    const totalVideos = essentialVideos.length;
-    
-    const gifDuration = 7000; // Target display time in ms (7 seconds) - shorter than full GIF loop
-    const startTime = Date.now();
-
     videoLogger.info(
-      `Preloading ${totalVideos} videos (80% of ${videoPaths.length}) for smooth experience, ${videoPaths.length - totalVideos} will load in background...`
+      `Preloading ${totalVideos} videos (80% of ${videoPaths.length}) with concurrency=${ESSENTIAL_CONCURRENCY}, ${videoPaths.length - totalVideos} will load in background...`
     );
 
-    // Create video elements and preload them
     const videoElements: HTMLVideoElement[] = [];
-    const loadPromises: Promise<void>[] = [];
 
-    essentialVideos.forEach((path) => {
-      const video = document.createElement('video');
-      video.preload = 'auto';
-      video.muted = true;
-      video.playsInline = true;
-      video.src = path;
-      videoElements.push(video);
+    const loadOneVideo = (path: string) =>
+      new Promise<void>((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'auto';
+        video.muted = true;
+        video.playsInline = true;
+        video.src = path;
+        videoElements.push(video);
 
-      const loadPromise = new Promise<void>((resolve) => {
-        const handleCanPlay = () => {
+        let settled = false;
+
+        const settle = (ok: boolean, reason?: string) => {
+          if (settled) return;
+          settled = true;
+
           if (!isCancelled) {
-            loadedCount++;
-            successfullyLoadedCount++;
-            // Cap progress at 99% until minimum wait time completes
+            loadedCount += 1;
+            if (ok) successfullyLoadedCount += 1;
+
             const progress = Math.min(99, Math.floor((loadedCount / totalVideos) * 100));
             setLoadingProgress(progress);
-            videoLogger.debug(
-              `✅ ${loadedCount}/${totalVideos} loaded (${progress}%): ${path.split('/').pop()}`
-            );
+
+            if (ok) {
+              videoLogger.debug(
+                `✅ ${loadedCount}/${totalVideos} loaded (${progress}%): ${path.split('/').pop()}`
+              );
+            } else {
+              videoLogger.warn(
+                `❌ ${loadedCount}/${totalVideos} errored (${progress}%): ${path.split('/').pop()}${reason ? ` (${reason})` : ''}`
+              );
+            }
           }
+
           cleanup();
           resolve();
         };
 
+        const handleCanPlay = () => settle(true);
         const handleError = (e: Event) => {
           videoLogger.error(`❌ Failed to load: ${path}`, e);
-          if (!isCancelled) {
-            loadedCount++;
-            const progress = Math.floor((loadedCount / totalVideos) * 100);
-            setLoadingProgress(progress);
-            videoLogger.debug(
-              `❌ ${loadedCount}/${totalVideos} errored (${progress}%): ${path.split('/').pop()}`
-            );
-          }
-          cleanup();
-          resolve();
+          settle(false, 'error');
         };
 
-        const timeoutId = setTimeout(() => {
-          videoLogger.warn(`⏱️ Timeout loading (${LOADING_TIMEOUT}ms): ${path}`);
-          handleError(new Event('timeout'));
-        }, LOADING_TIMEOUT); // Use full timeout for essential videos on slow connections
+        const timeoutId = window.setTimeout(() => {
+          videoLogger.warn(`⏱️ Timeout loading (${PER_VIDEO_TIMEOUT_MS}ms): ${path}`);
+          settle(false, 'timeout');
+        }, PER_VIDEO_TIMEOUT_MS);
 
         const cleanup = () => {
-          clearTimeout(timeoutId);
+          window.clearTimeout(timeoutId);
           video.removeEventListener('canplaythrough', handleCanPlay);
           video.removeEventListener('error', handleError);
         };
 
         video.addEventListener('canplaythrough', handleCanPlay);
         video.addEventListener('error', handleError);
+
+        video.load();
       });
 
-      loadPromises.push(loadPromise);
-      
-      // Start loading
-      video.load();
-    });
+    const runWithConcurrency = async () => {
+      let cursor = 0;
 
-    // Wait for essential videos to load
-    Promise.all(loadPromises).then(() => {
+      const worker = async () => {
+        while (!isCancelled) {
+          const idx = cursor;
+          cursor += 1;
+          if (idx >= essentialVideos.length) return;
+          await loadOneVideo(essentialVideos[idx]);
+        }
+      };
+
+      const workers = Array.from(
+        { length: Math.min(ESSENTIAL_CONCURRENCY, essentialVideos.length) },
+        () => worker()
+      );
+
+      await Promise.all(workers);
+    };
+
+    runWithConcurrency().then(() => {
       if (isCancelled) return;
 
       const perfElapsedMs = Math.round(performance.now() - startAt);
@@ -100,12 +126,8 @@ export function useVideoPreloader(videoPaths: string[]) {
         `Essential video preload settled in ~${perfElapsedMs}ms (wall=${wallElapsedMs}ms). loaded=${loadedCount}/${totalVideos}, ok=${successfullyLoadedCount}/${totalVideos}`
       );
 
-      // Calculate how long to wait to align with GIF loop completion
-      // We want to transition right when the GIF completes a full loop
-      const currentGifPosition = wallElapsedMs % gifDuration; // Where we are in the current GIF loop
-      const timeToNextGifLoop = gifDuration - currentGifPosition; // Time until GIF completes current loop
-
-      // Ensure we wait at least until the next GIF loop completes
+      const currentGifPosition = wallElapsedMs % gifDuration;
+      const timeToNextGifLoop = gifDuration - currentGifPosition;
       const remainingTime = timeToNextGifLoop;
 
       videoLogger.info(
@@ -115,33 +137,32 @@ export function useVideoPreloader(videoPaths: string[]) {
         `Time elapsed: ${wallElapsedMs}ms; waiting ${remainingTime.toFixed(0)}ms for GIF loop alignment.`
       );
 
-      // Ensure minimum loading time for branding
       setTimeout(() => {
-        if (!isCancelled) {
-          videoLogger.info('Loading complete. Starting background preload of remaining videos...');
-          setLoadingProgress(100);
+        if (isCancelled) return;
 
-          if (successfullyLoadedCount >= 1) {
-            videoLogger.info('✅ Loading complete! Starting background preload of remaining videos...');
-          } else {
-            videoLogger.warn('No videos loaded successfully, but proceeding anyway...');
-          }
+        videoLogger.info('Loading complete. Starting background preload of remaining videos...');
+        setLoadingProgress(100);
 
-          setTimeout(() => {
-            videoLogger.info('isLoading=false (loading screen can start hiding)');
-            setIsLoading(false);
-            videoElements.forEach(v => v.remove());
-
-            videoLogger.info(
-              `Background preload start: ${videoPaths.length - videosToPreload} remaining video(s)`
-            );
-            preloadRemainingVideos(videoPaths.slice(videosToPreload));
-          }, 500);
+        if (successfullyLoadedCount >= 1) {
+          videoLogger.info('✅ Loading complete! Starting background preload of remaining videos...');
+        } else {
+          videoLogger.warn('No videos loaded successfully, but proceeding anyway...');
         }
+
+        setTimeout(() => {
+          videoLogger.info('isLoading=false (loading screen can start hiding)');
+          setIsLoading(false);
+          videoElements.forEach(v => v.remove());
+
+          videoLogger.info(
+            `Background preload start: ${videoPaths.length - videosToPreload} remaining video(s)`
+          );
+          preloadRemainingVideos(videoPaths.slice(videosToPreload));
+        }, 500);
       }, remainingTime);
     });
 
-    // Maximum timeout fallback
+    // Maximum timeout fallback (still keep it, but concurrency should make it less likely).
     const maxTimeout = setTimeout(() => {
       if (!isCancelled) {
         videoLogger.warn('Maximum timeout reached, forcing load complete');
