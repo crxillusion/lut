@@ -7,9 +7,20 @@ interface LoggerConfig {
   prefix: string;
 }
 
+const isClient = typeof window !== 'undefined';
+const forceClientLogs =
+  isClient &&
+  (process.env.NEXT_PUBLIC_DEBUG_LOGS === '1' || process.env.NEXT_PUBLIC_DEBUG_LOGS === 'true');
+
+const forcedLevel = ((): LogLevel | undefined => {
+  const v = process.env.NEXT_PUBLIC_DEBUG_LOG_LEVEL;
+  if (v === 'debug' || v === 'info' || v === 'warn' || v === 'error') return v;
+  return undefined;
+})();
+
 const DEFAULT_CONFIG: LoggerConfig = {
-  enabled: process.env.NODE_ENV === 'development',
-  level: 'debug',
+  enabled: forceClientLogs || process.env.NODE_ENV === 'development',
+  level: forcedLevel ?? 'debug',
   prefix: '',
 };
 
