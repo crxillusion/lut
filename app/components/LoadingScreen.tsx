@@ -8,7 +8,7 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ isVisible }: LoadingScreenProps) {
   return (
-    <div 
+    <div
       className={`fixed inset-0 z-[100] flex items-center justify-center bg-cover bg-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
@@ -16,17 +16,16 @@ export function LoadingScreen({ isVisible }: LoadingScreenProps) {
         backgroundImage: `url(${BASE_PATH}/loading-bg.jpg)`,
       }}
     >
-      <div className="relative w-48 h-48 md:w-96 md:h-96">
-        <Image
-          src={`${BASE_PATH}/logo-animation.gif`}
-          alt="LUT Studios"
-          fill
-          unoptimized
-          priority
-          sizes="(min-width: 768px) 384px, 192px"
-          className="object-contain"
-        />
-      </div>
+      <Image
+        src={`${BASE_PATH}/logo-animation.gif`}
+        alt="LUT Studios"
+        width={384}
+        height={384}
+        unoptimized
+        priority
+        loading="eager"
+        className="w-48 h-48 md:w-96 md:h-96 object-contain"
+      />
     </div>
   );
 }
