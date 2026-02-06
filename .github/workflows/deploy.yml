@@ -24,6 +24,11 @@ jobs:
         with:
           lfs: true
       
+      - name: Pull Git LFS objects
+        run: |
+          git lfs install
+          git lfs pull
+      
       - name: Verify LFS files are checked out
         run: |
           echo "Checking LFS files..."
