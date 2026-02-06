@@ -97,6 +97,10 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
         }
 
         const video = transitionVideoRef.current;
+
+        // Hint to browser this is an important load.
+        video.preload = 'auto';
+
         video.currentTime = 0;
 
         if (video.readyState < 2) {
@@ -104,11 +108,17 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
         }
 
         let didAdvance = false;
-        const ADVANCE_TIMEOUT_MS = 1200;
+        const ADVANCE_TIMEOUT_MS = 900;
+        let advanceTimer: number | undefined;
 
         const advanceToTarget = (reason: string) => {
           if (didAdvance) return;
           didAdvance = true;
+
+          if (advanceTimer !== undefined) {
+            window.clearTimeout(advanceTimer);
+            advanceTimer = undefined;
+          }
 
           transitionLogger.warn(
             `Advancing transition without waiting (reason=${reason}, readyState=${video.readyState})`
@@ -142,6 +152,11 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
             transitionLogger.debug(
               `Transition video playing dt=${canPlayAt()}ms`
             );
+            // If we see playback begin, cancel fallback advance timer.
+            if (advanceTimer !== undefined) {
+              window.clearTimeout(advanceTimer);
+              advanceTimer = undefined;
+            }
           }).catch(err => {
             transitionLogger.warn('Transition video play error:', err?.name ?? err);
             advanceToTarget('play_error');
@@ -206,7 +221,7 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
         }
 
         // Fallback: if transition video still hasn't started after a short delay, advance anyway.
-        window.setTimeout(() => {
+        advanceTimer = window.setTimeout(() => {
           if (didAdvance) return;
           // If the video has started playing, we should not force-advance.
           if (!video.paused && video.currentTime > 0) return;

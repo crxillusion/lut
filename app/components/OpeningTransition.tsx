@@ -15,9 +15,19 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
   const [shouldRender, setShouldRender] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
+  // Guards to ensure we don't start playback multiple times due to re-renders.
+  const playbackStartedRef = useRef(false);
+  const completedRef = useRef(false);
+  const readyFiredRef = useRef(false);
+
   useEffect(() => {
     if (isPlaying && !shouldRender) {
       openingLogger.info('OpeningTransition: isPlaying=true -> mounting');
+      // Reset guards for this run.
+      playbackStartedRef.current = false;
+      completedRef.current = false;
+      readyFiredRef.current = false;
+
       const timer = setTimeout(() => {
         setShouldRender(true);
         setIsVisible(true);
@@ -36,25 +46,18 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
     }
 
     const video = videoRef.current;
-    let hasCompleted = false;
-    let readyFired = false;
 
     const fireReadyOnce = () => {
-      if (readyFired) return;
-      readyFired = true;
+      if (readyFiredRef.current) return;
+      readyFiredRef.current = true;
       openingLogger.info('OpeningTransition: ready');
       onReady?.();
     };
 
-    openingLogger.debug('OpeningTransition: starting effect', {
-      readyState: video.readyState,
-      networkState: video.networkState,
-      src: video.currentSrc || video.src,
-    });
-
     const completeTransition = () => {
-      if (hasCompleted) return;
-      hasCompleted = true;
+      if (completedRef.current) return;
+      completedRef.current = true;
+
       openingLogger.info('OpeningTransition: complete');
       setIsVisible(false);
       setTimeout(() => {
@@ -68,47 +71,64 @@ export function OpeningTransition({ isPlaying, onComplete, onReady }: OpeningTra
       completeTransition();
     };
 
-    const startPlayback = () => {
+    const begin = (reason: string) => {
+      if (playbackStartedRef.current) {
+        openingLogger.debug(`OpeningTransition: begin skipped (already started) reason=${reason}`);
+        return;
+      }
+      playbackStartedRef.current = true;
+
       fireReadyOnce();
-      openingLogger.info('OpeningTransition: play()');
-      video.currentTime = 0;
+      openingLogger.info(`OpeningTransition: play() (reason=${reason})`);
+
+      try {
+        video.currentTime = 0;
+      } catch {
+        // ignore
+      }
       video.playbackRate = 1.0;
       video.addEventListener('ended', handleEnded);
+
       void video.play().catch((err) => {
         openingLogger.warn('OpeningTransition: play() failed, completing immediately', err);
         completeTransition();
       });
     };
 
+    // Diagnostics
+    openingLogger.debug('OpeningTransition: starting effect', {
+      readyState: video.readyState,
+      networkState: video.networkState,
+      src: video.currentSrc || video.src,
+    });
+
+    const handleCanPlay = () => {
+      openingLogger.info('OpeningTransition: canplay');
+      begin('canplay');
+    };
+
+    const handleLoadedData = () => {
+      openingLogger.debug('OpeningTransition: loadeddata');
+      fireReadyOnce();
+    };
+
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('loadeddata', handleLoadedData);
+
+    // If already ready enough, start immediately.
     if (video.readyState >= 3) {
-      startPlayback();
+      begin('readyState>=3');
     } else {
-      const handleCanPlay = () => {
-        openingLogger.info('OpeningTransition: canplay');
-        startPlayback();
-      };
-      video.addEventListener('canplay', handleCanPlay, { once: true });
-
-      const handleLoadedData = () => {
-        // Slightly earlier than canplay on some browsers.
-        openingLogger.debug('OpeningTransition: loadeddata');
-        fireReadyOnce();
-      };
-      video.addEventListener('loadeddata', handleLoadedData, { once: true });
-
       if (video.readyState === 0) {
         openingLogger.debug('OpeningTransition: video.load()');
         video.load();
       }
-
-      return () => {
-        video.removeEventListener('ended', handleEnded);
-        video.removeEventListener('loadeddata', handleLoadedData);
-      };
     }
 
     return () => {
       video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
     };
   }, [isPlaying, shouldRender, onComplete, onReady]);
 
