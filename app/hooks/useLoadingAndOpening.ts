@@ -6,6 +6,7 @@ export function useLoadingAndOpening(loadingProgress: number) {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const [loadingScreenVisible, setLoadingScreenVisible] = useState(true);
+  const [loadingScreenMounted, setLoadingScreenMounted] = useState(true);
   const [heroVisible, setHeroVisible] = useState(false);
   const [aboutStartVisible, setAboutStartVisible] = useState(true);
 
@@ -22,7 +23,12 @@ export function useLoadingAndOpening(loadingProgress: number) {
         setTimeout(() => {
           homeLogger.debug('Fading out loading screen to reveal opening transition');
           setLoadingScreenVisible(false);
-        }, 100);
+
+          // Unmount after fade-out completes (matches LoadingScreen duration-300)
+          setTimeout(() => {
+            setLoadingScreenMounted(false);
+          }, 350);
+        }, 250);
       }, 0);
       
       return () => clearTimeout(timer);
@@ -42,6 +48,7 @@ export function useLoadingAndOpening(loadingProgress: number) {
     showOpening,
     showHero,
     loadingScreenVisible,
+    loadingScreenMounted,
     heroVisible,
     aboutStartVisible,
     

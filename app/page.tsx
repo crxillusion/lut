@@ -60,6 +60,7 @@ export default function Home() {
     showOpening,
     showHero,
     loadingScreenVisible,
+    loadingScreenMounted,
     heroVisible,
     aboutStartVisible,
     setHeroVisible,
@@ -115,7 +116,9 @@ export default function Home() {
 
   return (
     <>
-      {isLoading && <LoadingScreen progress={loadingProgress} isVisible={loadingScreenVisible} />}
+      {loadingScreenMounted && (
+        <LoadingScreen progress={loadingProgress} isVisible={loadingScreenVisible} />
+      )}
 
       <OpeningTransition isPlaying={showOpening} onComplete={handleOpeningComplete} />
 
