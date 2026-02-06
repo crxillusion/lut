@@ -10,6 +10,8 @@ export function useVideoPreloader(videoPaths: string[]) {
     let isCancelled = false;
     let loadedCount = 0;
     let successfullyLoadedCount = 0;
+
+    const startAt = performance.now();
     
     // Preload 80% of videos (20 out of 25) for smooth scrolling experience
     // This prevents black flashes during transitions
@@ -58,6 +60,9 @@ export function useVideoPreloader(videoPaths: string[]) {
             loadedCount++;
             const progress = Math.floor((loadedCount / totalVideos) * 100);
             setLoadingProgress(progress);
+            videoLogger.debug(
+              `❌ ${loadedCount}/${totalVideos} errored (${progress}%): ${path.split('/').pop()}`
+            );
           }
           cleanup();
           resolve();
@@ -88,13 +93,18 @@ export function useVideoPreloader(videoPaths: string[]) {
     Promise.all(loadPromises).then(() => {
       if (isCancelled) return;
 
-      const elapsed = Date.now() - startTime;
-      
+      const perfElapsedMs = Math.round(performance.now() - startAt);
+      const wallElapsedMs = Date.now() - startTime;
+
+      videoLogger.info(
+        `Essential video preload settled in ~${perfElapsedMs}ms (wall=${wallElapsedMs}ms). loaded=${loadedCount}/${totalVideos}, ok=${successfullyLoadedCount}/${totalVideos}`
+      );
+
       // Calculate how long to wait to align with GIF loop completion
       // We want to transition right when the GIF completes a full loop
-      const currentGifPosition = elapsed % gifDuration; // Where we are in the current GIF loop
+      const currentGifPosition = wallElapsedMs % gifDuration; // Where we are in the current GIF loop
       const timeToNextGifLoop = gifDuration - currentGifPosition; // Time until GIF completes current loop
-      
+
       // Ensure we wait at least until the next GIF loop completes
       const remainingTime = timeToNextGifLoop;
 
@@ -102,7 +112,7 @@ export function useVideoPreloader(videoPaths: string[]) {
         `Videos processed: ${loadedCount}/${totalVideos}. Successfully loaded: ${successfullyLoadedCount}/${totalVideos}.`
       );
       videoLogger.debug(
-        `Time elapsed: ${elapsed}ms; waiting ${remainingTime.toFixed(0)}ms for GIF loop alignment.`
+        `Time elapsed: ${wallElapsedMs}ms; waiting ${remainingTime.toFixed(0)}ms for GIF loop alignment.`
       );
 
       // Ensure minimum loading time for branding
@@ -110,24 +120,21 @@ export function useVideoPreloader(videoPaths: string[]) {
         if (!isCancelled) {
           videoLogger.info('Loading complete. Starting background preload of remaining videos...');
           setLoadingProgress(100);
-          
+
           if (successfullyLoadedCount >= 1) {
-            // At least 1 video loaded successfully - proceed
             videoLogger.info('✅ Loading complete! Starting background preload of remaining videos...');
           } else {
-            // No videos loaded - still proceed but warn user
             videoLogger.warn('No videos loaded successfully, but proceeding anyway...');
           }
-          
-          // Wait longer before setting isLoading to false
-          // This ensures the loading screen stays mounted during its fade-out animation
-          // Loading screen fade (300ms) + opening transition start (100ms) + buffer (100ms) = 500ms
+
           setTimeout(() => {
+            videoLogger.info('isLoading=false (loading screen can start hiding)');
             setIsLoading(false);
-            // Clean up video elements
             videoElements.forEach(v => v.remove());
-            
-            // Start background preloading of remaining videos (the last 20%)
+
+            videoLogger.info(
+              `Background preload start: ${videoPaths.length - videosToPreload} remaining video(s)`
+            );
             preloadRemainingVideos(videoPaths.slice(videosToPreload));
           }, 500);
         }

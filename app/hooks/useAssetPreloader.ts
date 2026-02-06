@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { createLogger } from '../utils/logger';
+
+const assetLogger = createLogger('Assets');
 
 type AssetPreloaderOptions = {
   /**
@@ -35,14 +38,18 @@ export function useAssetPreloader({
     let isCancelled = false;
 
     const uniqueImmediate = Array.from(new Set(immediate)).filter(Boolean);
+    assetLogger.info(`Immediate image preload: ${uniqueImmediate.length} asset(s)`);
 
     let resolvedCount = 0;
     const total = uniqueImmediate.length;
 
     if (total === 0) {
+      assetLogger.debug('Immediate image preload: nothing to do');
       setImmediateDone(true);
       return;
     }
+
+    const startAt = performance.now();
 
     const imgEls: HTMLImageElement[] = [];
 
@@ -51,9 +58,17 @@ export function useAssetPreloader({
       img.decoding = 'async';
       img.loading = 'eager';
 
-      const done = () => {
+      const done = (ok: boolean) => {
         resolvedCount += 1;
-        if (!isCancelled && resolvedCount >= total) setImmediateDone(true);
+        assetLogger.debug(
+          `${ok ? '✅' : '❌'} immediate ${resolvedCount}/${total}: ${src}`
+        );
+
+        if (!isCancelled && resolvedCount >= total) {
+          const ms = Math.round(performance.now() - startAt);
+          assetLogger.info(`Immediate image preload complete in ${ms}ms`);
+          setImmediateDone(true);
+        }
         cleanup();
       };
 
@@ -62,8 +77,8 @@ export function useAssetPreloader({
         img.onerror = null;
       };
 
-      img.onload = done;
-      img.onerror = done;
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
       img.src = src;
       imgEls.push(img);
     });
@@ -80,6 +95,7 @@ export function useAssetPreloader({
     if (!immediateDone) return;
 
     const uniqueBg = Array.from(new Set(background)).filter(Boolean);
+    assetLogger.info(`Background image warm: ${uniqueBg.length} asset(s)`);
     if (uniqueBg.length === 0) return;
 
     const timers: number[] = [];
@@ -87,6 +103,7 @@ export function useAssetPreloader({
 
     uniqueBg.forEach((src, idx) => {
       const t = window.setTimeout(() => {
+        assetLogger.debug(`↪️ background request: ${src}`);
         const img = new Image();
         img.decoding = 'async';
         img.loading = 'eager';

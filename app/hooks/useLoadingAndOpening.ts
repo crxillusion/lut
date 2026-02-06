@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { homeLogger } from '../utils/logger';
 
-export function useLoadingAndOpening(loadingProgress: number) {
+export function useLoadingAndOpening(loadingProgress: number, videosAreLoading?: boolean) {
   const [showOpening, setShowOpening] = useState(false);
   const [showHero, setShowHero] = useState(false);
   const [loadingScreenVisible, setLoadingScreenVisible] = useState(true);
@@ -10,49 +10,53 @@ export function useLoadingAndOpening(loadingProgress: number) {
   const [heroVisible, setHeroVisible] = useState(false);
   const [aboutStartVisible, setAboutStartVisible] = useState(true);
 
-  // Start opening transition when loading reaches 100%
   useEffect(() => {
-    if (loadingProgress === 100 && !showOpening && !showHero) {
-      homeLogger.info('Loading at 100%, starting opening transition and fading out loading screen');
-      // Use setTimeout to avoid setState during render
+    homeLogger.debug(
+      `Loading state: progress=${loadingProgress}, videosAreLoading=${videosAreLoading}, loadingScreenVisible=${loadingScreenVisible}, loadingScreenMounted=${loadingScreenMounted}, showOpening=${showOpening}, showHero=${showHero}`
+    );
+  }, [loadingProgress, videosAreLoading, loadingScreenVisible, loadingScreenMounted, showOpening, showHero]);
+
+  // Start opening transition when loading reaches 100% and video preloading is actually done.
+  useEffect(() => {
+    const videosDone = videosAreLoading === undefined ? true : !videosAreLoading;
+
+    if (loadingProgress === 100 && videosDone && !showOpening && !showHero) {
+      homeLogger.info('Loading at 100% and videos done, starting opening transition and fading out loading screen');
       const timer = setTimeout(() => {
-        // Start rendering the opening transition immediately (but invisible behind loading screen)
         setShowOpening(true);
-        
-        // Fade out loading screen after a brief delay to ensure video is ready
+
+        // Fade out loading screen after the opening has had a moment to mount.
         setTimeout(() => {
           homeLogger.debug('Fading out loading screen to reveal opening transition');
           setLoadingScreenVisible(false);
 
           // Unmount after fade-out completes (matches LoadingScreen duration-300)
           setTimeout(() => {
+            homeLogger.debug('Unmounting loading screen');
             setLoadingScreenMounted(false);
           }, 350);
         }, 250);
       }, 0);
-      
+
       return () => clearTimeout(timer);
     }
-  }, [loadingProgress, showOpening, showHero]);
+  }, [loadingProgress, videosAreLoading, showOpening, showHero]);
 
   const handleOpeningComplete = useCallback(() => {
     homeLogger.info('Opening transition complete, showing hero');
     setShowOpening(false);
     setShowHero(true);
-    setHeroVisible(true); // Set immediately, no delay needed
-    setAboutStartVisible(true); // Reset for future transitions
+    setHeroVisible(true);
+    setAboutStartVisible(true);
   }, []);
 
   return {
-    // State
     showOpening,
     showHero,
     loadingScreenVisible,
     loadingScreenMounted,
     heroVisible,
     aboutStartVisible,
-    
-    // Actions
     setHeroVisible,
     setAboutStartVisible,
     handleOpeningComplete,

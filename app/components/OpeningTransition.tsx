@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { VIDEO_PATHS } from '../constants/config';
+import { createLogger } from '../utils/logger';
+
+const openingLogger = createLogger('Opening');
 
 interface OpeningTransitionProps {
   isPlaying: boolean;
@@ -13,11 +16,16 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
 
   useEffect(() => {
     if (isPlaying && !shouldRender) {
+      openingLogger.info('OpeningTransition: isPlaying=true -> mounting');
       const timer = setTimeout(() => {
         setShouldRender(true);
         setIsVisible(true);
       }, 0);
       return () => clearTimeout(timer);
+    }
+
+    if (!isPlaying && shouldRender) {
+      openingLogger.debug('OpeningTransition: isPlaying=false while mounted');
     }
   }, [isPlaying, shouldRender]);
 
@@ -29,9 +37,16 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
     const video = videoRef.current;
     let hasCompleted = false;
 
+    openingLogger.debug('OpeningTransition: starting effect', {
+      readyState: video.readyState,
+      networkState: video.networkState,
+      src: video.currentSrc || video.src,
+    });
+
     const completeTransition = () => {
       if (hasCompleted) return;
       hasCompleted = true;
+      openingLogger.info('OpeningTransition: complete');
       setIsVisible(false);
       setTimeout(() => {
         setShouldRender(false);
@@ -40,14 +55,17 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
     };
 
     const handleEnded = () => {
+      openingLogger.info('OpeningTransition: video ended');
       completeTransition();
     };
 
     const startPlayback = () => {
+      openingLogger.info('OpeningTransition: play()');
       video.currentTime = 0;
       video.playbackRate = 1.0;
       video.addEventListener('ended', handleEnded);
-      void video.play().catch(() => {
+      void video.play().catch((err) => {
+        openingLogger.warn('OpeningTransition: play() failed, completing immediately', err);
         completeTransition();
       });
     };
@@ -56,10 +74,12 @@ export function OpeningTransition({ isPlaying, onComplete }: OpeningTransitionPr
       startPlayback();
     } else {
       const handleCanPlay = () => {
+        openingLogger.info('OpeningTransition: canplay');
         startPlayback();
       };
       video.addEventListener('canplay', handleCanPlay, { once: true });
       if (video.readyState === 0) {
+        openingLogger.debug('OpeningTransition: video.load()');
         video.load();
       }
     }

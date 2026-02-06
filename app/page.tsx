@@ -66,7 +66,7 @@ export default function Home() {
     setHeroVisible,
     setAboutStartVisible,
     handleOpeningComplete,
-  } = useLoadingAndOpening(loadingProgress);
+  } = useLoadingAndOpening(loadingProgress, isLoading);
 
   const nav = useHomeNavigation(
     {
