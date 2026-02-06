@@ -187,6 +187,29 @@ export function CasesSection({
   void videoSrc;
   void onBackClick;
 
+  // Preload images when this section becomes visible (helps GH Pages avoid late/stuttery loads)
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const urls = new Set<string>();
+    urls.add(`${BASE_PATH}/cases-bg.png`);
+    for (const item of CASES) urls.add(`${BASE_PATH}${item.img}`);
+
+    const imgs: HTMLImageElement[] = [];
+    urls.forEach(src => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
+      imgs.push(img);
+    });
+
+    return () => {
+      // Release references
+      imgs.length = 0;
+    };
+  }, [isVisible]);
+
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
