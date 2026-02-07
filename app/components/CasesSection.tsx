@@ -224,18 +224,114 @@ export function CasesSection({
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const frameImgRef = useRef<HTMLImageElement | null>(null);
 
-  // Define the approximate transparent "window" area where content is scrollable.
-  // These are tuned visually and can be adjusted later.
-  const windowStyle = useMemo(
+  /**
+   * Normalized insets (0..1) relative to the *rendered frame image rect*.
+   * These should match the transparent cutout margins in `Cases_png_transparent.png`.
+   * Tweak these values to align perfectly across breakpoints.
+   */
+  const WINDOW_INSETS = useMemo(
     () => ({
-      left: '20vw',
-      right: '18vw',
-      top: '13vh',
-      bottom: '13vh',
+      left: 0.20,
+      right: 0.18,
+      top: 0.18,
+      bottom: 0.12,
     }),
     []
   );
+
+  const [windowRect, setWindowRect] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const [titleMaxPx, setTitleMaxPx] = useState<number>(155);
+
+  // Derive the scroll window rect from the *rendered* (object-cover) frame image.
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const img = frameImgRef.current;
+    if (!img) return;
+
+    const update = () => {
+      const r = img.getBoundingClientRect();
+      const next = {
+        left: Math.round(r.left + r.width * WINDOW_INSETS.left),
+        top: Math.round(r.top + r.height * WINDOW_INSETS.top),
+        width: Math.round(r.width * (1 - WINDOW_INSETS.left - WINDOW_INSETS.right)),
+        height: Math.round(r.height * (1 - WINDOW_INSETS.top - WINDOW_INSETS.bottom)),
+      };
+
+      // Convert viewport coords -> section-local coords, since the scroll container is absolutely positioned
+      // inside the fixed section.
+      const section = sectionRef.current;
+      const sr = section?.getBoundingClientRect();
+      const local = sr
+        ? {
+            left: next.left - sr.left,
+            top: next.top - sr.top,
+            width: next.width,
+            height: next.height,
+          }
+        : next;
+
+      setWindowRect(local);
+
+      // Title uses window width so the lettering stays inside the cutout.
+      const titleNext = Math.round(Math.max(96, Math.min(210, local.width * 0.28)));
+      setTitleMaxPx(titleNext);
+
+      homeLogger.debug('[Cases] frame/window metrics', {
+        frameRect: {
+          x: Math.round(r.left),
+          y: Math.round(r.top),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+        },
+        windowInsets: WINDOW_INSETS,
+        windowRect: local,
+        titleMaxPx: titleNext,
+      });
+    };
+
+    // Image may not be laid out immediately.
+    const raf = requestAnimationFrame(update);
+
+    const ro = new ResizeObserver(() => update());
+    ro.observe(img);
+
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [isVisible, WINDOW_INSETS]);
+
+  // Ensure title/window also update if fonts/layout shift the container after first paint.
+  useEffect(() => {
+    if (!isVisible) return;
+    const t = setTimeout(() => {
+      const img = frameImgRef.current;
+      if (!img) return;
+      const r = img.getBoundingClientRect();
+      homeLogger.debug('[Cases] delayed frame re-measure', {
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      });
+      // Trigger the main effect by touching state: just re-set the same rect via a direct compute.
+      // (Avoid duplicating logic; a resize event will be enough.)
+      window.dispatchEvent(new Event('resize'));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [isVisible]);
 
   // While building Cases, keep scrolling inside this screen only.
   // Now: allow transitions when the wheel occurs OUTSIDE the transparent window.
@@ -290,8 +386,58 @@ export function CasesSection({
       e.stopPropagation();
     };
 
+    // Touch: if a gesture starts outside the window, treat as navigation intent.
+    // (Keeps the “scroll inside window” behavior on mobile without accidental section changes.)
+    let touchStart: { x: number; y: number } | null = null;
+    let touchStartedOutside = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      touchStart = { x: t.clientX, y: t.clientY };
+      touchStartedOutside = !isInWindow(t.clientX, t.clientY);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchStart || !touchStartedOutside) return;
+      // Prevent the page from scrolling when the user is swiping outside the window.
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!touchStart || !touchStartedOutside) {
+        touchStart = null;
+        touchStartedOutside = false;
+        return;
+      }
+
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dy = t.clientY - touchStart.y;
+      const absDy = Math.abs(dy);
+
+      // A small threshold to avoid accidental triggers.
+      if (absDy > 40) {
+        if (dy < 0) onScrollDownOutside?.();
+        else onScrollUpOutside?.();
+      }
+
+      touchStart = null;
+      touchStartedOutside = false;
+    };
+
     el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
   }, [isVisible, onScrollDownOutside, onScrollUpOutside]);
 
   const [popup, setPopup] = useState<{ title: string; url: string } | null>(null);
@@ -322,7 +468,22 @@ export function CasesSection({
           <div
             ref={scrollContainerRef}
             className="absolute overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10"
-            style={windowStyle}
+            style={
+              windowRect
+                ? {
+                    left: `${windowRect.left}px`,
+                    top: `${windowRect.top}px`,
+                    width: `${windowRect.width}px`,
+                    height: `${windowRect.height}px`,
+                  }
+                : {
+                    // Fallback while frame measures
+                    left: '20vw',
+                    right: '18vw',
+                    top: '13vh',
+                    bottom: '13vh',
+                  }
+            }
           >
             <div className="mx-auto w-[85%] max-w-[961px]">
               {/* Title (layered/blurred effect) */}
@@ -332,7 +493,10 @@ export function CasesSection({
                 animate={motionCommon.animate}
                 transition={{ ...motionCommon.transitionBase, delay: 0 }}
               >
-                <h1 className="relative z-[1] min-h-[110px] md:min-h-[170px] font-outfit font-bold leading-none tracking-[0.28em] text-center text-white text-[clamp(44px,15vw,155px)]">
+                <h1
+                  className="relative z-[1] min-h-[140px] font-outfit font-bold leading-none tracking-[0.28em] text-center text-white"
+                  style={{ fontSize: `clamp(44px, 10vw, ${titleMaxPx}px)` }}
+                >
                   <span className="relative z-[1]">CASES</span>
                   <span
                     aria-hidden
@@ -438,10 +602,16 @@ export function CasesSection({
           {/* Full-screen PNG frame on top (transparent window) */}
           <div className="pointer-events-none absolute inset-0 z-40">
             <img
+              ref={frameImgRef}
               src={`${BASE_PATH}/Cases_png_transparent.png`}
               alt="Cases frame"
               className="w-full h-full object-cover"
               draggable={false}
+              onLoad={() => {
+                homeLogger.debug('[Cases] frame image loaded');
+                // Ensure we measure right after load.
+                window.dispatchEvent(new Event('resize'));
+              }}
             />
           </div>
         </>
