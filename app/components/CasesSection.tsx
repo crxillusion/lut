@@ -129,14 +129,14 @@ function VideoPopup({ url, onClose }: { url: string; onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/20"
+        className="w-full max-w-4xl rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/20"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/15">
           <div className="text-white font-outfit font-medium text-sm opacity-80">Video</div>
           <button
             type="button"
-            className="text-white/80 hover:text-white transition-colors"
+            className="text-white/80 hover:text-white transition-colors cursor-pointer"
             onClick={onClose}
             aria-label="Close"
           >
