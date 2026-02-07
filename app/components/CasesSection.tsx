@@ -298,29 +298,45 @@ export function CasesSection({
               {CASES.map((item, idx) => {
                 const wrapperClass = item.wide ? 'md:col-span-2 min-h-[320px]' : 'min-h-[320px]';
 
+                const cardMotionInitial = { filter: 'blur(10px)', opacity: 0, y: 16 };
+                const cardMotionAnimate = { filter: 'blur(0px)', opacity: 1, y: 0 };
+
+                const motionWrapperProps = {
+                  initial: cardMotionInitial,
+                  whileInView: cardMotionAnimate,
+                  viewport: { once: true, amount: 0.25 } as const,
+                  transition: {
+                    duration: 0.55,
+                    delay: Math.min(0.4, idx * 0.06),
+                    ease: [0.23, 1, 0.32, 1] as const,
+                  },
+                };
+
                 if (item.openIn === 'newtab') {
                   return (
-                    <a
+                    <motion.a
                       key={`${item.title}-${idx}`}
                       className={wrapperClass}
                       href={item.url}
                       target="_blank"
                       rel="noreferrer"
+                      {...motionWrapperProps}
                     >
                       <CaseCard item={item} />
-                    </a>
+                    </motion.a>
                   );
                 }
 
                 return (
-                  <button
+                  <motion.button
                     key={`${item.title}-${idx}`}
                     type="button"
                     className={`${wrapperClass} text-left cursor-pointer`}
                     onClick={() => setPopupUrl(item.url)}
+                    {...motionWrapperProps}
                   >
                     <CaseCard item={item} />
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
