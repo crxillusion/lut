@@ -1,8 +1,9 @@
 'use client';
 
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BASE_PATH } from '../constants/config';
+import { homeLogger } from '../utils/logger';
 
 interface CasesSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -122,24 +123,54 @@ const INTRO_CARD_CLASS =
 const GRID_CARD_CLASS =
   'relative w-full h-full rounded-[20px] border-[0.5px] border-white/40 shadow-[7px_9px_14.4px_0px_#00000047] overflow-hidden';
 
-function VideoPopup({ url, onClose }: { url: string; onClose: () => void }) {
+function VideoPopup({ title, url, onClose }: { title: string; url: string; onClose: () => void }) {
+  const strictModeMountCountRef = useRef(0);
+
+  useEffect(() => {
+    strictModeMountCountRef.current += 1;
+    homeLogger.debug('[Cases][Popup] mount', { title, url, mountCount: strictModeMountCountRef.current });
+    return () => {
+      homeLogger.debug('[Cases][Popup] unmount', { title, url, mountCount: strictModeMountCountRef.current });
+    };
+  }, [title, url]);
+
   return (
-    <div
+    <motion.div
+      key={`popup-backdrop-${url}`}
       className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      onClick={() => {
+        homeLogger.debug('[Cases][Popup] backdrop click -> close');
+        onClose();
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onAnimationStart={() => homeLogger.debug('[Cases][Popup] backdrop anim start')}
+      onAnimationComplete={() => homeLogger.debug('[Cases][Popup] backdrop anim complete')}
+      transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
     >
-      <div
+      <motion.div
+        key={`popup-panel-${url}`}
         className="w-full max-w-4xl rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/20"
         onClick={e => e.stopPropagation()}
+        initial={{ opacity: 0, y: 32, scale: 0.94, filter: 'blur(14px)' }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, y: 32, scale: 0.94, filter: 'blur(14px)' }}
+        onAnimationStart={() => homeLogger.debug('[Cases][Popup] panel anim start')}
+        onAnimationComplete={() => homeLogger.debug('[Cases][Popup] panel anim complete')}
+        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/15">
-          <div className="text-white font-outfit font-medium text-sm opacity-80">Video</div>
+          <div className="text-white font-outfit font-medium text-sm opacity-80 truncate pr-4">{title}</div>
           <button
             type="button"
             className="text-white/80 hover:text-white transition-colors cursor-pointer"
-            onClick={onClose}
+            onClick={() => {
+              homeLogger.debug('[Cases][Popup] close button -> close');
+              onClose();
+            }}
             aria-label="Close"
           >
             ✕
@@ -152,11 +183,11 @@ function VideoPopup({ url, onClose }: { url: string; onClose: () => void }) {
             src={toVimeoEmbedUrl(url)}
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
-            title="Vimeo video"
+            title={title}
           />
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -263,7 +294,7 @@ export function CasesSection({
     return () => el.removeEventListener('wheel', onWheel);
   }, [isVisible, onScrollDownOutside, onScrollUpOutside]);
 
-  const [popupUrl, setPopupUrl] = useState<string | null>(null);
+  const [popup, setPopup] = useState<{ title: string; url: string } | null>(null);
 
   const motionCommon = {
     initial: { filter: 'blur(10px)', opacity: 0, y: 20 },
@@ -373,7 +404,10 @@ export function CasesSection({
                       key={`${item.title}-${idx}`}
                       type="button"
                       className={`${wrapperClass} text-left cursor-pointer`}
-                      onClick={() => setPopupUrl(item.url)}
+                      onClick={() => {
+                        homeLogger.debug('[Cases] open popup', { title: item.title, url: item.url });
+                        setPopup({ title: item.title, url: item.url });
+                      }}
                       {...motionWrapperProps}
                     >
                       <CaseCard item={item} />
@@ -383,7 +417,22 @@ export function CasesSection({
               </div>
             </div>
 
-            {popupUrl && <VideoPopup url={popupUrl} onClose={() => setPopupUrl(null)} />}
+            <AnimatePresence
+              mode="wait"
+              onExitComplete={() => homeLogger.debug('[Cases] popup AnimatePresence exit complete')}
+            >
+              {popup && (
+                <VideoPopup
+                  key={popup.url}
+                  title={popup.title}
+                  url={popup.url}
+                  onClose={() => {
+                    homeLogger.debug('[Cases] close popup');
+                    setPopup(null);
+                  }}
+                />
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Full-screen PNG frame on top (transparent window) */}
