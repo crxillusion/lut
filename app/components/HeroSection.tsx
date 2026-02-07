@@ -50,8 +50,8 @@ export function HeroSection({
 
       {/* Overlay Content */}
       <div className="relative z-10 h-full" key={uiKey}>
-        {/* Navigation - 390px from top */}
-        <div className="absolute top-[390px] left-0 right-0">
+        {/* Navigation - center on mobile, keep original absolute pos on desktop */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 sm:top-[390px] sm:translate-y-0">
           <div className="flex flex-col items-center">
             <Navigation
               currentSection={currentSection}
@@ -61,6 +61,7 @@ export function HeroSection({
               onContactClick={onContactClick}
               isVisible={showUI}
             />
+
             {/* Scroll Indicator - Right below navigation */}
             <motion.div
               key={`scroll-indicator-${uiKey}`}
@@ -89,7 +90,7 @@ export function HeroSection({
         {/* Copyright */}
         <motion.div
           key={`copyright-${uiKey}`}
-          className="absolute bottom-8 left-8 text-white text-xs"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center sm:left-8 sm:translate-x-0 sm:text-left text-white text-xs w-[calc(100%-2rem)] sm:w-auto px-4 sm:px-0"
           initial={{
             filter: 'blur(10px)',
             opacity: 0,

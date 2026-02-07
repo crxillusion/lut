@@ -38,7 +38,7 @@ const SocialLinksComponent = ({
   
   return (
     <motion.div 
-      className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4"
+      className="absolute bottom-20 sm:bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4"
       initial={{
         filter: 'blur(10px)',
         opacity: 0,
