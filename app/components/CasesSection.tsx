@@ -250,9 +250,27 @@ export function CasesSection({
 
   const [titleMaxPx, setTitleMaxPx] = useState<number>(155);
 
+  // Treat the PNG frame as desktop-only.
+  const [showFrame, setShowFrame] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const mq = window.matchMedia('(min-width: 1200px)');
+    const update = () => setShowFrame(mq.matches);
+    update();
+
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, [isVisible]);
+
   // Derive the scroll window rect from the *rendered* (object-cover) frame image.
   useEffect(() => {
     if (!isVisible) return;
+    if (!showFrame) {
+      setWindowRect(null);
+      return;
+    }
 
     const img = frameImgRef.current;
     if (!img) return;
@@ -313,11 +331,13 @@ export function CasesSection({
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
     };
-  }, [isVisible, WINDOW_INSETS]);
+  }, [isVisible, WINDOW_INSETS, showFrame]);
 
   // Ensure title/window also update if fonts/layout shift the container after first paint.
   useEffect(() => {
     if (!isVisible) return;
+    if (!showFrame) return;
+
     const t = setTimeout(() => {
       const img = frameImgRef.current;
       if (!img) return;
@@ -331,7 +351,7 @@ export function CasesSection({
       window.dispatchEvent(new Event('resize'));
     }, 250);
     return () => clearTimeout(t);
-  }, [isVisible]);
+  }, [isVisible, showFrame]);
 
   // While building Cases, keep scrolling inside this screen only.
   // Now: allow transitions when the wheel occurs OUTSIDE the transparent window.
@@ -339,6 +359,11 @@ export function CasesSection({
     if (!isVisible) return;
     const el = sectionRef.current;
     if (!el) return;
+
+    // On <1200px we behave like a normal section: no outside-window navigation.
+    if (!showFrame) {
+      return;
+    }
 
     const isInWindow = (clientX: number, clientY: number) => {
       const sc = scrollContainerRef.current;
@@ -438,7 +463,7 @@ export function CasesSection({
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [isVisible, onScrollDownOutside, onScrollUpOutside]);
+  }, [isVisible, onScrollDownOutside, onScrollUpOutside, showFrame]);
 
   const [popup, setPopup] = useState<{ title: string; url: string } | null>(null);
 
@@ -455,34 +480,52 @@ export function CasesSection({
   return (
     <section
       ref={sectionRef}
-      className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
-        isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
-      }`}
+      className={
+        showFrame
+          ? `fixed inset-0 w-full h-screen transition-opacity duration-0 ${
+              isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
+            }`
+          : `fixed inset-0 w-full h-screen transition-opacity duration-0 isolation ${
+              isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
+            }`
+      }
     >
       {isVisible && (
         <>
           {/* Background under the transparent PNG */}
-          <div className={`absolute inset-0 ${BG_GRADIENT}`} />
+          <div
+            className={
+              showFrame
+                ? `absolute inset-0 ${BG_GRADIENT}`
+                : `absolute inset-0 ${BG_GRADIENT} -z-10`
+            }
+          />
 
           {/* Scroll window content (clipped to the transparent area) */}
           <div
             ref={scrollContainerRef}
-            className="absolute overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10"
+            className={
+              showFrame
+                ? 'absolute overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10'
+                : 'absolute inset-0 overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10 pb-24 z-0'
+            }
             style={
-              windowRect
-                ? {
-                    left: `${windowRect.left}px`,
-                    top: `${windowRect.top}px`,
-                    width: `${windowRect.width}px`,
-                    height: `${windowRect.height}px`,
-                  }
-                : {
-                    // Fallback while frame measures
-                    left: '20vw',
-                    right: '18vw',
-                    top: '13vh',
-                    bottom: '13vh',
-                  }
+              showFrame
+                ? windowRect
+                  ? {
+                      left: `${windowRect.left}px`,
+                      top: `${windowRect.top}px`,
+                      width: `${windowRect.width}px`,
+                      height: `${windowRect.height}px`,
+                    }
+                  : {
+                      // Fallback while frame measures
+                      left: '20vw',
+                      right: '18vw',
+                      top: '13vh',
+                      bottom: '13vh',
+                    }
+                : undefined
             }
           >
             <div className="mx-auto w-[85%] max-w-[961px]">
@@ -600,20 +643,22 @@ export function CasesSection({
           </div>
 
           {/* Full-screen PNG frame on top (transparent window) */}
-          <div className="pointer-events-none absolute inset-0 z-40">
-            <img
-              ref={frameImgRef}
-              src={`${BASE_PATH}/Cases_png_transparent.png`}
-              alt="Cases frame"
-              className="w-full h-full object-cover"
-              draggable={false}
-              onLoad={() => {
-                homeLogger.debug('[Cases] frame image loaded');
-                // Ensure we measure right after load.
-                window.dispatchEvent(new Event('resize'));
-              }}
-            />
-          </div>
+          {showFrame && (
+            <div className="pointer-events-none absolute inset-0 z-40">
+              <img
+                ref={frameImgRef}
+                src={`${BASE_PATH}/Cases_png_transparent.png`}
+                alt="Cases frame"
+                className="w-full h-full object-cover"
+                draggable={false}
+                onLoad={() => {
+                  homeLogger.debug('[Cases] frame image loaded');
+                  // Ensure we measure right after load.
+                  window.dispatchEvent(new Event('resize'));
+                }}
+              />
+            </div>
+          )}
         </>
       )}
     </section>
