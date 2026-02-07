@@ -1,6 +1,6 @@
 'use client';
 
-import { RefObject, useEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BASE_PATH } from '../constants/config';
 
@@ -9,6 +9,8 @@ interface CasesSectionProps {
   videoSrc: string;
   isVisible: boolean;
   onBackClick?: () => void;
+  onScrollDownOutside?: () => void;
+  onScrollUpOutside?: () => void;
 }
 
 type CaseItem = {
@@ -182,6 +184,8 @@ export function CasesSection({
   videoSrc,
   isVisible,
   onBackClick,
+  onScrollDownOutside,
+  onScrollUpOutside,
 }: CasesSectionProps) {
   void videoRef;
   void videoSrc;
@@ -190,16 +194,50 @@ export function CasesSection({
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Define the approximate transparent "window" area where content is scrollable.
+  // These are tuned visually and can be adjusted later.
+  const windowStyle = useMemo(
+    () => ({
+      left: '20vw',
+      right: '18vw',
+      top: '13vh',
+      bottom: '13vh',
+    }),
+    []
+  );
+
   // While building Cases, keep scrolling inside this screen only.
+  // Now: allow transitions when the wheel occurs OUTSIDE the transparent window.
   useEffect(() => {
     if (!isVisible) return;
     const el = sectionRef.current;
     if (!el) return;
 
+    const isInWindow = (clientX: number, clientY: number) => {
+      const sc = scrollContainerRef.current;
+      if (!sc) return false;
+      const r = sc.getBoundingClientRect();
+      return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+    };
+
     const onWheel = (e: WheelEvent) => {
       const sc = scrollContainerRef.current;
       if (!sc) return;
 
+      const inWindow = isInWindow(e.clientX, e.clientY);
+      const goingDown = e.deltaY > 0;
+      const goingUp = e.deltaY < 0;
+
+      // Outside window => let home navigation handle it.
+      if (!inWindow) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (goingDown) onScrollDownOutside?.();
+        else if (goingUp) onScrollUpOutside?.();
+        return;
+      }
+
+      // Inside window => scroll the content only.
       const canScroll = sc.scrollHeight > sc.clientHeight + 1;
       if (!canScroll) {
         e.preventDefault();
@@ -209,9 +247,6 @@ export function CasesSection({
 
       const atTop = sc.scrollTop <= 0;
       const atBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1;
-      const goingDown = e.deltaY > 0;
-      const goingUp = e.deltaY < 0;
-
       const shouldStayOnThisScreen = (goingDown && !atBottom) || (goingUp && !atTop);
 
       if (shouldStayOnThisScreen) {
@@ -219,14 +254,14 @@ export function CasesSection({
         return;
       }
 
-      // At edges, prevent leaving the screen for now.
+      // At edges inside window, prevent leaving the screen for now.
       e.preventDefault();
       e.stopPropagation();
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [isVisible]);
+  }, [isVisible, onScrollDownOutside, onScrollUpOutside]);
 
   const [popupUrl, setPopupUrl] = useState<string | null>(null);
 
@@ -248,102 +283,119 @@ export function CasesSection({
       }`}
     >
       {isVisible && (
-        <div
-          ref={scrollContainerRef}
-          className={`absolute inset-0 w-full h-full overflow-y-auto [scrollbar-gutter:stable] ${BG_GRADIENT} px-4 md:px-8 py-25`}
-        >
-          <div className="mx-auto w-[85%] max-w-[961px]">
-            {/* Title (layered/blurred effect) */}
-            <motion.div
-              className="relative mb-[-2.5rem] md:mb-[-4rem] max-h-[885px]:hidden mx-auto w-[90%]"
-              initial={motionCommon.initial}
-              animate={motionCommon.animate}
-              transition={{ ...motionCommon.transitionBase, delay: 0 }}
-            >
-              <h1 className="relative z-[1] min-h-[110px] md:min-h-[170px] font-outfit font-bold leading-none tracking-[0.28em] text-center text-white text-[clamp(44px,15vw,200px)]">
-                <span className="relative z-[1]">CASES</span>
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 z-[2] text-white [clip-path:inset(0_0_31%_0)]"
-                >
-                  CASES
-                </span>
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 z-[2] text-white blur-[3px] [clip-path:inset(69%_0_0_0)]"
-                >
-                  CASES
-                </span>
-              </h1>
-            </motion.div>
+        <>
+          {/* Background under the transparent PNG */}
+          <div className={`absolute inset-0 ${BG_GRADIENT}`} />
 
-            {/* Intro card */}
-            <motion.div
-              className={INTRO_CARD_CLASS}
-              style={{
-                backgroundImage: `url(${BASE_PATH}/cases-bg.png), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185,176,155,0.20) 0%, rgba(240,240,240,0.20) 100%)`,
-              }}
-              initial={motionCommon.initial}
-              animate={motionCommon.animate}
-              transition={{ ...motionCommon.transitionBase, delay: 0.2 }}
-            >
-              <p className="m-0 font-outfit font-medium text-center text-white text-[clamp(14px,1.35vw,20px)] leading-[150%] tracking-[-0.011em]">
-                Our portfolio features a blend of client collaborations and our own creative explorations. Each project,
-                whether commercial or personal, reflects our passion for visual storytelling and experimentation.
-              </p>
-            </motion.div>
+          {/* Scroll window content (clipped to the transparent area) */}
+          <div
+            ref={scrollContainerRef}
+            className="absolute overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10"
+            style={windowStyle}
+          >
+            <div className="mx-auto w-[85%] max-w-[961px]">
+              {/* Title (layered/blurred effect) */}
+              <motion.div
+                className="relative mb-[-2.5rem] md:mb-[-4rem] max-h-[885px]:hidden mx-auto w-[90%]"
+                initial={motionCommon.initial}
+                animate={motionCommon.animate}
+                transition={{ ...motionCommon.transitionBase, delay: 0 }}
+              >
+                <h1 className="relative z-[1] min-h-[110px] md:min-h-[170px] font-outfit font-bold leading-none tracking-[0.28em] text-center text-white text-[clamp(44px,15vw,155px)]">
+                  <span className="relative z-[1]">CASES</span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 z-[2] text-white [clip-path:inset(0_0_31%_0)]"
+                  >
+                    CASES
+                  </span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 z-[2] text-white blur-[3px] [clip-path:inset(69%_0_0_0)]"
+                  >
+                    CASES
+                  </span>
+                </h1>
+              </motion.div>
 
-            {/* Grid */}
-            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 pb-16">
-              {CASES.map((item, idx) => {
-                const wrapperClass = item.wide ? 'md:col-span-2 min-h-[320px]' : 'min-h-[320px]';
+              {/* Intro card */}
+              <motion.div
+                className={INTRO_CARD_CLASS}
+                style={{
+                  backgroundImage: `url(${BASE_PATH}/cases-bg.png), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185,176,155,0.20) 0%, rgba(240,240,240,0.20) 100%)`,
+                }}
+                initial={motionCommon.initial}
+                animate={motionCommon.animate}
+                transition={{ ...motionCommon.transitionBase, delay: 0.2 }}
+              >
+                <p className="m-0 font-outfit font-medium text-center text-white text-[clamp(14px,1.35vw,20px)] leading-[150%] tracking-[-0.011em]">
+                  Our portfolio features a blend of client collaborations and our own creative explorations. Each project,
+                  whether commercial or personal, reflects our passion for visual storytelling and experimentation.
+                </p>
+              </motion.div>
 
-                const cardMotionInitial = { filter: 'blur(10px)', opacity: 0, y: 16 };
-                const cardMotionAnimate = { filter: 'blur(0px)', opacity: 1, y: 0 };
+              {/* Grid */}
+              <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 pb-16">
+                {CASES.map((item, idx) => {
+                  const wrapperClass = item.wide ? 'md:col-span-2 min-h-[320px]' : 'min-h-[320px]';
 
-                const motionWrapperProps = {
-                  initial: cardMotionInitial,
-                  whileInView: cardMotionAnimate,
-                  viewport: { once: true, amount: 0.25 } as const,
-                  transition: {
-                    duration: 0.55,
-                    delay: Math.min(0.4, idx * 0.06),
-                    ease: [0.23, 1, 0.32, 1] as const,
-                  },
-                };
+                  const cardMotionInitial = { filter: 'blur(10px)', opacity: 0, y: 16 };
+                  const cardMotionAnimate = { filter: 'blur(0px)', opacity: 1, y: 0 };
 
-                if (item.openIn === 'newtab') {
+                  const motionWrapperProps = {
+                    initial: cardMotionInitial,
+                    whileInView: cardMotionAnimate,
+                    viewport: { once: true, amount: 0.25 } as const,
+                    transition: {
+                      duration: 0.55,
+                      delay: Math.min(0.4, idx * 0.06),
+                      ease: [0.23, 1, 0.32, 1] as const,
+                    },
+                  };
+
+                  if (item.openIn === 'newtab') {
+                    return (
+                      <motion.a
+                        key={`${item.title}-${idx}`}
+                        className={wrapperClass}
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        {...motionWrapperProps}
+                      >
+                        <CaseCard item={item} />
+                      </motion.a>
+                    );
+                  }
+
                   return (
-                    <motion.a
+                    <motion.button
                       key={`${item.title}-${idx}`}
-                      className={wrapperClass}
-                      href={item.url}
-                      target="_blank"
-                      rel="noreferrer"
+                      type="button"
+                      className={`${wrapperClass} text-left cursor-pointer`}
+                      onClick={() => setPopupUrl(item.url)}
                       {...motionWrapperProps}
                     >
                       <CaseCard item={item} />
-                    </motion.a>
+                    </motion.button>
                   );
-                }
-
-                return (
-                  <motion.button
-                    key={`${item.title}-${idx}`}
-                    type="button"
-                    className={`${wrapperClass} text-left cursor-pointer`}
-                    onClick={() => setPopupUrl(item.url)}
-                    {...motionWrapperProps}
-                  >
-                    <CaseCard item={item} />
-                  </motion.button>
-                );
-              })}
+                })}
+              </div>
             </div>
+
+            {popupUrl && <VideoPopup url={popupUrl} onClose={() => setPopupUrl(null)} />}
           </div>
 
-          {popupUrl && <VideoPopup url={popupUrl} onClose={() => setPopupUrl(null)} />}
-        </div>
+          {/* Full-screen PNG frame on top (transparent window) */}
+          <div className="pointer-events-none absolute inset-0 z-40">
+            <img
+              src={`${BASE_PATH}/Cases_png_transparent.png`}
+              alt="Cases frame"
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          </div>
+        </>
       )}
     </section>
   );

@@ -122,6 +122,8 @@ export function HomeSections({
         videoSrc={VIDEO_PATHS.partnerToCases}
         isVisible={nav.currentSection === 'cases' && showHero}
         onBackClick={nav.transitions.toPartnerFromCases}
+        onScrollDownOutside={nav.transitions.toContactFromCases}
+        onScrollUpOutside={nav.transitions.toPartnerFromCases}
       />
 
       <ContactSection
