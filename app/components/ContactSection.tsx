@@ -151,8 +151,8 @@ export function ContactSection({
               transition={{ ...motionCommon.transitionBase, delay: 0.4 }}
             >
               {/* @ts-ignore */}
-              
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-5 xl:gap-[30px] max-h-[885px]:gap-3" netlify>
+
+              <form name='contact' onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-5 xl:gap-[30px] max-h-[885px]:gap-3" netlify>
                 {/* Email and Phone Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 xl:gap-[30px] max-h-[885px]:gap-3">
                   <div className="relative flex items-center">
