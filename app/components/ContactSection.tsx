@@ -26,6 +26,8 @@ export function ContactSection({
   });
 
   const shouldShow = isVisible && !isTransitioning;
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useManagedVideoPlayback(videoRef, {
     enabled: shouldShow,
@@ -33,10 +35,39 @@ export function ContactSection({
     preloadFirstFrame: true,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission
+    
+    const formData: any = new FormData(e.target as HTMLFormElement);
+    
+    // Add the required 'form-name' field to the data
+    formData.append('form-name', 'contact'); 
+
+    try {
+      const response = await fetch('/', { // POST to a static route, typically the site root
+        method: 'POST',
+        // Set Content-Type for URL-encoded data
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(formData).toString(),
+      });
+
+      if (response.ok) {
+        setIsSubmitted(true);
+        setError(null);
+      } else {
+        throw new Error('Form submission failed');
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
+
+   if (isSubmitted) {
+    return <p>Thank you for your submission! We will be in touch shortly.</p>;
+  }
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -150,9 +181,20 @@ export function ContactSection({
               animate={motionCommon.animate}
               transition={{ ...motionCommon.transitionBase, delay: 0.4 }}
             >
-              {/* @ts-ignore */}
-
-              <form name='contact' onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-5 xl:gap-[30px] max-h-[885px]:gap-3" netlify>
+              <form
+                name="contact"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="bot-field"
+                onSubmit={handleSubmit}
+                className="flex flex-col gap-4 md:gap-5 xl:gap-[30px] max-h-[885px]:gap-3"
+              >
+                <input type="hidden" name="form-name" value="contact" />
+                <p className="hidden">
+                  <label>
+                    Don’t fill this out if you’re human: <input name="bot-field" />
+                  </label>
+                </p>
                 {/* Email and Phone Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 xl:gap-[30px] max-h-[885px]:gap-3">
                   <div className="relative flex items-center">
@@ -243,6 +285,7 @@ export function ContactSection({
                 >
                   SCHEDULE A MEETING
                 </button>
+                {error && <p style={{ color: 'red' }}>{error}</p>}
               </form>
             </motion.div>
           </div>
