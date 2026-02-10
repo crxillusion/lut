@@ -183,7 +183,6 @@ export function ContactSection({
             >
               <form
                 name="contact"
-                method="POST"
                 data-netlify="true"
                 data-netlify-honeypot="bot-field"
                 onSubmit={handleSubmit}

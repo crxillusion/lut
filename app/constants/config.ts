@@ -1,6 +1,6 @@
 // Configuration constants for the application
 
-export const BASE_PATH = process.env.NODE_ENV === 'production' ? '' : '';
+export const BASE_PATH = process.env.NODE_ENV === 'development' ? '/lut' : '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
 export const LOADING_TIMEOUT = 20000; // 20 seconds - for slow GitHub Pages LFS downloads

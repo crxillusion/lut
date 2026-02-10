@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - dev
   workflow_dispatch:
 
 permissions:
@@ -50,6 +50,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          NEXT_PUBLIC_BASE_PATH: "/lut"
           NEXT_PUBLIC_DEBUG_LOGS: "1"
           NEXT_PUBLIC_DEBUG_LOG_LEVEL: "debug"
       
