@@ -60,7 +60,7 @@ jobs:
           echo "Checking logo in out directory..."
           ls -lh out/logo-animation.gif 2>/dev/null || echo "Logo not found in out/"
           echo "Checking videos in out directory..."
-          ls -lh out/lut/videos/*.mp4 2>/dev/null | head -5 || echo "No videos found in out/lut/videos/"
+          ls -lh out/videos/*.mp4 2>/dev/null | head -5 || echo "No videos found in out/videos/"
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
