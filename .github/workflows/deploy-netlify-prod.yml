@@ -1,0 +1,51 @@
+name: Deploy to Netlify (prod tag)
+
+on:
+  push:
+    tags:
+      - prod
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "netlify-prod"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy to Netlify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Pull Git LFS objects
+        run: |
+          git lfs install
+          git lfs pull
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Build an exported static site for the root domain (no basePath)
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_BASE_PATH: ""
+
+      - name: Deploy to Netlify
+        run: |
+          npx --yes netlify-cli@latest deploy --dir=out --prod --message "prod tag ${{ github.ref_name }} @ ${{ github.sha }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
