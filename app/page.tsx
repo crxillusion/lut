@@ -15,6 +15,7 @@ import { useLoadingAndOpening } from './hooks/useLoadingAndOpening';
 import { useHomeNavigation } from './hooks/useHomeNavigation';
 import { useContactVisibility } from './hooks/useContactVisibility';
 import { BASE_PATH } from './constants/config';
+import { useBgAudioAutoplay } from './hooks/useBgAudioAutoplay';
 
 export default function Home() {
   const videoRefs = useVideoRefs();
@@ -56,6 +57,9 @@ export default function Home() {
     setAboutStartVisible,
     handleOpeningComplete,
   } = useLoadingAndOpening(loadingProgress, isLoading, openingReady);
+
+  // Autoplay music once the loading screen is gone (best effort; may require gesture).
+  useBgAudioAutoplay({ enabled: !loadingScreenMounted });
 
   // Reset readiness when starting opening
   useEffect(() => {

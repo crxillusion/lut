@@ -4,6 +4,7 @@ import { BASE_PATH } from '../constants/config';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { memo, useState, useEffect } from 'react';
+import { SoundToggle } from './SoundToggle';
 
 interface SocialLinksProps {
   showBackButton?: boolean;
@@ -114,6 +115,9 @@ const SocialLinksComponent = ({
       >
         <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={iconSize} height={iconSize} />
       </a>
+
+      {/* Sound toggle (rightmost) */}
+      <SoundToggle iconSize={iconSize} />
     </motion.div>
   );
 };
