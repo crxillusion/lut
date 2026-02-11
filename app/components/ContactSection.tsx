@@ -1,5 +1,5 @@
 import { RefObject, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
 import { useManagedVideoPlayback } from '../hooks/useManagedVideoPlayback';
 
@@ -159,6 +159,13 @@ export function ContactSection({
       duration: showUI ? 0.6 : 0.4,
       ease: [0.23, 1, 0.32, 1] as const,
     },
+  };
+
+  const tooltipMotion = {
+    initial: { opacity: 0, y: 6, filter: 'blur(6px)' },
+    animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+    exit: { opacity: 0, y: 6, filter: 'blur(6px)' },
+    transition: { duration: 0.18, ease: [0.23, 1, 0.32, 1] as const },
   };
 
   return (
@@ -329,18 +336,26 @@ export function ContactSection({
                         required
                       />
 
-                      {touched.email && fieldErrors.email && (
-                        <div className="pointer-events-none absolute right-3 top-[-30px] z-30">
-                          <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
-                            {/* arrow (down) */}
-                            <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
-                            <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
-                            <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
-                              {fieldErrors.email}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {touched.email && fieldErrors.email && (
+                          <motion.div
+                            className="pointer-events-none absolute right-3 top-[-30px] z-30"
+                            initial={tooltipMotion.initial}
+                            animate={tooltipMotion.animate}
+                            exit={tooltipMotion.exit}
+                            transition={tooltipMotion.transition}
+                          >
+                            <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
+                              {/* arrow (down) */}
+                              <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
+                              <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
+                              <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
+                                {fieldErrors.email}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
@@ -365,18 +380,26 @@ export function ContactSection({
                         required
                       />
 
-                      {touched.phone && fieldErrors.phone && (
-                        <div className="pointer-events-none absolute right-3 top-[-30px] z-30">
-                          <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
-                            {/* arrow (down) */}
-                            <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
-                            <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
-                            <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
-                              {fieldErrors.phone}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {touched.phone && fieldErrors.phone && (
+                          <motion.div
+                            className="pointer-events-none absolute right-3 top-[-30px] z-30"
+                            initial={tooltipMotion.initial}
+                            animate={tooltipMotion.animate}
+                            exit={tooltipMotion.exit}
+                            transition={tooltipMotion.transition}
+                          >
+                            <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
+                              {/* arrow (down) */}
+                              <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
+                              <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
+                              <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
+                                {fieldErrors.phone}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </div>
@@ -402,18 +425,26 @@ export function ContactSection({
                       required
                     />
 
-                    {touched.name && fieldErrors.name && (
-                      <div className="pointer-events-none absolute right-3 top-[-30px] z-30">
-                        <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
-                          {/* arrow (down) */}
-                          <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
-                          <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
-                          <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
-                            {fieldErrors.name}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {touched.name && fieldErrors.name && (
+                        <motion.div
+                          className="pointer-events-none absolute right-3 top-[-30px] z-30"
+                          initial={tooltipMotion.initial}
+                          animate={tooltipMotion.animate}
+                          exit={tooltipMotion.exit}
+                          transition={tooltipMotion.transition}
+                        >
+                          <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
+                            {/* arrow (down) */}
+                            <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
+                            <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
+                            <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
+                              {fieldErrors.name}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
@@ -437,18 +468,26 @@ export function ContactSection({
                       required
                     />
 
-                    {touched.message && fieldErrors.message && (
-                      <div className="pointer-events-none absolute right-3 top-[-30px] z-30">
-                        <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
-                          {/* arrow (down) */}
-                          <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
-                          <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
-                          <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
-                            {fieldErrors.message}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {touched.message && fieldErrors.message && (
+                        <motion.div
+                          className="pointer-events-none absolute right-3 top-[-30px] z-30"
+                          initial={tooltipMotion.initial}
+                          animate={tooltipMotion.animate}
+                          exit={tooltipMotion.exit}
+                          transition={tooltipMotion.transition}
+                        >
+                          <div className="relative rounded-[14px] border border-red-200/40 bg-[#70343b] px-3 py-2 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)]">
+                            {/* arrow (down) */}
+                            <span className="absolute left-6 -bottom-[6px] w-0 h-0 border-x-[6px] border-x-transparent border-t-[6px] border-t-[#70343b]" />
+                            <span className="absolute left-6 -bottom-[7px] w-0 h-0 border-x-[7px] border-x-transparent border-t-[7px] border-t-red-200/40" />
+                            <p className="font-outfit font-medium text-[12px] leading-[140%] tracking-[-0.011em] text-red-100 whitespace-nowrap">
+                              {fieldErrors.message}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
                 {/* Submit Button */}
