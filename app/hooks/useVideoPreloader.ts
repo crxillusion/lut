@@ -24,7 +24,7 @@ export function useVideoPreloader(videoPaths: string[]) {
     // to block the whole queue for too long.
     const PER_VIDEO_TIMEOUT_MS = Math.min(15000, LOADING_TIMEOUT);
 
-    const gifDuration = 7000;
+    const gifDuration = 6400;
     const startTime = Date.now();
 
     let loadedCount = 0;
