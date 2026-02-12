@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   title: "LUT - Let Us Transform",
   description: "Motion design and content creation agency transforming businesses through creative excellence",
   icons: {
-    icon: "/favicon.png",
+    icon: `${BASE_PATH}/favicon.png`,
   },
 };
 
