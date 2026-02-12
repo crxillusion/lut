@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { BASE_PATH } from '../constants/config';
+import { createLogger } from '../utils/logger';
+
+const audioLogger = createLogger('Audio');
 
 const STORAGE_KEY = 'lut:audioMuted';
 const FADE_MS = 450;
@@ -52,6 +55,20 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
     }, 16);
   };
 
+  const snapshot = () => {
+    const a = audioRef.current;
+    if (!a) return null;
+    return {
+      paused: a.paused,
+      muted: a.muted,
+      volume: a.volume,
+      currentTime: Number.isFinite(a.currentTime) ? Number(a.currentTime.toFixed(3)) : a.currentTime,
+      readyState: a.readyState,
+      networkState: a.networkState,
+      src: a.currentSrc || a.src,
+    };
+  };
+
   // Initialize persisted mute state
   useEffect(() => {
     try {
@@ -72,6 +89,8 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
     const a = audioRef.current;
     if (!a) return;
 
+    audioLogger.debug('SoundToggle state changed', { isMuted, hasInteracted, snapshot: snapshot() });
+
     // Ensure baseline config
     a.loop = true;
     a.preload = 'auto';
@@ -83,28 +102,72 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
     }
 
     if (isMuted) {
+      audioLogger.debug('Muting: fade volume to 0 then pause');
       // Fade down to 0, then pause
       fadeVolume(0, {
         onDone: () => {
+          audioLogger.debug('Fade-to-0 complete; pausing audio', { snapshot: snapshot() });
           a.pause();
         },
       });
     } else {
+      // If audio is already playing (e.g. started by the global click handler),
+      // don't restart it or force volume back to 0. Just fade up to the target.
+      if (!a.paused) {
+        audioLogger.debug('Unmuting: audio already playing; fading to target', { snapshot: snapshot() });
+        fadeVolume(TARGET_VOLUME);
+        return;
+      }
+
+      audioLogger.debug('Unmuting: play at vol=0 then fade up', { snapshot: snapshot() });
       // Start playback at 0 volume then fade up
       a.volume = 0;
       a.play()
         .then(() => {
+          audioLogger.info('SoundToggle play() resolved; fading to target', { snapshot: snapshot() });
           fadeVolume(TARGET_VOLUME);
         })
-        .catch(() => {
+        .catch(err => {
+          audioLogger.warn('SoundToggle play() rejected (likely autoplay policy)', {
+            name: err?.name,
+            message: err?.message,
+            snapshot: snapshot(),
+          });
           // Autoplay blocked; will start on interaction.
         });
     }
   }, [isMuted]);
 
   const toggle = () => {
+    const a = audioRef.current;
+
+    audioLogger.debug('Sound toggle clicked', { fromMuted: isMuted, snapshot: snapshot() });
     setHasInteracted(true);
-    setIsMuted(prev => !prev);
+
+    // Decide action based on actual playback/volume, not just local UI state.
+    // If music is currently audible/playing, a click should MUTE.
+    const isActuallyPlaying = !!a && !a.paused && a.volume > 0;
+
+    if (isActuallyPlaying) {
+      audioLogger.debug('Toggle: audio is actually playing; muting');
+
+      // If the state is already muted, the effect won't re-run. Apply the fade
+      // directly so the mute is always smooth, then pause once volume hits 0.
+      if (a) {
+        fadeVolume(0, {
+          onDone: () => {
+            audioLogger.debug('Toggle fade-to-0 complete; pausing audio', { snapshot: snapshot() });
+            a.pause();
+          },
+        });
+      }
+
+      setIsMuted(true);
+      return;
+    }
+
+    audioLogger.debug('Toggle: audio not playing/audible; unmuting');
+    setIsMuted(false);
   };
 
   // On first user interaction with the page, if unmuted, try to start playback
@@ -116,7 +179,15 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
     if (!a) return;
 
     if (a.paused) {
-      a.play().then(() => fadeVolume(TARGET_VOLUME)).catch(() => {});
+      audioLogger.debug('User has interacted and audio is paused; retrying play()', { snapshot: snapshot() });
+      a.play()
+        .then(() => {
+          audioLogger.info('Retry play() resolved; fading to target', { snapshot: snapshot() });
+          fadeVolume(TARGET_VOLUME);
+        })
+        .catch(err => {
+          audioLogger.warn('Retry play() rejected', { name: err?.name, message: err?.message, snapshot: snapshot() });
+        });
     }
   }, [hasInteracted, isMuted]);
 

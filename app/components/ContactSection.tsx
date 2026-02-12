@@ -376,7 +376,7 @@ export function ContactSection({
                         onBlur={handleBlur}
                         autoComplete="tel"
                         inputMode="tel"
-                        className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[75px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.phone && fieldErrors.phone))}`}
+                        className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[75px] md:pl-[75px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.phone && fieldErrors.phone))}`}
                         required
                       />
 
@@ -421,7 +421,7 @@ export function ContactSection({
                       onChange={handleChange}
                       onBlur={handleBlur}
                       autoComplete="name"
-                      className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[75px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.name && fieldErrors.name))}`}
+                      className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[75px] md:pl-[75px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.name && fieldErrors.name))}`}
                       required
                     />
 

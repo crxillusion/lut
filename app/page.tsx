@@ -58,7 +58,8 @@ export default function Home() {
     handleOpeningComplete,
   } = useLoadingAndOpening(loadingProgress, isLoading, openingReady);
 
-  // Autoplay music once the loading screen is gone (best effort; may require gesture).
+  // Background audio: we don't attempt autoplay on load; we attempt once on the
+  // first global click after the loading screen is gone (plus the explicit sound button).
   useBgAudioAutoplay({ enabled: !loadingScreenMounted });
 
   // Reset readiness when starting opening
