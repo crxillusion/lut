@@ -22,6 +22,9 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "LUT - Let Us Transform",
   description: "Motion design and content creation agency transforming businesses through creative excellence",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
