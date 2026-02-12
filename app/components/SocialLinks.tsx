@@ -12,6 +12,10 @@ interface SocialLinksProps {
   iconSize?: number;
   isVisible?: boolean;
   animateOnce?: boolean; // If true, animate once and stay visible
+
+  // Optional, screen-specific actions
+  showEmailButton?: boolean;
+  onEmailClick?: () => void;
 }
 
 const SocialLinksComponent = ({ 
@@ -19,7 +23,9 @@ const SocialLinksComponent = ({
   onBackClick, 
   iconSize = 45,
   isVisible = true,
-  animateOnce = false
+  animateOnce = false,
+  showEmailButton = false,
+  onEmailClick,
 }: SocialLinksProps) => {
   const [hasAnimated, setHasAnimated] = useState(false);
   
@@ -36,6 +42,8 @@ const SocialLinksComponent = ({
   // For animateOnce mode: animate in once, then stay visible
   // For normal mode: follow isVisible prop
   const shouldBeVisible = animateOnce ? (hasAnimated || isVisible) : isVisible;
+
+  const emailButtonEnabled = Boolean(showEmailButton && onEmailClick);
   
   return (
     <motion.div 
@@ -115,6 +123,25 @@ const SocialLinksComponent = ({
       >
         <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={iconSize} height={iconSize} />
       </a>
+
+      {/* Cases-only: Email button after LinkedIn */}
+      <AnimatePresence>
+        {emailButtonEnabled && (
+          <motion.button
+            key="email-button"
+            type="button"
+            onClick={onEmailClick}
+            className="text-white hover:opacity-70 transition-opacity cursor-pointer"
+            aria-label="Contact"
+            initial={{ opacity: 0, y: 8, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 8, filter: 'blur(10px)' }}
+            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <Image src={`${BASE_PATH}/email.svg`} alt="Email" width={iconSize} height={iconSize} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Sound toggle (rightmost) */}
       <SoundToggle iconSize={iconSize} />

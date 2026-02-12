@@ -11,6 +11,8 @@ interface HomeOverlayProps {
 export function HomeOverlay({ nav, showHero }: HomeOverlayProps) {
   if (!showHero) return null;
 
+  const isCases = nav.currentSection === 'cases';
+
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
       <div className="pointer-events-auto">
@@ -19,6 +21,8 @@ export function HomeOverlay({ nav, showHero }: HomeOverlayProps) {
           onBackClick={nav.handleBackClick}
           isVisible={showHero}
           animateOnce={true}
+          showEmailButton={isCases}
+          onEmailClick={isCases ? nav.transitions.toContactFromCases : undefined}
         />
       </div>
     </div>
