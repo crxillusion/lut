@@ -90,22 +90,30 @@ export function useLoadingAndOpening(
     return () => clearTimeout(t);
   }, [showOpening, openingReady]);
 
+  // As soon as we start the opening video, mount the hero (background) behind it.
+  // This lets the hero loop decode and present its first frame before the opening
+  // overlay fades out, reducing perceived "gap"/jump on the cut.
+  useEffect(() => {
+    if (showOpening && !showHero) {
+      homeLogger.debug('[Opening->Hero] Pre-mount hero behind opening overlay');
+      setShowHero(true);
+    }
+  }, [showOpening, showHero]);
+
   const handleOpeningComplete = useCallback(() => {
     homeLogger.info('Opening transition complete, showing hero');
     openingCompletedRef.current = true;
 
+    // Hero should already be mounted (we pre-mount it when opening starts). Keep it on.
+    setShowHero(true);
+
     homeLogger.debug('Opening complete: setShowOpening(false)');
     setShowOpening(false);
-
-    homeLogger.debug('Opening complete: setShowHero(true)');
-    setShowHero(true);
 
     // Defer visibility toggles to the next frame so motion components have a clean
     // initial render before animate=true.
     requestAnimationFrame(() => {
-      // Only show hero UI if we are still in the hero phase (guards against immediately
-      // starting a queued transition that hides the hero UI).
-      const shouldShowHeroUI = true; // showHero will be true on next render, but RAF runs before that.
+      const shouldShowHeroUI = true;
       homeLogger.debug('Opening complete: RAF -> setHeroVisible(true), setAboutStartVisible(true)', {
         shouldShowHeroUI,
       });

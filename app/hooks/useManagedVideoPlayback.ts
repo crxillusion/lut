@@ -9,7 +9,7 @@ export interface UseManagedVideoPlaybackOptions {
    * 2 = HAVE_CURRENT_DATA.
    */
   minReadyState?: 2 | 3 | 4;
-  /** When true, seek to 0 while hidden to preload first frame. */
+  /** When true, attempt to ensure the first frame is available while hidden. */
   preloadFirstFrame?: boolean;
 }
 
@@ -18,13 +18,15 @@ export interface UseManagedVideoPlaybackOptions {
  *
  * - When `enabled` becomes true, attempts to play once the element has data.
  * - When `enabled` becomes false, pauses.
- * - Optionally preloads the first frame while hidden.
+ * - Optionally warms the first frame while hidden.
  */
 export function useManagedVideoPlayback(
   videoRef: RefObject<HTMLVideoElement | null>,
   { enabled, name, minReadyState = 2, preloadFirstFrame = false }: UseManagedVideoPlaybackOptions
 ) {
-  // Preload first frame when hidden (prevents black flash when toggling visibility)
+  // Warm first frame when hidden.
+  // IMPORTANT: do not force `currentTime = 0` while hidden; seeking during section switches
+  // can trigger `waiting` and present as a black-frame blink.
   useEffect(() => {
     if (!preloadFirstFrame) return;
     const video = videoRef.current;
@@ -32,7 +34,14 @@ export function useManagedVideoPlayback(
 
     const handleLoadedData = () => {
       if (!enabled && video.paused) {
-        video.currentTime = 0;
+        // Encourage browser to keep data buffered without forcing a seek.
+        if (video.readyState < 2) {
+          try {
+            video.load();
+          } catch {
+            // ignore
+          }
+        }
       }
     };
 

@@ -1,4 +1,4 @@
-import { RefObject, useMemo, useState } from 'react';
+import { RefObject, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
 import { useManagedVideoPlayback } from '../hooks/useManagedVideoPlayback';
@@ -38,6 +38,50 @@ export function ContactSection({
     name: 'ContactLoop',
     preloadFirstFrame: true,
   });
+
+  // Manual looping (avoid native `loop` to prevent black flash at loop boundary on exit).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // If we're not actually showing the contact background, ensure it's not playing.
+    // IMPORTANT: do NOT force a seek-to-0 here; seeks during transitions can cause `waiting`
+    // and a visible black flash.
+    if (!shouldShow) {
+      try {
+        video.pause();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    const handleEnded = () => {
+      // Only loop while contact is fully active (UI visible) and not transitioning away.
+      if (!shouldShow || !showUI || isTransitioning) return;
+
+      // Restart on the next frame.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // If we started leaving between frames, abort.
+          if (!showUI || isTransitioning) return;
+          try {
+            video.currentTime = 0;
+          } catch {
+            // ignore
+          }
+          void video.play().catch(() => {
+            // ignore
+          });
+        });
+      });
+    };
+
+    video.addEventListener('ended', handleEnded);
+    return () => {
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [isTransitioning, shouldShow, showUI, videoRef]);
 
   const validateEmail = (value: string) => {
     const v = value.trim();
@@ -174,7 +218,7 @@ export function ContactSection({
         shouldShow ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
-      <VideoBackground videoRef={videoRef} src={videoSrc} loop autoPlay />
+      <VideoBackground videoRef={videoRef} src={videoSrc} autoPlay loop={false} />
 
       {/* Centered submission modal */}
       <motion.div

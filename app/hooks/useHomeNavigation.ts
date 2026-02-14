@@ -107,7 +107,13 @@ export function useHomeNavigation(
     ) => {
       if (isTransitioningRef.current) return;
 
-      // Hide UI while transitioning away so it can animate back in on return.
+      homeLogger.info('[Transition] request', {
+        from: currentSection,
+        to: targetSection,
+        transitionVideo,
+        isDirectNavigation,
+      });
+
       if (currentSection === 'hero' && targetSection !== 'hero') {
         setHeroVisible(false);
       }
@@ -115,7 +121,6 @@ export function useHomeNavigation(
         setAboutStartVisible(false);
       }
 
-      // If we're transitioning *to* aboutStart, ensure its UI starts hidden so it can fade in on arrival.
       if (targetSection === 'aboutStart') {
         setAboutStartVisible(false);
       }
@@ -129,7 +134,12 @@ export function useHomeNavigation(
 
       const targetVideo = targetVideoRef.current;
       if (targetVideo) {
-        targetVideo.currentTime = 0;
+        // Avoid forcing a seek-to-0 for the contact loop.
+        // During Contact exit we intentionally speed the loop and freeze near the end;
+        // an external seek (back to 0) can trigger `waiting` and a brief black flash.
+        if (targetSection !== 'contact') {
+          targetVideo.currentTime = 0;
+        }
         if (targetVideo.readyState < 2) targetVideo.load();
       }
 
@@ -141,10 +151,45 @@ export function useHomeNavigation(
             return;
           }
 
+          const tName = `[TransitionVideo ${targetSection}]`;
+          const logState = (label: string) => {
+            homeLogger.debug(tName + ' ' + label, {
+              readyState: transitionEl.readyState,
+              networkState: transitionEl.networkState,
+              paused: transitionEl.paused,
+              currentTime: Number.isFinite(transitionEl.currentTime) ? Number(transitionEl.currentTime.toFixed(3)) : null,
+              duration: Number.isFinite(transitionEl.duration) ? Number(transitionEl.duration.toFixed(3)) : null,
+              src: transitionEl.currentSrc || transitionEl.src,
+            });
+          };
+
+          const onLoadedData = () => logState('loadeddata');
+          const onCanPlay = () => logState('canplay');
+          const onPlay = () => logState('play');
+          const onPlaying = () => logState('playing');
+          const onWaiting = () => logState('waiting');
+          const onStalled = () => logState('stalled');
+          const onSeeking = () => logState('seeking');
+          const onSeeked = () => logState('seeked');
+
+          transitionEl.addEventListener('loadeddata', onLoadedData);
+          transitionEl.addEventListener('canplay', onCanPlay);
+          transitionEl.addEventListener('play', onPlay);
+          transitionEl.addEventListener('playing', onPlaying);
+          transitionEl.addEventListener('waiting', onWaiting);
+          transitionEl.addEventListener('stalled', onStalled);
+          transitionEl.addEventListener('seeking', onSeeking);
+          transitionEl.addEventListener('seeked', onSeeked);
+
           transitionEl.currentTime = 0;
           if (transitionEl.readyState < 2) transitionEl.load();
+          logState('after load/currentTime=0');
 
           const handleCanPlay = () => {
+            homeLogger.info('[Transition] canplay -> setIsTransitioning(true) + play()', {
+              from: currentSection,
+              to: targetSection,
+            });
             setIsTransitioning(true);
             transitionEl.play().catch(err => {
               homeLogger.warn('Transition video play error:', err.name);
@@ -156,6 +201,17 @@ export function useHomeNavigation(
           };
 
           transitionEl.onended = () => {
+            logState('ended');
+
+            transitionEl.removeEventListener('loadeddata', onLoadedData);
+            transitionEl.removeEventListener('canplay', onCanPlay);
+            transitionEl.removeEventListener('play', onPlay);
+            transitionEl.removeEventListener('playing', onPlaying);
+            transitionEl.removeEventListener('waiting', onWaiting);
+            transitionEl.removeEventListener('stalled', onStalled);
+            transitionEl.removeEventListener('seeking', onSeeking);
+            transitionEl.removeEventListener('seeked', onSeeked);
+
             if (targetVideoRef.current) {
               targetVideoRef.current.currentTime = 0;
               targetVideoRef.current.play().catch(() => {});
@@ -163,6 +219,9 @@ export function useHomeNavigation(
 
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
+                homeLogger.info('[Transition] commit section', {
+                  to: targetSection,
+                });
                 setCurrentSection(targetSection);
                 setIsTransitioning(false);
                 isTransitioningRef.current = false;
@@ -359,35 +418,175 @@ export function useHomeNavigation(
 
       if (currentSection !== 'contact') return;
 
-      // loop end (5x) -> fade-out -> transition
+      homeLogger.info('[ContactExit] begin', {
+        previousSection,
+        currentSection,
+        contact: {
+          readyState: refs.contactVideoRef.current?.readyState,
+          paused: refs.contactVideoRef.current?.paused,
+          currentTime: refs.contactVideoRef.current?.currentTime,
+          duration: refs.contactVideoRef.current?.duration,
+          playbackRate: refs.contactVideoRef.current?.playbackRate,
+        },
+      });
+
       setWaitingForContactLoop(true);
       setLeavingContact(true);
       setContactVisible(false);
 
+      let transitionStarted = false;
+      let frozeContact = false;
+
+      const contactEl = refs.contactVideoRef.current;
+
+      const freezeContactNow = (reason: string) => {
+        if (!contactEl || frozeContact) return;
+        frozeContact = true;
+
+        const dur = Number.isFinite(contactEl.duration) ? contactEl.duration : null;
+        const t = Number.isFinite(contactEl.currentTime) ? contactEl.currentTime : null;
+
+        homeLogger.info('[ContactExit] freezeContactNow', {
+          reason,
+          t,
+          dur,
+          playbackRate: contactEl.playbackRate,
+          readyState: contactEl.readyState,
+          paused: contactEl.paused,
+        });
+
+        // Best-effort: clamp near the end and pause to prevent an internal loop reset -> black flash.
+        try {
+          if (dur) contactEl.currentTime = Math.max(0, dur - 0.01);
+        } catch {
+          // ignore
+        }
+        try {
+          contactEl.pause();
+        } catch {
+          // ignore
+        }
+      };
+
+      const startTransition = (reason: string) => {
+        if (transitionStarted) {
+          homeLogger.debug('[ContactExit] startTransition skipped (already started)', { reason });
+          return;
+        }
+        transitionStarted = true;
+
+        // Freeze contact immediately when we decide to transition.
+        freezeContactNow('startTransition:' + reason);
+
+        const transitionEl = refs.transitionVideoRef.current;
+        homeLogger.info('[ContactExit] startTransition', {
+          reason,
+          previousSection,
+          target: previousSection === 'cases' ? 'cases' : 'hero',
+          transition: {
+            hasEl: Boolean(transitionEl),
+            readyState: transitionEl?.readyState,
+            paused: transitionEl?.paused,
+            currentTime: transitionEl?.currentTime,
+            duration: transitionEl?.duration,
+            src: transitionEl?.currentSrc || transitionEl?.src,
+          },
+          contact: {
+            readyState: refs.contactVideoRef.current?.readyState,
+            paused: refs.contactVideoRef.current?.paused,
+            currentTime: refs.contactVideoRef.current?.currentTime,
+            duration: refs.contactVideoRef.current?.duration,
+            playbackRate: refs.contactVideoRef.current?.playbackRate,
+          },
+        });
+
+        if (previousSection === 'cases') {
+          handleTransition('cases', VIDEO_PATHS.contactToCases, refs.casesVideoRef);
+          previousSectionRef.current = 'partner';
+        } else {
+          previousSectionRef.current = 'hero';
+          handleTransition('hero', VIDEO_PATHS.contactToHero, refs.heroVideoRef);
+        }
+      };
+
+      const NEAR_END_S = 0.12;
+
+      const nearEndCheck = () => {
+        if (!contactEl || transitionStarted) return;
+        const dur = Number.isFinite(contactEl.duration) ? contactEl.duration : 0;
+        const t = Number.isFinite(contactEl.currentTime) ? contactEl.currentTime : 0;
+        if (!dur) return;
+
+        // Freeze slightly before wrap, even before we start the transition.
+        if (!frozeContact && t >= dur - NEAR_END_S) {
+          freezeContactNow('near_end_freeze');
+        }
+
+        if (t >= dur - NEAR_END_S) {
+          homeLogger.debug('[ContactExit] near-end detected', { t, dur, NEAR_END_S });
+          startTransition('near_end_timeupdate');
+        }
+      };
+
+      const onContactSeeking = () =>
+        homeLogger.debug('[ContactExit][contact] seeking', {
+          currentTime: contactEl?.currentTime,
+          frozeContact,
+          transitionStarted,
+        });
+      const onContactSeeked = () =>
+        homeLogger.debug('[ContactExit][contact] seeked', {
+          currentTime: contactEl?.currentTime,
+          frozeContact,
+          transitionStarted,
+        });
+      const onContactWaiting = () => {
+        // If we've frozen intentionally, waiting at t=0 is likely an internal reset; log it separately.
+        const t = contactEl?.currentTime;
+        if (frozeContact) {
+          homeLogger.warn('[ContactExit][contact] waiting (after freeze)', { currentTime: t });
+          return;
+        }
+        homeLogger.warn('[ContactExit][contact] waiting', { currentTime: t });
+      };
+
+      contactEl?.addEventListener('timeupdate', nearEndCheck);
+      contactEl?.addEventListener('seeking', onContactSeeking);
+      contactEl?.addEventListener('seeked', onContactSeeked);
+      contactEl?.addEventListener('waiting', onContactWaiting);
+
       const cleanup = speedUpVideoLoop({
         videoRef: refs.contactVideoRef,
         speedMultiplier: 5.0,
+        earlyCompleteSeconds: 0.12,
         onProgress: (current, duration) => homeLogger.loopProgress(current, duration, 5.0),
         onLoopComplete: () => {
           homeLogger.loopComplete('Contact');
           setWaitingForContactLoop(false);
 
-          // small delay so UI fade-out is visible
-          setTimeout(() => {
-            if (previousSection === 'cases') {
-              handleTransition('cases', VIDEO_PATHS.contactToCases, refs.casesVideoRef);
-              previousSectionRef.current = 'partner';
-            } else {
-              previousSectionRef.current = 'hero';
-              handleTransition('hero', VIDEO_PATHS.contactToHero, refs.heroVideoRef);
-            }
-          }, 250);
+          // Freeze before starting transition (defensive).
+          freezeContactNow('loop_complete');
+          startTransition('loop_complete');
         },
       });
 
-      return cleanup;
+      return () => {
+        homeLogger.info('[ContactExit] cleanup');
+        contactEl?.removeEventListener('timeupdate', nearEndCheck);
+        contactEl?.removeEventListener('seeking', onContactSeeking);
+        contactEl?.removeEventListener('seeked', onContactSeeked);
+        contactEl?.removeEventListener('waiting', onContactWaiting);
+        cleanup?.();
+      };
     },
-    [currentSection, handleTransition, refs.casesVideoRef, refs.contactVideoRef, refs.heroVideoRef]
+    [
+      currentSection,
+      handleTransition,
+      refs.casesVideoRef,
+      refs.contactVideoRef,
+      refs.heroVideoRef,
+      refs.transitionVideoRef,
+    ]
   );
 
   const handleScrollDown = useCallback(() => {

@@ -5,6 +5,8 @@ interface VideoBackgroundProps {
   src: string;
   autoPlay?: boolean;
   loop?: boolean;
+  muted?: boolean;
+  preload?: 'none' | 'metadata' | 'auto';
   className?: string;
 }
 
@@ -13,6 +15,8 @@ export function VideoBackground({
   src,
   autoPlay = false,
   loop = false,
+  muted = true,
+  preload = 'auto',
   className = '',
 }: VideoBackgroundProps) {
   return (
@@ -21,9 +25,9 @@ export function VideoBackground({
       src={src || undefined}
       autoPlay={autoPlay}
       loop={loop}
-      muted
+      muted={muted}
       playsInline
-      preload="auto"
+      preload={preload}
       className={`absolute inset-0 w-full h-full object-cover ${className}`}
     />
   );
