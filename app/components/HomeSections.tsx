@@ -8,6 +8,7 @@ import { StaticSection } from './StaticSection';
 import { CasesSection } from './CasesSection';
 import { ContactSection } from './ContactSection';
 import { TransitionVideo } from './TransitionVideo';
+import { ShowreelSection } from './ShowreelSection';
 import type { UseHomeNavigationResult } from '../hooks/useHomeNavigation';
 
 interface HomeSectionsProps {
@@ -66,12 +67,20 @@ export function HomeSections({
         isVisible={nav.isTransitioning}
       />
 
+      <ShowreelSection
+        isVisible={nav.currentSection === 'showreel' && showHero}
+        onBackClick={nav.transitions.toHero}
+      />
+
+      {/* Remove legacy showreel StaticSection (replaced by <ShowreelSection />) */}
+      {/*
       <StaticSection
         videoRef={showreelVideoRef}
         videoSrc={VIDEO_PATHS.heroToShowreel}
         isVisible={nav.currentSection === 'showreel' && showHero}
         onBackClick={nav.transitions.toHero}
       />
+      */}
 
       <AboutStartSection
         videoRef={aboutStartVideoRef}

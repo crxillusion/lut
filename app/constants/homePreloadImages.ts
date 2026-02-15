@@ -23,4 +23,8 @@ export const HOME_PRELOAD_IMAGE_PATHS: string[] = [
   `${BASE_PATH}/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg`,
   `${BASE_PATH}/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg`,
   `${BASE_PATH}/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png`,
+
+  // Section frame overlays
+  `${BASE_PATH}/Cases_png_transparent.png`,
+  `${BASE_PATH}/Showreel_png_transparent.png`,
 ] as const;

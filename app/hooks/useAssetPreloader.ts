@@ -127,12 +127,45 @@ export function useAssetPreloader({
           return r.blob();
         })
         .then(() => {
-          // Also warm the image decode/cache path; do not await decode.
+          // Also warm the image decode/cache path.
           const img = new Image();
           img.decoding = 'async';
           img.loading = 'eager';
-          img.src = src;
-          // Consider it done once bytes are fetched.
+
+          const isCriticalOverlay = /\/((Cases|Showreel)_png_transparent)\.png$/i.test(src);
+
+          return new Promise<void>((resolve) => {
+            let done = false;
+            const finish = () => {
+              if (done) return;
+              done = true;
+              resolve();
+            };
+
+            // Safety timeout so preloading can't hang forever.
+            const decodeTimeout = window.setTimeout(() => finish(), 1200);
+
+            img.onload = async () => {
+              window.clearTimeout(decodeTimeout);
+              if (isCriticalOverlay && typeof (img as any).decode === 'function') {
+                try {
+                  await (img as any).decode();
+                } catch {
+                  // ignore decode errors
+                }
+              }
+              finish();
+            };
+            img.onerror = () => {
+              window.clearTimeout(decodeTimeout);
+              finish();
+            };
+
+            img.src = src;
+          });
+        })
+        .then(() => {
+          // Consider it done once bytes are fetched (and for critical overlays, decoded).
           settle(true);
         })
         .catch((e) => {

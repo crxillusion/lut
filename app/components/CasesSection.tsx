@@ -226,6 +226,8 @@ export function CasesSection({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const frameImgRef = useRef<HTMLImageElement | null>(null);
 
+  const [frameReady, setFrameReady] = useState(false);
+
   /**
    * Normalized insets (0..1) relative to the *rendered frame image rect*.
    * These should match the transparent cutout margins in `Cases_png_transparent.png`.
@@ -252,6 +254,50 @@ export function CasesSection({
 
   // Treat the PNG frame as desktop-only.
   const [showFrame, setShowFrame] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    setFrameReady(false);
+
+    const el = frameImgRef.current;
+    if (!el) return;
+
+    let cancelled = false;
+
+    const markReadyAfterPaint = async () => {
+      try {
+        if (typeof (el as any).decode === 'function') {
+          await (el as any).decode();
+        }
+      } catch {
+        // ignore
+      }
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      if (!cancelled) setFrameReady(true);
+    };
+
+    const onLoad = () => {
+      homeLogger.debug('[Cases] frame image loaded');
+      // Ensure we measure right after load.
+      window.dispatchEvent(new Event('resize'));
+      void markReadyAfterPaint();
+    };
+
+    if (el.complete && el.naturalWidth > 0) {
+      void markReadyAfterPaint();
+    } else {
+      el.addEventListener('load', onLoad);
+    }
+
+    return () => {
+      cancelled = true;
+      el.removeEventListener('load', onLoad);
+    };
+  }, [isVisible]);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -642,23 +688,33 @@ export function CasesSection({
             </AnimatePresence>
           </div>
 
-          {/* Full-screen PNG frame on top (transparent window) */}
-          {showFrame && (
-            <div className="pointer-events-none absolute inset-0 z-40">
+          {/*
+            Full-screen PNG frame on top (transparent window)
+            Keep it mounted so it can be painted before the first visible frame.
+          */}
+          <div
+            className={`pointer-events-none absolute inset-0 z-40 ${showFrame ? '' : 'hidden'}`}
+            aria-hidden={!showFrame}
+          >
+            <motion.div
+              className="absolute inset-0"
+              initial={false}
+              animate={
+                isVisible && showFrame && frameReady
+                  ? { opacity: 1, filter: 'blur(0px)' }
+                  : { opacity: 0, filter: 'blur(10px)' }
+              }
+              transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+            >
               <img
                 ref={frameImgRef}
                 src={`${BASE_PATH}/Cases_png_transparent.png`}
                 alt="Cases frame"
                 className="w-full h-full object-cover"
                 draggable={false}
-                onLoad={() => {
-                  homeLogger.debug('[Cases] frame image loaded');
-                  // Ensure we measure right after load.
-                  window.dispatchEvent(new Event('resize'));
-                }}
               />
-            </div>
-          )}
+            </motion.div>
+          </div>
         </>
       )}
     </section>
