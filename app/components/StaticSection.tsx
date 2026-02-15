@@ -23,7 +23,76 @@ export function StaticSection({
   const [isFrameCaptured, setIsFrameCaptured] = useState(false);
   const captureAttemptedRef = useRef(false);
   const targetTimeRef = useRef<number>(0);
-  
+
+  // Parallax hover state
+  const sectionRef = useRef<HTMLElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const targetOffsetRef = useRef({ x: 0, y: 0 });
+
+  const applyParallax = () => {
+    rafRef.current = null;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const { x, y } = targetOffsetRef.current;
+    // Translate opposite to cursor direction, plus a slight scale to avoid edge gaps.
+    canvas.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.03)`;
+  };
+
+  useEffect(() => {
+    if (!isVisible) {
+      // Reset transforms when hidden.
+      targetOffsetRef.current = { x: 0, y: 0 };
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      if (canvasRef.current) canvasRef.current.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+      return;
+    }
+
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const MAX_PX = 14; // overall strength
+
+    const onMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const nx = rect.width ? (e.clientX - rect.left) / rect.width : 0.5; // 0..1
+      const ny = rect.height ? (e.clientY - rect.top) / rect.height : 0.5;
+
+      // Convert to -1..1, then invert so motion is opposite to cursor.
+      const dx = (nx - 0.5) * 2;
+      const dy = (ny - 0.5) * 2;
+
+      const x = Math.max(-MAX_PX, Math.min(MAX_PX, -dx * MAX_PX));
+      const y = Math.max(-MAX_PX, Math.min(MAX_PX, -dy * MAX_PX));
+
+      targetOffsetRef.current = { x, y };
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(applyParallax);
+      }
+    };
+
+    const onLeave = () => {
+      targetOffsetRef.current = { x: 0, y: 0 };
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          if (canvasRef.current) canvasRef.current.style.transform = 'translate3d(0px, 0px, 0) scale(1.03)';
+        });
+      }
+    };
+
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+
+    return () => {
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [isVisible]);
+
   // Capture the last frame to canvas
   useEffect(() => {
     if (videoRef.current && canvasRef.current && !captureAttemptedRef.current) {
@@ -140,8 +209,31 @@ export function StaticSection({
     return () => clearTimeout(timer);
   }, [videoSrc]);
 
+  // When the canvas becomes visible, animate a subtle scale-in even before mouse move.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (!isVisible) return;
+
+    if (isFrameCaptured) {
+      // Start slightly smaller, then animate up to the base scale.
+      canvas.style.transition = 'transform 520ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms ease';
+      canvas.style.transform = 'translate3d(0px, 0px, 0) scale(1.01)';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Base state for parallax (with slight overscale to avoid edges)
+          canvas.style.transform = 'translate3d(0px, 0px, 0) scale(1.03)';
+        });
+      });
+    } else {
+      // While not captured yet, keep at neutral.
+      canvas.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+    }
+  }, [isFrameCaptured, isVisible]);
+
   return (
     <section 
+      ref={sectionRef as any}
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
         isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
@@ -162,7 +254,12 @@ export function StaticSection({
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
           isFrameCaptured ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{ objectFit: 'cover' }}
+        style={{
+          objectFit: 'cover',
+          willChange: 'transform, opacity',
+          // Default base transform (will be overridden by the scale-in effect when captured)
+          transform: 'translate3d(0px, 0px, 0) scale(1)',
+        }}
       />
 
       {/* Content Overlay */}
