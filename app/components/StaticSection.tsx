@@ -82,6 +82,76 @@ export function StaticSection({
       }
     };
 
+    // --- Mobile / tablet tilt support via DeviceOrientation ---
+    let orientationActive = false;
+    let orientationCleanup: (() => void) | null = null;
+
+    const installOrientation = () => {
+      if (orientationActive) return;
+      if (typeof window === 'undefined') return;
+      if (typeof (window as any).DeviceOrientationEvent === 'undefined') return;
+
+      const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+      const onOrientation = (e: DeviceOrientationEvent) => {
+        // gamma: left/right (-90..90)
+        // beta: front/back (-180..180)
+        const gamma = typeof e.gamma === 'number' ? e.gamma : 0;
+        const beta = typeof e.beta === 'number' ? e.beta : 0;
+
+        // Map to -1..1 range (cap to typical usable range)
+        const nx = clamp(gamma / 25, -1, 1);
+        const ny = clamp(beta / 25, -1, 1);
+
+        // Opposite direction feel (same as cursor)
+        const x = clamp(-nx * MAX_PX, -MAX_PX, MAX_PX);
+        const y = clamp(-ny * MAX_PX, -MAX_PX, MAX_PX);
+
+        targetOffsetRef.current = { x, y };
+        if (rafRef.current == null) {
+          rafRef.current = requestAnimationFrame(applyParallax);
+        }
+      };
+
+      window.addEventListener('deviceorientation', onOrientation, true);
+      orientationActive = true;
+      orientationCleanup = () => {
+        window.removeEventListener('deviceorientation', onOrientation, true);
+      };
+    };
+
+    // iOS requires a user gesture to request permission.
+    const tryEnableOrientationFromGesture = async () => {
+      try {
+        const DOE: any = (window as any).DeviceOrientationEvent;
+        if (DOE && typeof DOE.requestPermission === 'function') {
+          const res = await DOE.requestPermission();
+          if (res === 'granted') installOrientation();
+        } else {
+          // Non-iOS: no permission API
+          installOrientation();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    // Try enabling immediately (Android/most browsers). If permission is required, it will no-op.
+    installOrientation();
+
+    // One-time gesture hook to enable orientation on iOS.
+    let gestureBound = false;
+    const bindGesture = () => {
+      if (gestureBound) return;
+      gestureBound = true;
+      const onFirstTouch = () => {
+        void tryEnableOrientationFromGesture();
+        window.removeEventListener('touchstart', onFirstTouch);
+      };
+      window.addEventListener('touchstart', onFirstTouch, { passive: true });
+    };
+    bindGesture();
+
     el.addEventListener('mousemove', onMove);
     el.addEventListener('mouseleave', onLeave);
 
@@ -90,6 +160,8 @@ export function StaticSection({
       el.removeEventListener('mouseleave', onLeave);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+      if (orientationCleanup) orientationCleanup();
+      orientationCleanup = null;
     };
   }, [isVisible]);
 
