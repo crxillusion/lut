@@ -1,5 +1,7 @@
 // Configuration constants for the application
 
+import { assetUrl } from '@/app/utils/assetUrl';
+
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
@@ -8,48 +10,48 @@ export const LOADING_DELAY = 7000; // 7 seconds - balanced loading time for bran
 
 export const VIDEO_PATHS = {
   // Opening
-  opening: `${BASE_PATH}/videos/loading_to_homepage.mp4`,
+  opening: assetUrl('/videos/loading_to_homepage.mp4'),
   
   // Hero/Homepage
-  heroLoop: `${BASE_PATH}/videos/Homepage_loop.mp4`,
-  heroToShowreel: `${BASE_PATH}/videos/Homepage_showreel.mp4`,
-  showreelToHero: `${BASE_PATH}/videos/Homepage_showreel_reverse.mp4`,
-  heroToAboutStart: `${BASE_PATH}/videos/Homepage_aboutstart.mp4`,
-  aboutStartToHero: `${BASE_PATH}/videos/Homepage_aboutstart_reverse.mp4`,
-  heroToCases: `${BASE_PATH}/videos/Homepage_cases.mp4`,
-  casesToHero: `${BASE_PATH}/videos/Homepage_cases_reverse.mp4`,
-  heroToContact: `${BASE_PATH}/videos/Homepage_contact.mp4`,
-  contactToHero: `${BASE_PATH}/videos/Homepage_contact_reverse.mp4`,
+  heroLoop: assetUrl('/videos/Homepage_loop.mp4'),
+  heroToShowreel: assetUrl('/videos/Homepage_showreel.mp4'),
+  showreelToHero: assetUrl('/videos/Homepage_showreel_reverse.mp4'),
+  heroToAboutStart: assetUrl('/videos/Homepage_aboutstart.mp4'),
+  aboutStartToHero: assetUrl('/videos/Homepage_aboutstart_reverse.mp4'),
+  heroToCases: assetUrl('/videos/Homepage_cases.mp4'),
+  casesToHero: assetUrl('/videos/Homepage_cases_reverse.mp4'),
+  heroToContact: assetUrl('/videos/Homepage_contact.mp4'),
+  contactToHero: assetUrl('/videos/Homepage_contact_reverse.mp4'),
   
   // About Start
-  aboutStartLoop: `${BASE_PATH}/videos/aboutstart_loop.mp4`,
-  aboutStartToAbout: `${BASE_PATH}/videos/aboutstarttoabout.mp4`,
-  aboutToAboutStart: `${BASE_PATH}/videos/aboutstarttoabout_reverse.mp4`,
+  aboutStartLoop: assetUrl('/videos/aboutstart_loop.mp4'),
+  aboutStartToAbout: assetUrl('/videos/aboutstarttoabout.mp4'),
+  aboutToAboutStart: assetUrl('/videos/aboutstarttoabout_reverse.mp4'),
   
   // About
-  aboutToTeam: `${BASE_PATH}/videos/abouttoteam.mp4`,
-  teamToAbout: `${BASE_PATH}/videos/abouttoteam_reverse.mp4`,
+  aboutToTeam: assetUrl('/videos/abouttoteam.mp4'),
+  teamToAbout: assetUrl('/videos/abouttoteam_reverse.mp4'),
   
   // Team (split into Team1 and Team2)
-  team1ToTeam2: `${BASE_PATH}/videos/teamtoteam.mp4`,
-  team2ToTeam1: `${BASE_PATH}/videos/teamtoteam_reverse.mp4`,
-  team2ToOffer: `${BASE_PATH}/videos/teamtooffer.mp4`,
-  offerToTeam2: `${BASE_PATH}/videos/teamtooffer_reverse.mp4`,
+  team1ToTeam2: assetUrl('/videos/teamtoteam.mp4'),
+  team2ToTeam1: assetUrl('/videos/teamtoteam_reverse.mp4'),
+  team2ToOffer: assetUrl('/videos/teamtooffer.mp4'),
+  offerToTeam2: assetUrl('/videos/teamtooffer_reverse.mp4'),
   
   // Offer
-  offerToPartner: `${BASE_PATH}/videos/offertopartner.mp4`,
-  partnerToOffer: `${BASE_PATH}/videos/offertopartner_reverse.mp4`,
+  offerToPartner: assetUrl('/videos/offertopartner.mp4'),
+  partnerToOffer: assetUrl('/videos/offertopartner_reverse.mp4'),
   
   // Partner
-  partnerToCases: `${BASE_PATH}/videos/partnertoCases.mp4`,
-  casesToPartner: `${BASE_PATH}/videos/partnertoCases_reverse.mp4`,
+  partnerToCases: assetUrl('/videos/partnertoCases.mp4'),
+  casesToPartner: assetUrl('/videos/partnertoCases_reverse.mp4'),
   
   // Cases
-  casesToContact: `${BASE_PATH}/videos/CasestoContact.mp4`,
-  contactToCases: `${BASE_PATH}/videos/CasestoContact_reverse.mp4`,
+  casesToContact: assetUrl('/videos/CasestoContact.mp4'),
+  contactToCases: assetUrl('/videos/CasestoContact_reverse.mp4'),
   
   // Contact
-  contactLoop: `${BASE_PATH}/videos/Contact_loop.mp4`,
+  contactLoop: assetUrl('/videos/Contact_loop.mp4'),
 } as const;
 
 export type Section = 

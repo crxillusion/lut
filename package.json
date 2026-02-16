@@ -6,9 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "upload:r2:videos": "node scripts/upload-r2-videos.mjs",
+    "audit": "npm audit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.990.0",
     "framer-motion": "^12.28.1",
     "lucide-react": "^0.562.0",
     "next": "16.0.3",

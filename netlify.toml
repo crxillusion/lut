@@ -5,6 +5,8 @@
 # Production deploys should use no basePath (root domain).
 [build.environment]
   NEXT_PUBLIC_BASE_PATH = ""
+  # Public asset host
+  NEXT_PUBLIC_ASSET_PREFIX = "https://77e123c06aa5124bec986669e43d8881.r2.cloudflarestorage.com/lut"
 
 # Optional: ensure Netlify uses the Next.js export output
 # and doesn't try to run a Next.js server.
