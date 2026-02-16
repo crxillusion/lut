@@ -30,6 +30,8 @@ if (isClient) {
   // eslint-disable-next-line no-console
   console.info('[Logger]', {
     NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_PUBLIC_BASE_PATH,
+    NEXT_PUBLIC_ASSET_PREFIX: process.env.NEXT_PUBLIC_ASSET_PREFIX,
     NEXT_PUBLIC_DEBUG_LOGS: process.env.NEXT_PUBLIC_DEBUG_LOGS,
     NEXT_PUBLIC_DEBUG_LOG_LEVEL: process.env.NEXT_PUBLIC_DEBUG_LOG_LEVEL,
     forceClientLogs,

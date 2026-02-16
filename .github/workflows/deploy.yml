@@ -51,6 +51,9 @@ jobs:
         env:
           NODE_ENV: production
           NEXT_PUBLIC_BASE_PATH: "/lut"
+          # Set this in GitHub: Settings -> Secrets and variables -> Actions
+          # e.g. https://assets.example.com
+          NEXT_PUBLIC_ASSET_PREFIX: ${{ secrets.NEXT_PUBLIC_ASSET_PREFIX }}
           NEXT_PUBLIC_DEBUG_LOGS: "1"
           NEXT_PUBLIC_DEBUG_LOG_LEVEL: "debug"
       
