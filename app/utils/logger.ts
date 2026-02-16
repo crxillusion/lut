@@ -102,14 +102,6 @@ class Logger {
   videoState(videoName: string, state: Record<string, unknown>) {
     this.debug(`📹 Video [${videoName}]:`, state);
   }
-
-  loopProgress(current: number, duration: number, speed: number = 1) {
-    this.debug(`⏱️  Loop progress: ${current.toFixed(2)}s / ${duration.toFixed(2)}s (${speed}x)`);
-  }
-
-  loopComplete(sectionName: string) {
-    this.info(`✅ Loop complete: ${sectionName}`);
-  }
 }
 
 // Create logger instances for different modules

@@ -1,7 +1,6 @@
 // Consolidated hook for managing video transitions with loop support
 import { useCallback, RefObject } from 'react';
 import { Section } from '../constants/config';
-import { speedUpVideoLoop } from '../utils/videoLoop';
 import { transitionLogger } from '../utils/logger';
 
 interface UseTransitionManagerProps {
@@ -247,7 +246,7 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
   ]);
 
   /**
-   * Handle transitions with loop speed-up
+   * Handle transitions (loop waiting removed)
    */
   const handleTransitionWithLoop = useCallback((
     fromSection: 'hero' | 'aboutStart' | 'contact',
@@ -256,45 +255,36 @@ export function useTransitionManager(props: UseTransitionManagerProps) {
     targetVideo: string,
     targetVideoRef: RefObject<HTMLVideoElement | null>
   ) => {
-    transitionLogger.info(`Starting loop speed-up for ${fromSection}`);
+    transitionLogger.info(`Loop wait removed; transitioning immediately from ${fromSection} -> ${targetSection}`);
 
-    // Set waiting flag
-    const setWaiting = fromSection === 'hero' ? setWaitingForHeroLoop :
-                       fromSection === 'aboutStart' ? setWaitingForAboutStartLoop :
-                       setWaitingForContactLoop;
+    // Clear any waiting flags and hide current section UI immediately.
+    setWaitingForHeroLoop(false);
+    setWaitingForAboutStartLoop(false);
+    setWaitingForContactLoop(false);
 
-    const setVisible = fromSection === 'hero' ? setHeroVisible :
-                       fromSection === 'aboutStart' ? setAboutStartVisible :
-                       setContactVisible;
+    if (fromSection === 'hero') setHeroVisible(false);
+    if (fromSection === 'aboutStart') setAboutStartVisible(false);
+    if (fromSection === 'contact') setContactVisible(false);
 
-    setWaiting(true);
-    setVisible(false);
+    // Defensive: ensure we don't leave any sped-up playback rate around.
+    try {
+      if (videoRef.current) videoRef.current.playbackRate = 1.0;
+    } catch {
+      // ignore
+    }
 
-    // Speed up loop
-    return speedUpVideoLoop({
-      videoRef,
-      speedMultiplier: fromSection === 'contact' ? 5.0 : 5.0,
-      onProgress: (current, duration) => {
-        transitionLogger.loopProgress(current, duration, 5.0);
-      },
-      onLoopComplete: () => {
-        transitionLogger.loopComplete(fromSection);
-        setWaiting(false);
-        setPendingTransition({
-          section: targetSection,
-          video: targetVideo,
-          ref: targetVideoRef,
-        });
-      },
-    });
+    handleTransition(targetSection, targetVideo, targetVideoRef, false);
+
+    // Keep the same API shape (return cleanup fn)
+    return () => {};
   }, [
+    handleTransition,
     setWaitingForHeroLoop,
     setWaitingForAboutStartLoop,
     setWaitingForContactLoop,
     setHeroVisible,
     setAboutStartVisible,
     setContactVisible,
-    setPendingTransition,
   ]);
 
   /**

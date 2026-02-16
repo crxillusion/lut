@@ -98,7 +98,6 @@ export default function Home() {
   useContactVisibility({
     currentSection: nav.currentSection,
     showHero,
-    waitingForContactLoop: nav.waitingForContactLoop,
     contactVisible: nav.contactVisible,
     leavingContact: nav.leavingContact,
     setContactVisible: nav.setContactVisible,
@@ -108,7 +107,7 @@ export default function Home() {
   useScrollTransition({
     currentSection: nav.currentSection,
     isTransitioning: nav.isTransitioning,
-    isWaiting: nav.waitingForHeroLoop || nav.waitingForAboutStartLoop || nav.waitingForContactLoop,
+    isWaiting: false,
     onScrollDown: nav.handleScrollDown,
     onScrollUp: nav.handleScrollUp,
   });

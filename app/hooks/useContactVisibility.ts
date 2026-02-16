@@ -5,7 +5,6 @@ import { homeLogger } from '../utils/logger';
 interface UseContactVisibilityOptions {
   currentSection: Section;
   showHero: boolean;
-  waitingForContactLoop: boolean;
   contactVisible: boolean;
   leavingContact: boolean;
   setContactVisible: (v: boolean) => void;
@@ -23,7 +22,6 @@ interface UseContactVisibilityOptions {
 export function useContactVisibility({
   currentSection,
   showHero,
-  waitingForContactLoop,
   contactVisible,
   leavingContact,
   setContactVisible,
@@ -31,7 +29,7 @@ export function useContactVisibility({
 }: UseContactVisibilityOptions) {
   useEffect(() => {
     // Enter: show UI after a short delay (only when not leaving)
-    if (currentSection === 'contact' && showHero && !waitingForContactLoop && !contactVisible && !leavingContact) {
+    if (currentSection === 'contact' && showHero && !contactVisible && !leavingContact) {
       const timer = setTimeout(() => {
         homeLogger.debug('Setting contactVisible to true');
         setContactVisible(true);
@@ -60,6 +58,5 @@ export function useContactVisibility({
     setContactVisible,
     setLeavingContact,
     showHero,
-    waitingForContactLoop,
   ]);
 }
