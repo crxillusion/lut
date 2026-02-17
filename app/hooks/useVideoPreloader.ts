@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { LOADING_TIMEOUT } from '../constants/config';
 import { videoLogger } from '../utils/logger';
+import { VIDEO_PATHS } from '../constants/config';
 
 export function useVideoPreloader(videoPaths: string[]) {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,14 +15,18 @@ export function useVideoPreloader(videoPaths: string[]) {
 
   useEffect(() => {
     let isCancelled = false;
+    let essentialSettled = false;
 
     const startAt = performance.now();
 
-    // Decide what blocks the loading UI vs what can be warmed later.
-    // Default: block on a small curated subset (max 12), warm the rest later.
-    const ESSENTIAL_MAX = 12;
-    const essentialVideos = uniqueVideoPaths.slice(0, ESSENTIAL_MAX);
-    const remainingVideos = uniqueVideoPaths.slice(ESSENTIAL_MAX);
+    // Treat the incoming list as the curated "must-have" set.
+    const essentialVideos = uniqueVideoPaths;
+
+    // Best-effort: background warm any other known videos (non-blocking).
+    const allKnownVideos = Array.from(
+      new Set(Object.values(VIDEO_PATHS).filter((v): v is string => typeof v === 'string'))
+    );
+    const remainingVideos = allKnownVideos.filter((p) => !essentialVideos.includes(p));
 
     const totalVideos = essentialVideos.length;
 
@@ -135,6 +140,8 @@ export function useVideoPreloader(videoPaths: string[]) {
 
     runWithConcurrency().then(() => {
       if (isCancelled) return;
+      essentialSettled = true;
+      if (maxTimeoutId) window.clearTimeout(maxTimeoutId);
 
       const perfElapsedMs = Math.round(performance.now() - startAt);
       const wallElapsedMs = Date.now() - startTime;
@@ -171,18 +178,18 @@ export function useVideoPreloader(videoPaths: string[]) {
       }, remainingTime);
     });
 
-    const maxTimeout = setTimeout(() => {
-      if (!isCancelled) {
-        videoLogger.warn('Maximum timeout reached, forcing load complete');
-        setIsLoading(false);
-        videoElements.forEach(v => v.remove());
-        preloadRemainingVideos(remainingVideos);
-      }
+    // Safety watchdog: only relevant while essential preload is still running.
+    let maxTimeoutId: number | null = window.setTimeout(() => {
+      if (isCancelled || essentialSettled) return;
+      videoLogger.warn('Maximum timeout reached, forcing load complete');
+      setIsLoading(false);
+      videoElements.forEach(v => v.remove());
+      preloadRemainingVideos(remainingVideos);
     }, LOADING_TIMEOUT);
 
     return () => {
       isCancelled = true;
-      clearTimeout(maxTimeout);
+      if (maxTimeoutId) window.clearTimeout(maxTimeoutId);
       videoElements.forEach(v => v.remove());
     };
     // caller passes constants; uniqueVideoPaths memoizes
