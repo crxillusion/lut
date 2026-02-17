@@ -22,30 +22,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          lfs: true
-      
-      - name: Pull Git LFS objects
-        run: |
-          git lfs install
-          git lfs pull
-      
-      - name: Verify LFS files are checked out
-        run: |
-          echo "Checking LFS files..."
-          git lfs ls-files
-          echo "Checking logo file..."
-          ls -lh public/logo-animation.gif
-          file public/logo-animation.gif
-      
+          lfs: false
+
+      # LFS is intentionally disabled: videos are hosted on R2 via NEXT_PUBLIC_ASSET_PREFIX.
+      # Removing LFS pulls avoids CI failures when LFS objects are missing/unavailable.
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build with Next.js
         run: npm run build
         env:
@@ -56,16 +46,16 @@ jobs:
           NEXT_PUBLIC_ASSET_PREFIX: ${{ secrets.NEXT_PUBLIC_ASSET_PREFIX }}
           NEXT_PUBLIC_DEBUG_LOGS: "1"
           NEXT_PUBLIC_DEBUG_LOG_LEVEL: "debug"
-      
+
       - name: Verify build output
         run: |
           echo "Checking if out directory exists..."
           ls -la out/ | head -20
           echo "Checking logo in out directory..."
           ls -lh out/logo-animation.gif 2>/dev/null || echo "Logo not found in out/"
-          echo "Checking videos in out directory..."
+          echo "Checking videos in out directory (should be empty when using R2)..."
           ls -lh out/videos/*.mp4 2>/dev/null | head -5 || echo "No videos found in out/videos/"
-      
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
