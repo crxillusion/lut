@@ -49,6 +49,19 @@ export function StaticSection({
       return;
     }
 
+    // Disable tilt/parallax on mobile screens.
+    const isMobile =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 767px)').matches;
+
+    if (isMobile) {
+      // Ensure neutral transform on mobile.
+      targetOffsetRef.current = { x: 0, y: 0 };
+      if (canvasRef.current) canvasRef.current.style.transform = 'translate3d(0px, 0px, 0) scale(1.03)';
+      return;
+    }
+
     const el = sectionRef.current;
     if (!el) return;
 
@@ -83,6 +96,7 @@ export function StaticSection({
     };
 
     // --- Mobile / tablet tilt support via DeviceOrientation ---
+    // (Only enabled on non-mobile viewports; see gate above.)
     let orientationActive = false;
     let orientationCleanup: (() => void) | null = null;
 
