@@ -24,9 +24,6 @@ jobs:
         with:
           lfs: false
 
-      # LFS is intentionally disabled: videos are hosted on R2 via NEXT_PUBLIC_ASSET_PREFIX.
-      # Removing LFS pulls avoids CI failures when LFS objects are missing/unavailable.
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
