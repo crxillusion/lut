@@ -37,6 +37,21 @@ export default function RootLayout({
       <head>
         <link rel="preload" as="image" href={`${BASE_PATH}/logo-animation.gif`} />
         <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.jpg`} />
+
+        {/* UI icons (overlay) */}
+        <link rel="preload" as="image" href={`${BASE_PATH}/back-arrow.svg`} />
+        <link rel="preload" as="image" href={`${BASE_PATH}/instagram.svg`} />
+        <link rel="preload" as="image" href={`${BASE_PATH}/linkedin.svg`} />
+        <link rel="preload" as="image" href={`${BASE_PATH}/sound.svg`} />
+        <link rel="preload" as="image" href={`${BASE_PATH}/email.svg`} />
+
+        {/* Background audio */}
+        <link
+          rel="preload"
+          as="audio"
+          href={`${BASE_PATH}/Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav`}
+          type="audio/wav"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}

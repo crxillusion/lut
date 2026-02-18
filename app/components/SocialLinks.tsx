@@ -115,7 +115,14 @@ const SocialLinksComponent = ({
         className="text-white hover:opacity-70 transition-opacity"
         aria-label="Instagram"
       >
-        <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={effectiveIconSize} height={effectiveIconSize} />
+        <Image
+          src={`${BASE_PATH}/instagram.svg`}
+          alt="Instagram"
+          width={effectiveIconSize}
+          height={effectiveIconSize}
+          priority
+          loading="eager"
+        />
       </a>
       <a 
         href="https://www.linkedin.com/company/lutstudios/" 
@@ -124,7 +131,14 @@ const SocialLinksComponent = ({
         className="text-white hover:opacity-70 transition-opacity"
         aria-label="LinkedIn"
       >
-        <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={effectiveIconSize} height={effectiveIconSize} />
+        <Image
+          src={`${BASE_PATH}/linkedin.svg`}
+          alt="LinkedIn"
+          width={effectiveIconSize}
+          height={effectiveIconSize}
+          priority
+          loading="eager"
+        />
       </a>
 
       {/* Cases-only: Email button after LinkedIn */}
@@ -141,7 +155,14 @@ const SocialLinksComponent = ({
             exit={{ opacity: 0, y: 8, filter: 'blur(10px)' }}
             transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
           >
-            <Image src={`${BASE_PATH}/email.svg`} alt="Email" width={effectiveIconSize} height={effectiveIconSize} />
+            <Image
+              src={`${BASE_PATH}/email.svg`}
+              alt="Email"
+              width={effectiveIconSize}
+              height={effectiveIconSize}
+              priority
+              loading="eager"
+            />
           </motion.button>
         )}
       </AnimatePresence>
