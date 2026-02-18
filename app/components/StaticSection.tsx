@@ -301,6 +301,18 @@ export function StaticSection({
     if (!canvas) return;
     if (!isVisible) return;
 
+    const isMobile =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 767px)').matches;
+
+    if (isMobile) {
+      // No scaling/tilt on mobile.
+      canvas.style.transition = 'opacity 300ms ease';
+      canvas.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+      return;
+    }
+
     if (isFrameCaptured) {
       // Start slightly smaller, then animate up to the base scale.
       canvas.style.transition = 'transform 520ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms ease';
@@ -343,7 +355,7 @@ export function StaticSection({
         style={{
           objectFit: 'cover',
           willChange: 'transform, opacity',
-          // Default base transform (will be overridden by the scale-in effect when captured)
+          // Default base transform (desktop can override via effects; mobile stays neutral)
           transform: 'translate3d(0px, 0px, 0) scale(1)',
         }}
       />
