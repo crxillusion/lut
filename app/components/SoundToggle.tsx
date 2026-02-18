@@ -194,12 +194,14 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
   const ariaLabel = isMuted ? 'Unmute background music' : 'Mute background music';
 
   return (
-    <div className={className} style={{ width: iconSize, height: iconSize }}>
+    <div
+      className={className}
+    >
       <audio ref={audioRef} src={audioSrc} data-bg-audio="true" />
       <button
         type="button"
         onClick={toggle}
-        className="text-white hover:opacity-70 transition-opacity"
+        className="text-white hover:opacity-70 transition-opacity flex items-center justify-center w-full h-full leading-none"
         aria-label={ariaLabel}
       >
         <Image
@@ -207,7 +209,7 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
           alt="Sound"
           width={iconSize}
           height={iconSize}
-          className={isMuted && hasInteracted ? 'opacity-70' : 'opacity-100'}
+          className={`${isMuted && hasInteracted ? 'opacity-70' : 'opacity-100'} block`}
         />
       </button>
     </div>

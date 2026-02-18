@@ -44,10 +44,13 @@ const SocialLinksComponent = ({
   const shouldBeVisible = animateOnce ? (hasAnimated || isVisible) : isVisible;
 
   const emailButtonEnabled = Boolean(showEmailButton && onEmailClick);
+
+  // Mobile-friendly sizing (keeps desktop unchanged)
+  const effectiveIconSize = iconSize;
   
   return (
     <motion.div 
-      className="absolute bottom-20 sm:bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4"
+      className="absolute bottom-20 sm:bottom-20 left-1/2 transform -translate-x-1/2 flex items-center gap-3 sm:gap-4"
       initial={{
         filter: 'blur(10px)',
         opacity: 0,
@@ -68,7 +71,7 @@ const SocialLinksComponent = ({
         {showBackButton && onBackClick && (
           <motion.div
             key="back-button-group"
-            className="flex items-center gap-4"
+            className="flex items-center gap-3 sm:gap-4"
             initial={{
               opacity: 0,
               x: -10,
@@ -95,7 +98,7 @@ const SocialLinksComponent = ({
               className="text-white hover:opacity-70 transition-opacity"
               aria-label="Go back"
             >
-              <Image src={`${BASE_PATH}/back-arrow.svg`} alt="Back" width={iconSize} height={iconSize} />
+              <Image src={`${BASE_PATH}/back-arrow.svg`} alt="Back" width={effectiveIconSize} height={effectiveIconSize} />
             </button>
             
             {/* Divider */}
@@ -112,7 +115,7 @@ const SocialLinksComponent = ({
         className="text-white hover:opacity-70 transition-opacity"
         aria-label="Instagram"
       >
-        <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={iconSize} height={iconSize} />
+        <Image src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={effectiveIconSize} height={effectiveIconSize} />
       </a>
       <a 
         href="https://www.linkedin.com/company/lutstudios/" 
@@ -121,7 +124,7 @@ const SocialLinksComponent = ({
         className="text-white hover:opacity-70 transition-opacity"
         aria-label="LinkedIn"
       >
-        <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={iconSize} height={iconSize} />
+        <Image src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={effectiveIconSize} height={effectiveIconSize} />
       </a>
 
       {/* Cases-only: Email button after LinkedIn */}
@@ -138,13 +141,13 @@ const SocialLinksComponent = ({
             exit={{ opacity: 0, y: 8, filter: 'blur(10px)' }}
             transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
           >
-            <Image src={`${BASE_PATH}/email.svg`} alt="Email" width={iconSize} height={iconSize} />
+            <Image src={`${BASE_PATH}/email.svg`} alt="Email" width={effectiveIconSize} height={effectiveIconSize} />
           </motion.button>
         )}
       </AnimatePresence>
 
       {/* Sound toggle (rightmost) */}
-      <SoundToggle iconSize={iconSize} />
+      <SoundToggle iconSize={effectiveIconSize} />
     </motion.div>
   );
 };
