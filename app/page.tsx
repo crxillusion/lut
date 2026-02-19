@@ -35,6 +35,10 @@ export default function Home() {
 
   const { isLoading, loadingProgress } = useVideoPreloader(HOME_PRELOAD_VIDEO_PATHS);
 
+  // When loading is complete, wait for the loader lottie to finish its current loop
+  // before starting the opening transition.
+  const [loaderLoopDone, setLoaderLoopDone] = useState(false);
+
   // Preload critical images during the loading screen.
   // (Cases card images are included in HOME_PRELOAD_IMAGE_PATHS so they render instantly.)
   useAssetPreloader({
@@ -56,7 +60,11 @@ export default function Home() {
     setHeroVisible,
     setAboutStartVisible,
     handleOpeningComplete,
-  } = useLoadingAndOpening(loadingProgress, isLoading, openingReady);
+  } = useLoadingAndOpening(loaderLoopDone ? loadingProgress : Math.min(loadingProgress, 99), isLoading, openingReady);
+
+  useEffect(() => {
+    if (loadingProgress < 100) setLoaderLoopDone(false);
+  }, [loadingProgress]);
 
   // Background audio: we don't attempt autoplay on load; we attempt once on the
   // first global click after the loading screen is gone (plus the explicit sound button).
@@ -115,7 +123,11 @@ export default function Home() {
   return (
     <>
       {loadingScreenMounted && (
-        <LoadingScreen progress={loadingProgress} isVisible={loadingScreenVisible} />
+        <LoadingScreen
+          progress={loadingProgress}
+          isVisible={loadingScreenVisible}
+          onLoopEndAfterComplete={() => setLoaderLoopDone(true)}
+        />
       )}
 
       <OpeningTransition
