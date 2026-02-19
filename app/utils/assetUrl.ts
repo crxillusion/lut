@@ -13,7 +13,14 @@ function normalizePrefix(prefix: string) {
 
 export function assetUrl(p: string): string {
   const rawPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX;
-  const prefix = rawPrefix ? normalizePrefix(rawPrefix) : '';
+  const isLocalhost =
+    process.env.NODE_ENV === 'development' &&
+    (process.env.NEXT_PUBLIC_VERCEL_ENV === undefined || process.env.NEXT_PUBLIC_VERCEL_ENV === 'development');
+
+  // In local dev, default to R2 if no explicit prefix is set.
+  // This prevents having to keep large videos in /public/videos during development.
+  const effectivePrefix = rawPrefix || (isLocalhost ? 'https://pub-d2e341ccd5fc4ac59f6cce5ff14c3ead.r2.dev' : '');
+  const prefix = effectivePrefix ? normalizePrefix(effectivePrefix) : '';
   const normalizedPath = p.startsWith('/') ? p : `/${p}`;
 
   if (prefix) {

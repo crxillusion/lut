@@ -50,7 +50,7 @@ const SocialLinksComponent = ({
   
   return (
     <motion.div 
-      className="absolute bottom-20 sm:bottom-20 left-1/2 transform -translate-x-1/2 flex items-center gap-3 sm:gap-4"
+      className="absolute md:bottom-8 sm:bottom-20 bottom-20 left-1/2 transform -translate-x-1/2 flex items-center gap-3 sm:gap-4"
       initial={{
         filter: 'blur(10px)',
         opacity: 0,
