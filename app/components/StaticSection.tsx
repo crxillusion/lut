@@ -192,17 +192,28 @@ export function StaticSection({
       
       const captureFrame = () => {
         if (video.videoWidth > 0 && video.videoHeight > 0) {
-          // Set canvas dimensions to match video
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          
-          // Draw the current frame
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          // Keep original framing: match the canvas coordinate space to the video frame.
+          // Improve sharpness on retina by scaling the backing store by DPR.
+          const dpr = typeof window !== 'undefined' ? Math.max(1, window.devicePixelRatio || 1) : 1;
+
+          canvas.width = Math.round(video.videoWidth * dpr);
+          canvas.height = Math.round(video.videoHeight * dpr);
+
+          // Draw in "video pixel" units; DPR scaling is handled by the transform.
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+
           setIsFrameCaptured(true);
           captureAttemptedRef.current = true;
           
           videoLogger.debug(
-            `[StaticSection ${videoSrc.split('/').pop()}] Frame captured at ${video.currentTime.toFixed(3)}s / ${video.duration.toFixed(3)}s`
+            `[StaticSection ${videoSrc.split('/').pop()}] Frame captured at ${video.currentTime.toFixed(3)}s / ${video.duration.toFixed(3)}s`,
+            {
+              video: { w: video.videoWidth, h: video.videoHeight },
+              canvas: { w: canvas.width, h: canvas.height, dpr },
+            }
           );
         }
       };
