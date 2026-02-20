@@ -17,6 +17,21 @@ import { useContactVisibility } from './hooks/useContactVisibility';
 import { BASE_PATH } from './constants/config';
 import { useBgAudioAutoplay } from './hooks/useBgAudioAutoplay';
 
+function preloadDotLottie(url: string) {
+  try {
+    // Fetch with high priority; keep alive so the browser can reuse it.
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'fetch';
+    link.href = url;
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+    return () => link.remove();
+  } catch {
+    return () => {};
+  }
+}
+
 export default function Home() {
   const videoRefs = useVideoRefs();
   const {
@@ -34,6 +49,12 @@ export default function Home() {
   } = videoRefs;
 
   const { isLoading, loadingProgress } = useVideoPreloader(HOME_PRELOAD_VIDEO_PATHS);
+
+  // Preload the loader animation early so it doesn't pop in late.
+  useEffect(() => {
+    const cleanup = preloadDotLottie(`${BASE_PATH}/5Z8KeWup2u.lottie`);
+    return cleanup;
+  }, []);
 
   // When loading is complete, wait for the loader lottie to finish its current loop
   // before starting the opening transition.
