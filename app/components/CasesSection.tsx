@@ -121,7 +121,7 @@ const INTRO_CARD_CLASS =
   'relative w-full rounded-[20px] border border-white/60 bg-[length:770px,100%] bg-bottom bg-no-repeat shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] py-[22px] md:px-[50px] md:py-[42px] md:pb-[20rem]';
 
 const GRID_CARD_CLASS =
-  'relative w-full h-full rounded-[20px] border-[0.5px] border-white/40 shadow-[7px_9px_14.4px_0px_#00000047] overflow-hidden';
+  'relative w-full h-full border-[0.5px] border-white/40 shadow-[7px_9px_14.4px_0px_#00000047] overflow-hidden';
 
 function VideoPopup({ title, url, onClose }: { title: string; url: string; onClose: () => void }) {
   const strictModeMountCountRef = useRef(0);
@@ -196,17 +196,202 @@ function CaseCard({ item }: { item: CaseItem }) {
   return (
     <div className={GRID_CARD_CLASS}>
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${bgUrl})` }} />
-      <div className="absolute inset-0 bg-black/35" />
-
-      <div className="relative z-[1] h-full w-full flex flex-col items-center justify-center px-8 py-25 text-white">
-        <h3 className="font-outfit font-bold text-[24px] leading-[150%] tracking-[0.5em] text-center uppercase">
-          {item.title}
-        </h3>
-        <p className="mt-4 font-outfit font-medium text-[15px] leading-[150%] tracking-[-0.011em] text-center">
-          {item.desc}
-        </p>
-      </div>
     </div>
+  );
+}
+
+function CaseActionIcon({ type }: { type: 'popup' | 'newtab' }) {
+  // Minimal inline icons to avoid adding deps.
+  if (type === 'popup') {
+    // Play icon
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 5v14l11-7L8 5z" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  // External-link icon
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"
+        fill="currentColor"
+      />
+      <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CaseCardInteractive({
+  item,
+  idx,
+  onOpenPopup,
+}: {
+  item: CaseItem;
+  idx: number;
+  onOpenPopup: (title: string, url: string) => void;
+}) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSmallMobile, setIsSmallMobile] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [inView, setInView] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1599px)');
+    const update = () => setIsSmallMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
+
+  const wrapperClass = item.wide
+    ? 'md:col-span-2 min-h-[320px]'
+    : isSmallMobile
+      ? 'min-h-[450px]'
+      : 'min-h-[320px]';
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        setInView(Boolean(e?.isIntersecting));
+      },
+      { threshold: [0, 0.35, 0.6] }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [isMobile]);
+
+  const openNewTab = () => {
+    try {
+      window.open(item.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAction = () => {
+    if (item.openIn === 'popup') {
+      homeLogger.debug('[Cases] open popup', { title: item.title, url: item.url });
+      onOpenPopup(item.title, item.url);
+    } else {
+      homeLogger.debug('[Cases] open new tab', { title: item.title, url: item.url });
+      openNewTab();
+    }
+  };
+
+  const overlay = (visible: boolean, size: 'desktop' | 'mobile') => (
+    <motion.div
+      className="absolute inset-0 z-[2] flex flex-col items-center justify-center text-white px-8"
+      initial={false}
+      animate={visible ? { opacity: 1, filter: 'blur(0px)' } : { opacity: 0, filter: 'blur(10px)' }}
+      transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+      style={{ pointerEvents: visible ? 'auto' : 'none' }}
+    >
+      <div className="absolute inset-0 bg-black/45" />
+
+      <div className="relative z-[1] w-full max-w-[560px] text-center">
+        <div
+          className={
+            size === 'mobile' || isSmallMobile
+              ? 'font-outfit font-bold text-[20px] leading-[150%] tracking-[0.5em] uppercase'
+              : 'font-outfit font-bold text-[20px] md:text-[24px] leading-[150%] tracking-[0.5em] uppercase'
+          }
+          style={{ textShadow: '0 6px 22px rgba(0,0,0,0.45)' }}
+        >
+          {item.title}
+        </div>
+        <div
+          className={
+            size === 'mobile' || isSmallMobile
+              ? 'mt-4 font-outfit font-medium text-[12px] leading-[150%] tracking-[-0.011em]'
+              : 'mt-4 font-outfit font-medium text-[14px] md:text-[15px] leading-[150%] tracking-[-0.011em]'
+          }
+          style={{ textShadow: '0 6px 22px rgba(0,0,0,0.45)' }}
+        >
+          {item.desc}
+        </div>
+
+        <motion.button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleAction();
+          }}
+          className="mt-6 inline-flex items-center justify-center gap-2 rounded-[999px] border border-white/70 bg-black/30 px-5 py-3 font-outfit font-semibold uppercase tracking-[0.22em] text-[12px] md:text-[12px] hover:bg-black/45 transition-colors"
+          initial={false}
+          animate={visible ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+          transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1], delay: visible ? 0.05 : 0 }}
+          aria-label={item.openIn === 'popup' ? 'Play' : 'Open link'}
+        >
+          <span className="inline-flex items-center justify-center">{item.openIn === 'popup' ? 'PLAY' : 'OPEN'}</span>
+          <span className="inline-flex items-center justify-center">
+            <CaseActionIcon type={item.openIn} />
+          </span>
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+
+  // Desktop: show overlay on hover
+  if (!isMobile) {
+    return (
+      <motion.div
+        className={wrapperClass}
+        initial={{ filter: 'blur(10px)', opacity: 0, y: 16 }}
+        whileInView={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.25 }}
+        transition={{
+          duration: 0.55,
+          delay: Math.min(0.4, idx * 0.06),
+          ease: [0.23, 1, 0.32, 1],
+        }}
+      >
+        <div
+          ref={cardRef}
+          className="relative w-full h-full rounded-[20px] overflow-hidden"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <CaseCard item={item} />
+          {overlay(hovered, 'desktop')}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Mobile: show overlay when card scrolls into view
+  return (
+    <motion.div
+      className={wrapperClass}
+      initial={{ filter: 'blur(10px)', opacity: 0, y: 16 }}
+      whileInView={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{
+        duration: 0.55,
+        delay: Math.min(0.4, idx * 0.06),
+        ease: [0.23, 1, 0.32, 1],
+      }}
+    >
+      <div ref={cardRef} className="relative w-full h-full rounded-[20px] overflow-hidden">
+        <CaseCard item={item} />
+        {overlay(inView, 'mobile')}
+      </div>
+    </motion.div>
   );
 }
 
@@ -621,50 +806,13 @@ export function CasesSection({
               {/* Grid */}
               <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 pb-16">
                 {CASES.map((item, idx) => {
-                  const wrapperClass = item.wide ? 'md:col-span-2 min-h-[320px]' : 'min-h-[320px]';
-
-                  const cardMotionInitial = { filter: 'blur(10px)', opacity: 0, y: 16 };
-                  const cardMotionAnimate = { filter: 'blur(0px)', opacity: 1, y: 0 };
-
-                  const motionWrapperProps = {
-                    initial: cardMotionInitial,
-                    whileInView: cardMotionAnimate,
-                    viewport: { once: true, amount: 0.25 } as const,
-                    transition: {
-                      duration: 0.55,
-                      delay: Math.min(0.4, idx * 0.06),
-                      ease: [0.23, 1, 0.32, 1] as const,
-                    },
-                  };
-
-                  if (item.openIn === 'newtab') {
-                    return (
-                      <motion.a
-                        key={`${item.title}-${idx}`}
-                        className={wrapperClass}
-                        href={item.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        {...motionWrapperProps}
-                      >
-                        <CaseCard item={item} />
-                      </motion.a>
-                    );
-                  }
-
                   return (
-                    <motion.button
+                    <CaseCardInteractive
                       key={`${item.title}-${idx}`}
-                      type="button"
-                      className={`${wrapperClass} text-left cursor-pointer`}
-                      onClick={() => {
-                        homeLogger.debug('[Cases] open popup', { title: item.title, url: item.url });
-                        setPopup({ title: item.title, url: item.url });
-                      }}
-                      {...motionWrapperProps}
-                    >
-                      <CaseCard item={item} />
-                    </motion.button>
+                      item={item}
+                      idx={idx}
+                      onOpenPopup={(title, url) => setPopup({ title, url })}
+                    />
                   );
                 })}
               </div>
