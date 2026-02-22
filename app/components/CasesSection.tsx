@@ -23,6 +23,8 @@ type CaseItem = {
   wide?: boolean;
 };
 
+type AudioSnapshot = { el: HTMLAudioElement; paused: boolean; volume: number };
+
 const CASES: CaseItem[] = [
   {
     title: 'TESTING [HOME]',
@@ -696,7 +698,58 @@ export function CasesSection({
     };
   }, [isVisible, onScrollDownOutside, onScrollUpOutside, showFrame]);
 
+  const audioSnapshotRef = useRef<AudioSnapshot[] | null>(null);
+
   const [popup, setPopup] = useState<{ title: string; url: string } | null>(null);
+
+  const muteSiteAudio = () => {
+    if (typeof document === 'undefined') return;
+    const audios = Array.from(document.querySelectorAll<HTMLAudioElement>('audio[data-bg-audio="true"]'));
+    audioSnapshotRef.current = audios.map(a => ({ el: a, paused: a.paused, volume: a.volume }));
+
+    audios.forEach(a => {
+      try {
+        a.volume = 0;
+        a.pause();
+      } catch {
+        // ignore
+      }
+    });
+  };
+
+  const restoreSiteAudio = () => {
+    const snaps = audioSnapshotRef.current;
+    if (!snaps) return;
+    snaps.forEach(({ el, paused, volume }) => {
+      try {
+        el.volume = volume;
+        if (!paused) void el.play().catch(() => {});
+      } catch {
+        // ignore
+      }
+    });
+    audioSnapshotRef.current = null;
+  };
+
+  // Mute bg audio while popup is open; restore on close.
+  useEffect(() => {
+    if (!popup) {
+      restoreSiteAudio();
+      return;
+    }
+    // Opening popup
+    muteSiteAudio();
+    return () => {
+      restoreSiteAudio();
+    };
+  }, [popup]);
+
+  // When leaving the Cases screen, close any open popup first.
+  useEffect(() => {
+    if (isVisible) return;
+    setPopup(null);
+    restoreSiteAudio();
+  }, [isVisible]);
 
   const motionCommon = {
     initial: { filter: 'blur(10px)', opacity: 0, y: 20 },
