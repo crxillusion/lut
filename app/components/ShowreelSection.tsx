@@ -24,6 +24,7 @@ function vimeoEmbedUrl(id: string, { autoplay }: { autoplay: boolean }) {
 type AudioSnapshot = { el: HTMLAudioElement; paused: boolean; volume: number };
 
 export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const frameImgRef = useRef<HTMLImageElement | null>(null);
 
   // Frame readiness: keep mounted early, but only fade in once we're sure it has painted.
@@ -33,6 +34,64 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
   const [userStarted, setUserStarted] = useState(false);
 
   const audioSnapshotRef = useRef<AudioSnapshot[] | null>(null);
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [isUltraWide, setIsUltraWide] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    // Ultrawide: frame is cover-cropped differently, so we use a dedicated window inset set.
+    const mq = window.matchMedia('(min-aspect-ratio: 1.9/1)');
+    const update = () => setIsUltraWide(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, [isVisible]);
+
+  const WINDOW_INSETS = useMemo(() => {
+    // Calibrated for ultrawide (example frame rect 1512x766):
+    // desired window: left=305, top=135, width=905, height=500
+    const ultraWide = {
+      left: 305 / 1512,
+      right: 1 - (305 + 905) / 1512,
+      top: 135 / 766,
+      bottom: 1 - (135 + 500) / 766,
+    };
+
+    const desktop = {
+      left: 0.2004,
+      right: 0.2021,
+      top: 0.2058,
+      bottom: 0.1979,
+    };
+
+    const mobile = {
+      left: 0,
+      right: 0,
+      top: 215 / 932,
+      bottom: 1 - (215 + 500) / 932,
+    };
+
+    if (isMobile) return mobile;
+    if (isUltraWide) return ultraWide;
+    return desktop;
+  }, [isMobile, isUltraWide]);
+
+  const [windowRect, setWindowRect] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   // When section is shown, wait until the frame image has loaded+decoded
   // and has had a chance to paint before animating its opacity.
@@ -75,6 +134,51 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
       el.removeEventListener('load', onLoad);
     };
   }, [isVisible]);
+
+  // Derive the iframe window rect from the *rendered* frame image.
+  useEffect(() => {
+    if (!isVisible) return;
+    const img = frameImgRef.current;
+    if (!img) return;
+
+    const update = () => {
+      const r = img.getBoundingClientRect();
+      console.log('Frame image rect:', r);
+      const next = {
+        left: Math.round(r.left + r.width * WINDOW_INSETS.left),
+        top: Math.round(r.top + r.height * WINDOW_INSETS.top),
+        width: Math.round(r.width * (1 - WINDOW_INSETS.left - WINDOW_INSETS.right)),
+        height: Math.round(r.height * (1 - WINDOW_INSETS.top - WINDOW_INSETS.bottom)),
+      };
+
+      const section = sectionRef.current;
+      const sr = section?.getBoundingClientRect();
+      const local = sr
+        ? {
+            left: next.left - sr.left,
+            top: next.top - sr.top,
+            width: next.width,
+            height: next.height,
+          }
+        : next;
+
+      setWindowRect(local);
+    };
+
+    const raf = requestAnimationFrame(update);
+    const ro = new ResizeObserver(() => update());
+    ro.observe(img);
+
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [isVisible, WINDOW_INSETS, isMobile, isUltraWide]);
 
   // Reset play state when leaving the showreel section.
   useEffect(() => {
@@ -128,23 +232,32 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
 
   return (
     <section
+      ref={sectionRef as any}
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
         isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
-      {/* Vimeo background */}
+      {/* Vimeo constrained to the frame window */}
       <div className="absolute inset-0">
-        {vimeoSrc && (
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={vimeoSrc}
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            title="Showreel"
-          />
+        {vimeoSrc && windowRect && (
+          <div
+            className="absolute overflow-hidden"
+            style={{
+              left: windowRect.left,
+              top: windowRect.top,
+              width: windowRect.width,
+              height: windowRect.height,
+            }}
+          >
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={vimeoSrc}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title="Showreel"
+            />
+          </div>
         )}
-
-        {/* Click overlay to start playback (no autoplay). */}
         <AnimatePresence>
           {isVisible && !userStarted && (
             <motion.button
