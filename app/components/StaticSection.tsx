@@ -1,4 +1,5 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { createLogger, videoLogger } from '../utils/logger';
 import { BASE_PATH } from '@/app/constants/config';
 
@@ -96,12 +97,17 @@ export function StaticSection({
     const cs = img ? window.getComputedStyle(img) : null;
 
     staticLogger.debug(`[StaticSection ${sectionName}] enter snapshot`, {
+      isTransitioning,
+      imgShown,
+      bgPainted,
+      expectedOpacity: (imgShown && bgPainted) ? 1 : 0,
       hasPicture: !!pic,
       hasImg: !!img,
       imgSrc: img?.currentSrc || img?.getAttribute('src') || null,
       imgComplete: img ? img.complete : null,
       natural: img ? { w: img.naturalWidth, h: img.naturalHeight } : null,
-      opacity: cs?.opacity ?? null,
+      opacity: cs?.opacity ?? 'NULL',
+      inlineOpacity: img?.style.opacity ?? 'NOT_SET',
       display: cs?.display ?? null,
       visibility: cs?.visibility ?? null,
       sectionClass: sectionRef.current?.getAttribute('class') ?? null,
@@ -112,23 +118,44 @@ export function StaticSection({
       const img2 = imgRef.current;
       const cs2 = img2 ? window.getComputedStyle(img2) : null;
       staticLogger.debug(`[StaticSection ${sectionName}] enter +1raf`, {
+        isTransitioning,
+        imgShown,
+        bgPainted,
+        expectedOpacity: (imgShown && bgPainted) ? 1 : 0,
         imgSrc: img2?.currentSrc || img2?.getAttribute('src') || null,
         imgComplete: img2 ? img2.complete : null,
         natural: img2 ? { w: img2.naturalWidth, h: img2.naturalHeight } : null,
-        opacity: cs2?.opacity ?? null,
+        opacity: cs2?.opacity ?? 'NULL',
+        inlineOpacity: img2?.style.opacity ?? 'NOT_SET',
       });
     });
-  }, [isVisible, sectionName]);
+  }, [isVisible, sectionName, isTransitioning, imgShown, bgPainted]);
 
   // Start image decoding immediately (not tied to visibility) so it's ready when the section becomes visible.
   // This eliminates the black blip when transitioning between sections.
   useEffect(() => {
     if (!srcBase) return;
 
-    // If we already saw this background once, show instantly on next visit.
-    if (everReadyRef.current) {
-      setBgPainted(true);
-      setImgShown(true);
+    // Check if this image was already loaded before resetting state
+    const wasAlreadyLoaded = everReadyRef.current;
+
+    // Reset when changing to a new image (different srcBase) UNLESS it was already cached
+    if (!wasAlreadyLoaded) {
+      setBgPainted(false);
+      setImgShown(false);
+    }
+
+    // If already loaded, show instantly and skip decode
+    if (wasAlreadyLoaded) {
+      // Use flushSync to ensure opacity is updated immediately before returning
+      // This prevents a black flash when navigating to a cached image
+      staticLogger.debug(`[StaticSection ${sectionName}] cache hit - flushing state`, { srcBase });
+      flushSync(() => {
+        setIsBgReady(true);
+        setBgPainted(true);
+        setImgShown(true);
+      });
+      staticLogger.debug(`[StaticSection ${sectionName}] cache hit - flushed`, { srcBase });
       return;
     }
 
@@ -139,11 +166,6 @@ export function StaticSection({
 
     const run = async () => {
       try {
-        // Start decoding immediately, don't wait for visibility.
-        // This way the image is ready before the transition completes.
-        setBgPainted(false);
-        setImgShown(false);
-
         const pre = new Image();
         pre.decoding = 'async';
         pre.src = url;
@@ -172,9 +194,12 @@ export function StaticSection({
         if (cancelled) return;
 
         everReadyRef.current = true;
-        setIsBgReady(true);
-        setBgPainted(true);
-        setImgShown(true);
+        // Use flushSync to ensure opacity updates immediately after decode
+        flushSync(() => {
+          setIsBgReady(true);
+          setBgPainted(true);
+          setImgShown(true);
+        });
 
         const ms = Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - t0);
         staticLogger.debug(`[StaticSection ${sectionName}] bg ready (+${ms}ms)`, { url });
@@ -182,9 +207,11 @@ export function StaticSection({
         // On any error, just show what we have.
         if (cancelled) return;
         everReadyRef.current = true;
-        setIsBgReady(true);
-        setBgPainted(true);
-        setImgShown(true);
+        flushSync(() => {
+          setIsBgReady(true);
+          setBgPainted(true);
+          setImgShown(true);
+        });
       }
     };
 
@@ -193,12 +220,6 @@ export function StaticSection({
       cancelled = true;
     };
   }, [srcBase, isOptimizedBase, sectionName]);
-
-  // If we have ever loaded this background, keep it visible instantly on subsequent enters.
-  useEffect(() => {
-    if (!isVisible) return;
-    if (everReadyRef.current) setIsBgReady(true);
-  }, [isVisible]);
 
   // Parallax hover state
   const sectionRef = useRef<HTMLElement>(null);
@@ -437,6 +458,7 @@ export function StaticSection({
         style={{
           background:
             'radial-gradient(120% 120% at 20% 15%, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.0) 42%), radial-gradient(110% 110% at 80% 85%, rgba(185,176,155,0.10) 0%, rgba(0,0,0,0.0) 48%), linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.86) 100%)',
+          zIndex: 1,
         }}
       />
 
@@ -480,21 +502,28 @@ export function StaticSection({
             decoding="async"
             loading="eager"
             fetchPriority="high"
+            data-debug-visible={isVisible}
+            data-debug-shown={imgShown}
+            data-debug-painted={bgPainted}
+            data-debug-opacity={isVisible && imgShown && bgPainted ? 1 : 0}
             src={`${BASE_PATH}${(isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp'}`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{
               objectFit: 'cover',
               willChange: 'transform, opacity',
               transform: 'translate3d(0px, 0px, 0) scale(1)',
-              opacity: !isTransitioning && imgShown && bgPainted ? 1 : 0,
+              // Always show image once painted/shown - TransitionVideo covers it during transitions
+              opacity: (imgShown && bgPainted) ? 1 : 0,
               transition: 'none',
             }}
             onLoad={() => {
               // If browser loads via cache and our decode gate hasn't run, still mark as ready.
+              staticLogger.debug(`[StaticSection ${sectionName}] img onLoad`, { isVisible, imgShown, bgPainted, srcBase, avifSrcSetLength: avifSrcSet.length, webpSrcSetLength: webpSrcSet.length });
               everReadyRef.current = true;
               setIsBgReady(true);
             }}
             onError={() => {
+              staticLogger.debug(`[StaticSection ${sectionName}] img onError`, { srcBase });
               everReadyRef.current = true;
               setIsBgReady(true);
             }}
