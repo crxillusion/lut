@@ -94,6 +94,8 @@ export function HomeSections({
         videoRef={aboutVideoRef}
         videoSrc={VIDEO_PATHS.aboutStartToAbout}
         isVisible={nav.currentSection === 'about' && showHero}
+        isTransitioning={nav.isTransitioning}
+        transitionVideoRef={transitionVideoRef}
         onBackClick={nav.transitions.toAboutStartFromAbout}
         frameOffsetFromEnd={0.01}
       />
@@ -102,6 +104,8 @@ export function HomeSections({
         videoRef={team1VideoRef}
         videoSrc={VIDEO_PATHS.aboutToTeam}
         isVisible={nav.currentSection === 'team1' && showHero}
+        isTransitioning={nav.isTransitioning}
+        transitionVideoRef={transitionVideoRef}
         onBackClick={nav.transitions.toAboutFromTeam1}
       />
 
@@ -109,6 +113,8 @@ export function HomeSections({
         videoRef={team2VideoRef}
         videoSrc={VIDEO_PATHS.team1ToTeam2}
         isVisible={nav.currentSection === 'team2' && showHero}
+        isTransitioning={nav.isTransitioning}
+        transitionVideoRef={transitionVideoRef}
         onBackClick={nav.transitions.toTeam1FromTeam2}
       />
 
@@ -116,6 +122,8 @@ export function HomeSections({
         videoRef={offerVideoRef}
         videoSrc={VIDEO_PATHS.team2ToOffer}
         isVisible={nav.currentSection === 'offer' && showHero}
+        isTransitioning={nav.isTransitioning}
+        transitionVideoRef={transitionVideoRef}
         onBackClick={nav.transitions.toTeam2FromOffer}
       />
 
@@ -123,6 +131,8 @@ export function HomeSections({
         videoRef={partnerVideoRef}
         videoSrc={VIDEO_PATHS.offerToPartner}
         isVisible={nav.currentSection === 'partner' && showHero}
+        isTransitioning={nav.isTransitioning}
+        transitionVideoRef={transitionVideoRef}
         onBackClick={nav.transitions.toOfferFromPartner}
       />
 

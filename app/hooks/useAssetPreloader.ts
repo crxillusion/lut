@@ -133,6 +133,7 @@ export function useAssetPreloader({
           img.loading = 'eager';
 
           const isCriticalOverlay = /\/((Cases|Showreel)_png_transparent)\.png$/i.test(src);
+          const isOptimizedStaticBg = /\/optimized\/.+--\d+\.(avif|webp)$/i.test(src);
 
           return new Promise<void>((resolve) => {
             let done = false;
@@ -143,17 +144,42 @@ export function useAssetPreloader({
             };
 
             // Safety timeout so preloading can't hang forever.
-            const decodeTimeout = window.setTimeout(() => finish(), 1200);
+            const decodeTimeout = window.setTimeout(() => finish(), 2500);
+
+            const warmRaster = () => {
+              // Try to force a raster/upload by drawing once.
+              // This helps avoid a black blip when the image is first painted full-screen.
+              try {
+                const w = (img as any).naturalWidth || 0;
+                const h = (img as any).naturalHeight || 0;
+                if (w > 0 && h > 0) {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = Math.min(64, w);
+                  canvas.height = Math.min(64, h);
+                  const ctx = canvas.getContext('2d');
+                  ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                }
+              } catch {
+                // ignore
+              }
+            };
 
             img.onload = async () => {
               window.clearTimeout(decodeTimeout);
-              if (isCriticalOverlay && typeof (img as any).decode === 'function') {
+              const shouldDecode =
+                (isCriticalOverlay || isOptimizedStaticBg) && typeof (img as any).decode === 'function';
+              if (shouldDecode) {
                 try {
                   await (img as any).decode();
                 } catch {
                   // ignore decode errors
                 }
               }
+
+              if (isCriticalOverlay || isOptimizedStaticBg) {
+                warmRaster();
+              }
+
               finish();
             };
             img.onerror = () => {

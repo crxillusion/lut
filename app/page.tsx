@@ -22,9 +22,12 @@ function preloadDotLottie(url: string) {
     // Fetch with high priority; keep alive so the browser can reuse it.
     const link = document.createElement('link');
     link.rel = 'preload';
-    link.as = 'fetch';
+    // Some browsers still warn when assigning `link.as = 'fetch'` directly.
+    // Setting the attribute is more compatible.
+    link.setAttribute('as', 'fetch');
     link.href = url;
     link.crossOrigin = 'anonymous';
+    link.type = 'application/octet-stream';
     document.head.appendChild(link);
     return () => link.remove();
   } catch {

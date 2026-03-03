@@ -763,17 +763,14 @@ export function CasesSection({
 
   return (
     <section
-      ref={sectionRef}
-      className={
-        showFrame
-          ? `fixed inset-0 w-full h-screen transition-opacity duration-0 ${
-              isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
-            }`
-          : `fixed inset-0 w-full h-screen transition-opacity duration-0 isolation ${
-              isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
-            }`
-      }
+      ref={sectionRef as any}
+      className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
+        isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
+      }`}
     >
+      {/* Always-painted fallback behind the frame (prevents 1-frame flash on first paint). */}
+      <div className="absolute inset-0 bg-black" aria-hidden />
+
       {isVisible && (
         <>
           {/* Background under the transparent PNG */}

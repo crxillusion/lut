@@ -22,9 +22,12 @@ export function TransitionVideo({
   // during rapid hide/show toggles.
   return (
     <section
-      className={`fixed inset-0 z-50 w-full h-screen overflow-hidden transition-opacity duration-100 ${
+      className={`fixed inset-0 z-50 w-full h-screen overflow-hidden ${
         isVisible ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
       }`}
+      style={{
+        transition: 'opacity 0s', // No fade, instant swap
+      }}
     >
       <VideoBackground 
         videoRef={videoRef}

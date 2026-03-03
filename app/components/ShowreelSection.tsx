@@ -237,6 +237,9 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
         isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
+      {/* Always-painted fallback behind the frame (prevents 1-frame flash on first paint). */}
+      <div className="absolute inset-0 bg-black" aria-hidden />
+
       {/* Vimeo constrained to the frame window */}
       <div className="absolute inset-0">
         {vimeoSrc && windowRect && (

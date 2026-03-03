@@ -35,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preload" as="image" href={`${BASE_PATH}/logo-animation.gif`} />
+        {/* Legacy loader GIF removed (loader is now .lottie and preloaded in `app/page.tsx`) */}
         <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.jpg`} />
 
         {/* UI icons (overlay) */}
@@ -43,7 +43,6 @@ export default function RootLayout({
         <link rel="preload" as="image" href={`${BASE_PATH}/instagram.svg`} />
         <link rel="preload" as="image" href={`${BASE_PATH}/linkedin.svg`} />
         <link rel="preload" as="image" href={`${BASE_PATH}/sound.svg`} />
-        <link rel="preload" as="image" href={`${BASE_PATH}/email.svg`} />
 
         {/* Background audio */}
         <link
