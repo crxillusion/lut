@@ -1,5 +1,6 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { createLogger, videoLogger } from '../utils/logger';
+import { BASE_PATH } from '@/app/constants/config';
 
 const staticLogger = createLogger('Static');
 
@@ -58,13 +59,15 @@ export function StaticSection({
   const avifSrcSet = useMemo(() => {
     if (!srcBase) return '';
     const base = isOptimizedBase ? srcBase : `/optimized${srcBase}`;
-    return widths.map(w => `${base}--${w}.avif ${w}w`).join(', ');
+    const basePath = `${BASE_PATH}${base}`;
+    return widths.map(w => `${basePath}--${w}.avif ${w}w`).join(', ');
   }, [srcBase, isOptimizedBase]);
 
   const webpSrcSet = useMemo(() => {
     if (!srcBase) return '';
     const base = isOptimizedBase ? srcBase : `/optimized${srcBase}`;
-    return widths.map(w => `${base}--${w}.webp ${w}w`).join(', ');
+    const basePath = `${BASE_PATH}${base}`;
+    return widths.map(w => `${basePath}--${w}.webp ${w}w`).join(', ');
   }, [srcBase, isOptimizedBase]);
 
   // Track if the optimized image has been loaded at least once.
@@ -131,7 +134,7 @@ export function StaticSection({
 
     let cancelled = false;
 
-    const url = (isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp';
+    const url = `${BASE_PATH}${(isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp'}`;
     const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
 
     const run = async () => {
@@ -477,7 +480,7 @@ export function StaticSection({
             decoding="async"
             loading="eager"
             fetchPriority="high"
-            src={(isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp'}
+            src={`${BASE_PATH}${(isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp'}`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{
               objectFit: 'cover',
