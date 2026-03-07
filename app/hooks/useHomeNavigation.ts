@@ -318,8 +318,6 @@ export function useHomeNavigation(
 
   const transitionBackFromContact = useCallback(
     () => {
-      const previousSection = previousSectionRef.current;
-
       if (currentSection !== 'contact') return;
 
       // No longer speed up / wait for the contact loop. Freeze defensively, then transition immediately.
@@ -342,18 +340,13 @@ export function useHomeNavigation(
         }
       }
 
-      if (previousSection === 'cases') {
-        handleTransition('cases', VIDEO_PATHS.contactToCases, refs.casesVideoRef);
-        previousSectionRef.current = 'partner';
-      } else {
-        previousSectionRef.current = 'hero';
-        handleTransition('hero', VIDEO_PATHS.contactToHero, refs.heroVideoRef);
-      }
+      // ALWAYS navigate back to hero, regardless of where we came from
+      previousSectionRef.current = 'hero';
+      handleTransition('hero', VIDEO_PATHS.contactToHero, refs.heroVideoRef);
     },
     [
       currentSection,
       handleTransition,
-      refs.casesVideoRef,
       refs.contactVideoRef,
       refs.heroVideoRef,
     ]

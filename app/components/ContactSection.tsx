@@ -296,12 +296,12 @@ export function ContactSection({
 
             {/* Contact Us Card */}
             <motion.div
-              className="relative z-[2] w-full max-w-[845px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] py-[18px] md:px-[20px] md:py-[42px] max-h-[885px]:py-[18px] mb-9 xl:mb-5 max-h-[885px]:mb-4"
+              className="relative z-[2] w-full max-w-[845px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] md:px-[20px] py-[10px] xl:py-[42px] max-h-[885px]:py-[18px] mb-9 xl:mb-5 max-h-[885px]:mb-4"
               initial={motionCommon.initial}
               animate={motionCommon.animate}
               transition={{ ...motionCommon.transitionBase, delay: 0.2 }}
             >
-              <h2 className="font-outfit font-bold tracking-[0.5em] text-center text-white mb-2 text-[clamp(14px,1.4vw,20px)]">
+              <h2 className="font-outfit font-bold tracking-[0.5em] text-center text-white mb-2 text-[clamp(20px,1.4vw,20px)]">
                 CONTACT US
               </h2>
 
