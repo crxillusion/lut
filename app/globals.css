@@ -40,4 +40,6 @@ html {
   -ms-overflow-style: none;
   scrollbar-width: none;
   overflow: hidden;
+  /* Disable zoom with keyboard shortcuts */
+  touch-action: manipulation;
 }

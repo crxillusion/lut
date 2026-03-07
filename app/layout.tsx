@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: `${BASE_PATH}/favicon.png`, type: 'image/png' }],
   },
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
 };
 
 export default function RootLayout({
@@ -35,6 +36,23 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Disable zoom on keyboard shortcuts */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+                  e.preventDefault();
+                }
+              }, false);
+              document.addEventListener('wheel', (e) => {
+                if ((e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                }
+              }, { passive: false });
+            `,
+          }}
+        />
         {/* Legacy loader GIF removed (loader is now .lottie and preloaded in `app/page.tsx`) */}
         <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.jpg`} />
 
