@@ -412,6 +412,8 @@ export function CasesSection({
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const frameImgRef = useRef<HTMLImageElement | null>(null);
+  const frameOverlayRef = useRef<HTMLDivElement | null>(null);
+  const hasInitializedRef = useRef(false);
 
   const [frameReady, setFrameReady] = useState(false);
 
@@ -440,62 +442,88 @@ export function CasesSection({
   const [titleMaxPx, setTitleMaxPx] = useState<number>(155);
 
   // Treat the PNG frame as desktop-only.
+  // Start with false to avoid hydration mismatch, then set on client with useEffect
   const [showFrame, setShowFrame] = useState(false);
 
+  const everReadyRef = useRef(false);
+
+  // Start decoding the frame PNG immediately (not tied to visibility) so it's ready before navigation.
+  // This matches StaticSection's approach for seamless transitions.
   useEffect(() => {
-    if (!isVisible) return;
-
-    setFrameReady(false);
-
     const el = frameImgRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
+
+    // If already loaded, mark ready immediately
+    if (everReadyRef.current) {
+      queueMicrotask(() => setFrameReady(true));
+      return;
+    }
 
     let cancelled = false;
 
-    const markReadyAfterPaint = async () => {
+    const decodeFrame = async () => {
       try {
         if (typeof (el as any).decode === 'function') {
           await (el as any).decode();
         }
-      } catch {
+      } catch (e) {
         // ignore
       }
 
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      // Wait 2 frames for paint
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
 
-      if (!cancelled) setFrameReady(true);
+      if (!cancelled) {
+        everReadyRef.current = true;
+        // Use microtask to avoid flushSync in effect error
+        queueMicrotask(() => {
+          setFrameReady(true);
+        });
+      }
     };
 
-    const onLoad = () => {
-      homeLogger.debug('[Cases] frame image loaded');
-      // Ensure we measure right after load.
-      window.dispatchEvent(new Event('resize'));
-      void markReadyAfterPaint();
-    };
-
+    // Start decoding if image is already loaded
     if (el.complete && el.naturalWidth > 0) {
-      void markReadyAfterPaint();
+      void decodeFrame();
     } else {
+      // Wait for image to load first
+      const onLoad = () => {
+        void decodeFrame();
+        el.removeEventListener('load', onLoad);
+      };
       el.addEventListener('load', onLoad);
+      return () => {
+        el.removeEventListener('load', onLoad);
+      };
     }
 
     return () => {
       cancelled = true;
-      el.removeEventListener('load', onLoad);
     };
   }, [isVisible]);
 
+  // Show the frame immediately when section becomes visible (seamless transition from video)
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible) {
+      setFrameReady(false);
+    } else if (everReadyRef.current) {
+      // Frame is already decoded, show immediately
+      // Use microtask to avoid flushSync in effect error
+      queueMicrotask(() => setFrameReady(true));
+    }
+  }, [isVisible]);
 
+  // Update showFrame when viewport width changes
+  useEffect(() => {
     const mq = window.matchMedia('(min-width: 1200px)');
     const update = () => setShowFrame(mq.matches);
-    update();
-
+    update(); // Set initial state on mount
     mq.addEventListener?.('change', update);
     return () => mq.removeEventListener?.('change', update);
-  }, [isVisible]);
+  }, []);
 
   // Derive the scroll window rect from the *rendered* (object-cover) frame image.
   useEffect(() => {
@@ -771,6 +799,39 @@ export function CasesSection({
       {/* Always-painted fallback behind the frame (prevents 1-frame flash on first paint). */}
       <div className="absolute inset-0 bg-black" aria-hidden />
 
+      {/*
+        Full-screen PNG frame on top (transparent window)
+        ALWAYS mounted (not inside any conditional) to avoid hydration mismatch.
+        Visibility controlled by showFrame state; opacity gated on isVisible for seamless transitions.
+      */}
+      <div
+        className="pointer-events-none absolute inset-0 z-40"
+        style={{
+          // Hide frame container on mobile
+          visibility: showFrame ? 'visible' : 'hidden',
+        }}
+        aria-hidden={!showFrame}
+      >
+        <div
+          ref={frameOverlayRef}
+          className="absolute inset-0"
+          style={{
+            // Show immediately when section is visible
+            opacity: isVisible ? 1 : 0,
+            filter: isVisible ? 'blur(0px)' : 'blur(10px)',
+            transition: 'none',
+          }}
+        >
+          <img
+            ref={frameImgRef}
+            src={`${BASE_PATH}/Cases_png_transparent.png`}
+            alt="Cases frame"
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
+        </div>
+      </div>
+
       {isVisible && (
         <>
           {/* Background under the transparent PNG */}
@@ -884,34 +945,6 @@ export function CasesSection({
                 />
               )}
             </AnimatePresence>
-          </div>
-
-          {/*
-            Full-screen PNG frame on top (transparent window)
-            Keep it mounted so it can be painted before the first visible frame.
-          */}
-          <div
-            className={`pointer-events-none absolute inset-0 z-40 ${showFrame ? '' : 'hidden'}`}
-            aria-hidden={!showFrame}
-          >
-            <motion.div
-              className="absolute inset-0"
-              initial={false}
-              animate={
-                isVisible && showFrame && frameReady
-                  ? { opacity: 1, filter: 'blur(0px)' }
-                  : { opacity: 0, filter: 'blur(10px)' }
-              }
-              transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
-            >
-              <img
-                ref={frameImgRef}
-                src={`${BASE_PATH}/Cases_png_transparent.png`}
-                alt="Cases frame"
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
-            </motion.div>
           </div>
         </>
       )}

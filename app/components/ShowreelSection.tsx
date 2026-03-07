@@ -26,6 +26,8 @@ type AudioSnapshot = { el: HTMLAudioElement; paused: boolean; volume: number };
 export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const frameImgRef = useRef<HTMLImageElement | null>(null);
+  const frameOverlayRef = useRef<HTMLDivElement | null>(null);
+  const hasInitializedRef = useRef(false);
 
   // Frame readiness: keep mounted early, but only fade in once we're sure it has painted.
   const [frameReady, setFrameReady] = useState(false);
@@ -93,20 +95,24 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
     height: number;
   } | null>(null);
 
-  // When section is shown, wait until the frame image has loaded+decoded
-  // and has had a chance to paint before animating its opacity.
+  const everReadyRef = useRef(false);
+
+  // Start decoding the frame PNG immediately (not tied to visibility) so it's ready before navigation.
+  // This matches StaticSection's approach for seamless transitions.
   useEffect(() => {
-    if (!isVisible) return;
-
-    setFrameReady(false);
-
     const el = frameImgRef.current;
     if (!el) return;
 
+    // If already loaded, mark ready immediately
+    if (everReadyRef.current) {
+      // Use microtask to avoid flushSync in effect error
+      queueMicrotask(() => setFrameReady(true));
+      return;
+    }
+
     let cancelled = false;
 
-    const markReadyAfterPaint = async () => {
-      // If possible, wait for image decode, then wait 2 rAFs for paint.
+    const decodeFrame = async () => {
       try {
         if (typeof (el as any).decode === 'function') {
           await (el as any).decode();
@@ -115,24 +121,46 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
         // ignore
       }
 
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      // Wait 2 frames for paint
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
 
-      if (!cancelled) setFrameReady(true);
+      if (!cancelled) {
+        everReadyRef.current = true;
+        // Use microtask to avoid flushSync in effect error
+        queueMicrotask(() => setFrameReady(true));
+      }
     };
 
-    const onLoad = () => void markReadyAfterPaint();
-
+    // Start decoding if image is already loaded
     if (el.complete && el.naturalWidth > 0) {
-      void markReadyAfterPaint();
+      void decodeFrame();
     } else {
+      // Wait for image to load first
+      const onLoad = () => {
+        void decodeFrame();
+        el.removeEventListener('load', onLoad);
+      };
       el.addEventListener('load', onLoad);
+      return () => {
+        el.removeEventListener('load', onLoad);
+      };
     }
 
     return () => {
       cancelled = true;
-      el.removeEventListener('load', onLoad);
     };
+  }, []);
+
+  // Show the frame immediately when section becomes visible (seamless transition from video)
+  useEffect(() => {
+    if (!isVisible) {
+      setFrameReady(false);
+    } else if (everReadyRef.current) {
+      // Frame is already decoded, show immediately
+      // Use microtask to avoid flushSync in effect error
+      queueMicrotask(() => setFrameReady(true));
+    }
   }, [isVisible]);
 
   // Derive the iframe window rect from the *rendered* frame image.
@@ -297,19 +325,19 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
 
       {/*
         Frame overlay is ALWAYS mounted so it can be painted/ready before the
-        section becomes visible. We only animate opacity when `isVisible` AND
-        the underlying <img> has loaded/decoded and had time to paint.
+        section becomes visible. Shows immediately when visible (no fade).
       */}
       <div className="absolute inset-0 z-10 pointer-events-none">
-        <motion.div
+        <div
+          ref={frameOverlayRef}
           className="absolute inset-0"
-          initial={false}
-          animate={
-            isVisible && frameReady
-              ? { opacity: 1, filter: 'blur(0px)' }
-              : { opacity: 0, filter: 'blur(10px)' }
-          }
-          transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+          style={{
+            // Show immediately when section is visible - frameReady gate is just for appearance quality
+            opacity: isVisible ? 1 : 0,
+            filter: isVisible ? 'blur(0px)' : 'blur(10px)',
+            // No transition: image appears immediately
+            transition: 'none',
+          }}
         >
           <Image
             ref={frameImgRef as any}
@@ -323,7 +351,7 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
               objectPosition: 'center',
             }}
           />
-        </motion.div>
+        </div>
       </div>
 
       {/* Optional back click area (if you want an in-screen back besides overlay UI) */}
