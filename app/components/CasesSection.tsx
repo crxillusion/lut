@@ -862,8 +862,13 @@ export function CasesSection({
         isVisible ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
     >
-      {/* Always-painted fallback behind the frame (prevents 1-frame flash on first paint). */}
-      <div className="absolute inset-0 bg-black" aria-hidden />
+      {/* Fallback black background - keep it behind everything */}
+      <div className="absolute inset-0 bg-black z-0" aria-hidden />
+
+      {/* Gradient background - should be visible on all screens */}
+      <div className="absolute inset-0 z-10" aria-hidden>
+        <div className={`absolute inset-0 ${BG_GRADIENT}`} />
+      </div>
 
       {/*
         Full-screen PNG frame on top (transparent window)
@@ -900,22 +905,13 @@ export function CasesSection({
 
       {isVisible && (
         <>
-          {/* Background under the transparent PNG */}
-          <div
-            className={
-              showFrame
-                ? `absolute inset-0 ${BG_GRADIENT}`
-                : `absolute inset-0 ${BG_GRADIENT} -z-10`
-            }
-          />
-
-          {/* Scroll window content (clipped to the transparent area) */}
+          {/* Scroll window content (clipped to the transparent area on desktop) */}
           <div
             ref={scrollContainerRef}
             className={
               showFrame
-                ? 'absolute overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10'
-                : 'absolute inset-0 overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10 pb-24 z-0'
+                ? 'absolute overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10 z-30'
+                : 'absolute inset-0 overflow-y-auto [scrollbar-gutter:stable] px-4 md:px-8 py-10 pb-24 z-20'
             }
             style={
               showFrame
