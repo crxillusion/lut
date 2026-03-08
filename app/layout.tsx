@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { BASE_PATH } from "./constants/config";
@@ -25,7 +25,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: `${BASE_PATH}/favicon.png`, type: 'image/png' }],
   },
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

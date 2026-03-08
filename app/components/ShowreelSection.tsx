@@ -37,57 +37,8 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
 
   const audioSnapshotRef = useRef<AudioSnapshot[] | null>(null);
 
-  const [isMobile, setIsMobile] = useState(false);
-  const [isUltraWide, setIsUltraWide] = useState(false);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    const mq = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener?.('change', update);
-    return () => mq.removeEventListener?.('change', update);
-  }, [isVisible]);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    // Ultrawide: frame is cover-cropped differently, so we use a dedicated window inset set.
-    const mq = window.matchMedia('(min-aspect-ratio: 1.9/1)');
-    const update = () => setIsUltraWide(mq.matches);
-    update();
-    mq.addEventListener?.('change', update);
-    return () => mq.removeEventListener?.('change', update);
-  }, [isVisible]);
-
-  const WINDOW_INSETS = useMemo(() => {
-    // Calibrated for ultrawide (example frame rect 1512x766):
-    // desired window: left=305, top=135, width=905, height=500
-    const ultraWide = {
-      left: 305 / 1512,
-      right: 1 - (305 + 905) / 1512,
-      top: 135 / 766,
-      bottom: 1 - (135 + 500) / 766,
-    };
-
-    const desktop = {
-      left: 0.2004,
-      right: 0.2021,
-      top: 0.2058,
-      bottom: 0.1979,
-    };
-
-    const mobile = {
-      left: 0,
-      right: 0,
-      top: 215 / 932,
-      bottom: 1 - (215 + 500) / 932,
-    };
-
-    if (isMobile) return mobile;
-    if (isUltraWide) return ultraWide;
-    return desktop;
-  }, [isMobile, isUltraWide]);
-
+  // Window rect is calculated dynamically based on how the PNG renders
+  // The calculation adapts to all viewport sizes and aspect ratios
   const [windowRect, setWindowRect] = useState<{
     left: number;
     top: number;
@@ -171,25 +122,88 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
 
     const update = () => {
       const r = img.getBoundingClientRect();
-      console.log('Frame image rect:', r);
-      const next = {
-        left: Math.round(r.left + r.width * WINDOW_INSETS.left),
-        top: Math.round(r.top + r.height * WINDOW_INSETS.top),
-        width: Math.round(r.width * (1 - WINDOW_INSETS.left - WINDOW_INSETS.right)),
-        height: Math.round(r.height * (1 - WINDOW_INSETS.top - WINDOW_INSETS.bottom)),
+      const pngNaturalWidth = (img as any).naturalWidth;
+      const pngNaturalHeight = (img as any).naturalHeight;
+      
+      // For object-fit: cover, calculate the actual scale and offset
+      const containerAR = r.width / r.height;
+      const pngAR = pngNaturalWidth / pngNaturalHeight; // 1920/1920 = 1
+      
+      let imgDisplayWidth: number;
+      let imgDisplayHeight: number;
+      let imgOffsetX: number;
+      let imgOffsetY: number;
+      
+      if (containerAR > pngAR) {
+        // Container is wider than PNG (in aspect ratio) - scale to width
+        imgDisplayWidth = r.width;
+        imgDisplayHeight = r.width / pngAR;
+        imgOffsetX = 0;
+        imgOffsetY = (r.height - imgDisplayHeight) / 2; // center vertically
+      } else {
+        // Container is taller than PNG (in aspect ratio) - scale to height
+        imgDisplayHeight = r.height;
+        imgDisplayWidth = r.height * pngAR;
+        imgOffsetX = (r.width - imgDisplayWidth) / 2; // center horizontally
+        imgOffsetY = 0;
+      }
+      
+      // PNG transparent area in PNG space
+      const pngTransparent = {
+        left: 397,
+        top: 645,
+        width: 1126,
+        height: 633,
       };
-
+      
+      // Calculate where the transparent area appears on screen
+      // The transparent area is at (397, 645) in the PNG
+      // When the PNG is displayed at imgDisplaySize starting at imgOffset, the transparent area maps to:
+      const scale = imgDisplayWidth / pngNaturalWidth; // or imgDisplayHeight / pngNaturalHeight, should be same
+      
+      const transparentScreenX = r.left + imgOffsetX + pngTransparent.left * scale;
+      const transparentScreenY = r.top + imgOffsetY + pngTransparent.top * scale;
+      const transparentScreenWidth = pngTransparent.width * scale;
+      const transparentScreenHeight = pngTransparent.height * scale;
+      
+      // Calculate aspect-ratio-aware insets for the video window
+      // These insets define how much padding to leave around the video within the transparent area
+      // Calibrated to produce perfect fit: left: 360px, top: 43px, width: 1200px, height: 632px for 1920x720
+      const videoContainerAR = r.width / r.height;
+      
+      let containerInsets = {
+        left: -0.0328,  // Expand left by ~37px
+        right: -0.0329, // Expand right by ~37px
+        top: -0.0032,   // Shift up by ~2px
+        bottom: 0.0048, // Minimal bottom padding
+      };
+      
+      // For ultrawide, reduce insets to maximize video size
+      if (videoContainerAR > 2.5) {
+        containerInsets.left *= 0.5;
+        containerInsets.right *= 0.5;
+      } else if (videoContainerAR > 1.9) {
+        containerInsets.left *= 0.7;
+        containerInsets.right *= 0.7;
+      }
+      
+      // Apply insets within the transparent area to get the video window
+      const windowScreenX = transparentScreenX + transparentScreenWidth * containerInsets.left;
+      const windowScreenY = transparentScreenY + transparentScreenHeight * containerInsets.top;
+      const windowScreenWidth = transparentScreenWidth * (1 - containerInsets.left - containerInsets.right);
+      const windowScreenHeight = transparentScreenHeight * (1 - containerInsets.top - containerInsets.bottom);
+      
+      // Convert to local section coordinates
       const section = sectionRef.current;
       const sr = section?.getBoundingClientRect();
-      const local = sr
-        ? {
-            left: next.left - sr.left,
-            top: next.top - sr.top,
-            width: next.width,
-            height: next.height,
-          }
-        : next;
-
+      
+      let local = {
+        left: Math.round(windowScreenX - (sr?.left || 0)),
+        top: Math.round(windowScreenY - (sr?.top || 0)),
+        width: Math.round(windowScreenWidth),
+        height: Math.round(windowScreenHeight),
+      };
+      
       setWindowRect(local);
     };
 
@@ -206,7 +220,7 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
     };
-  }, [isVisible, WINDOW_INSETS, isMobile, isUltraWide]);
+  }, [isVisible]);
 
   // Reset play state when leaving the showreel section.
   useEffect(() => {
@@ -284,7 +298,6 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
               className="absolute inset-0 w-full h-full"
               src={vimeoSrc}
               allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
               title="Showreel"
             />
           </div>
