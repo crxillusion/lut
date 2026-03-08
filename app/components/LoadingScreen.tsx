@@ -19,15 +19,41 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
   const clamped = Math.max(0, Math.min(100, progress));
   const [dotLottie, setDotLottie] = useState<DotLottie | null>(null);
   const firedRef = useRef(false);
+  const mountTimeRef = useRef<number>(Date.now());
+  // Minimum time to display the loading screen (in ms) - ensures animation is visible
+  const MIN_DISPLAY_TIME = 2500;
+
+  useEffect(() => {
+    console.log('[LoadingScreen] Component mounted, isVisible:', isVisible);
+    mountTimeRef.current = Date.now();
+  }, [isVisible]);
 
   useEffect(() => {
     if (!dotLottie || firedRef.current) return;
     if (clamped < 100) return;
 
+    // Ensure minimum display time has passed
+    const elapsedMs = Date.now() - mountTimeRef.current;
+    if (elapsedMs < MIN_DISPLAY_TIME) {
+      console.log('[LoadingScreen] Loading complete but MIN_DISPLAY_TIME not reached. Delaying callback:', {
+        elapsedMs,
+        remaining: MIN_DISPLAY_TIME - elapsedMs,
+      });
+      const delayMs = MIN_DISPLAY_TIME - elapsedMs;
+      const t = window.setTimeout(() => {
+        if (firedRef.current) return;
+        firedRef.current = true;
+        console.log('[LoadingScreen] MIN_DISPLAY_TIME reached, firing onLoopEndAfterComplete');
+        onLoopEndAfterComplete?.();
+      }, delayMs);
+      return () => window.clearTimeout(t);
+    }
+
     // If we can't get a duration, fall back to firing immediately.
     const durationMs = Number(dotLottie.duration);
     if (!Number.isFinite(durationMs) || durationMs <= 0) {
       firedRef.current = true;
+      console.log('[LoadingScreen] No valid duration, firing onLoopEndAfterComplete immediately');
       onLoopEndAfterComplete?.();
       return;
     }
@@ -42,9 +68,11 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
         : 0;
 
     const remainingMs = Math.max(0, Math.round(durationMs * (1 - progressInLoop)));
+    console.log('[LoadingScreen] Scheduling onLoopEndAfterComplete in', remainingMs, 'ms');
     const t = window.setTimeout(() => {
       if (firedRef.current) return;
       firedRef.current = true;
+      console.log('[LoadingScreen] Loop end reached, firing onLoopEndAfterComplete');
       onLoopEndAfterComplete?.();
     }, remainingMs);
 
@@ -53,33 +81,69 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-cover bg-center transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
       style={{
-        backgroundImage: `url(${BASE_PATH}/loading-bg.jpg)`,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1920'%3E%3Crect fill='%23000000' width='1920' height='1920'/%3E%3C/svg%3E")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }}
     >
+      {/* Background picture element with modern format fallbacks */}
+      <picture
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+        }}
+      >
+        <source srcSet={`${BASE_PATH}/loading-bg.avif`} type="image/avif" />
+        <source srcSet={`${BASE_PATH}/loading-bg.webp`} type="image/webp" />
+        <img
+          src={`${BASE_PATH}/loading-bg.jpg`}
+          alt=""
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+          }}
+          decoding="sync"
+          loading="eager"
+        />
+      </picture>
       <div className="flex flex-col items-center">
-        <div className="w-96 h-96 md:w-128 md:h-128">
+        <div className="w-96 h-96 md:w-128 md:h-128 relative overflow-hidden">
           <DotLottieReact
             src={`${BASE_PATH}/5Z8KeWup2u.lottie`}
             autoplay
             loop
+            speed={1}
             dotLottieRefCallback={(instance) => {
+              console.log('[LoadingScreen] DotLottieReact callback fired', {
+                instanceExists: !!instance,
+                isLoaded: instance?.isLoaded,
+                canvas: instance?.canvas ? 'exists' : 'null',
+              });
               setDotLottie(instance);
               // `duration` is provided by @lottiefiles/dotlottie-web (milliseconds).
               if (instance?.isLoaded) {
-                // eslint-disable-next-line no-console
-                console.log('LoadingScreen lottie duration (ms):', instance.duration);
+                console.log('[LoadingScreen] Lottie loaded immediately - duration (ms):', instance.duration);
               } else if (instance) {
+                console.log('[LoadingScreen] Lottie not loaded yet, waiting for load event');
                 instance.addEventListener('load', () => {
-                  // eslint-disable-next-line no-console
-                  console.log('LoadingScreen lottie duration (ms):', instance.duration);
+                  console.log('[LoadingScreen] Lottie load event fired - duration (ms):', instance.duration);
                 });
               }
             }}
-            style={{ width: '100%', height: '100%' }}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+            }}
           />
         </div>
 

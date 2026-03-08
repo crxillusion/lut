@@ -17,24 +17,6 @@ import { useContactVisibility } from './hooks/useContactVisibility';
 import { BASE_PATH } from './constants/config';
 import { useBgAudioAutoplay } from './hooks/useBgAudioAutoplay';
 
-function preloadDotLottie(url: string) {
-  try {
-    // Fetch with high priority; keep alive so the browser can reuse it.
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    // Some browsers still warn when assigning `link.as = 'fetch'` directly.
-    // Setting the attribute is more compatible.
-    link.setAttribute('as', 'fetch');
-    link.href = url;
-    link.crossOrigin = 'anonymous';
-    link.type = 'application/octet-stream';
-    document.head.appendChild(link);
-    return () => link.remove();
-  } catch {
-    return () => {};
-  }
-}
-
 export default function Home() {
   const videoRefs = useVideoRefs();
   const {
@@ -53,10 +35,28 @@ export default function Home() {
 
   const { isLoading, loadingProgress } = useVideoPreloader(HOME_PRELOAD_VIDEO_PATHS);
 
-  // Preload the loader animation early so it doesn't pop in late.
+  // Pre-cache the lottie file BEFORE LoadingScreen component mounts/renders
+  // This ensures DotLottieReact finds it in cache when it requests it
   useEffect(() => {
-    const cleanup = preloadDotLottie(`${BASE_PATH}/5Z8KeWup2u.lottie`);
-    return cleanup;
+    const lottieUrl = `${BASE_PATH}/5Z8KeWup2u.lottie`;
+    console.log('[Home] Attempting lottie cache-warm at:', new Date().getTime());
+    
+    // Try to fetch and cache the file with no-cache to force a fresh request from network
+    // but browser will cache it for subsequent requests
+    fetch(lottieUrl, { 
+      method: 'GET',
+      cache: 'no-cache',  // Skip cache on this request, but browser will store it
+    })
+      .then(r => {
+        console.log('[Home] Lottie fetch response:', r.status, r.statusText);
+        return r.blob();
+      })
+      .then(blob => {
+        console.log('[Home] Lottie blob cached, size:', blob.size, 'at:', new Date().getTime());
+      })
+      .catch(err => {
+        console.warn('[Home] Lottie cache-warm failed:', err.message);
+      });
   }, []);
 
   // When loading is complete, wait for the loader lottie to finish its current loop

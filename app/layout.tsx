@@ -25,6 +25,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: `${BASE_PATH}/favicon.png`, type: 'image/png' }],
   },
+  // Preload critical resources as early as possible
+  other: {
+    'x-ua-compatible': 'IE=edge',
+  },
 };
 
 export const viewport: Viewport = {
@@ -59,8 +63,26 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Legacy loader GIF removed (loader is now .lottie and preloaded in `app/page.tsx`) */}
-        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.jpg`} />
+        {/* Loading screen background - preload modern formats with high priority */}
+        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.avif`} type="image/avif" />
+        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.webp`} type="image/webp" />
+        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.jpg`} type="image/jpeg" />
+
+        {/* Loading animation (lottie) - preload immediately via fetch to warm browser cache */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Pre-cache lottie file immediately on page load
+              (function() {
+                const lottieUrl = '${BASE_PATH}/5Z8KeWup2u.lottie';
+                if (navigator.sendBeacon || fetch) {
+                  // Use fetch to preload with cache
+                  fetch(lottieUrl, { cache: 'default' }).catch(() => {});
+                }
+              })();
+            `,
+          }}
+        />
 
         {/* UI icons (overlay) */}
         <link rel="preload" as="image" href={`${BASE_PATH}/back-arrow.svg`} />

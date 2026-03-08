@@ -193,10 +193,17 @@ function VideoPopup({ title, url, onClose }: { title: string; url: string; onClo
   );
 }
 
-function CaseCard({ item }: { item: CaseItem }) {
+function CaseCard({ item, imgRef }: { item: CaseItem; imgRef?: React.RefObject<HTMLImageElement | null> }) {
   const bgUrl = `${BASE_PATH}${item.img}`;
   return (
     <div className={GRID_CARD_CLASS}>
+      <img
+        ref={imgRef}
+        src={bgUrl}
+        alt={item.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0 }}
+      />
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${bgUrl})` }} />
     </div>
   );
@@ -229,16 +236,21 @@ function CaseCardInteractive({
   item,
   idx,
   onOpenPopup,
+  scrollContainer,
 }: {
   item: CaseItem;
   idx: number;
   onOpenPopup: (title: string, url: string) => void;
+  scrollContainer?: HTMLDivElement | null;
 }) {
   const [isMobile, setIsMobile] = useState(false);
   const [isSmallMobile, setIsSmallMobile] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [inView, setInView] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [cardFits, setCardFits] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -276,6 +288,53 @@ function CaseCardInteractive({
     io.observe(el);
     return () => io.disconnect();
   }, [isMobile]);
+
+  // Track image load and container fit
+  useEffect(() => {
+    if (!cardRef.current || !imgRef.current) return;
+
+    const checkCardFit = () => {
+      const card = cardRef.current;
+      const img = imgRef.current;
+      if (!card || !img) return;
+
+      // Check if image is loaded
+      const imgReady = img.complete && img.naturalWidth > 0;
+      setImageLoaded(imgReady);
+
+      if (imgReady) {
+        // Check if card height fits in the scroll container's visible height
+        if (scrollContainer) {
+          const containerHeight = scrollContainer.clientHeight;
+          const cardHeight = card.offsetHeight;
+          const fitsInContainer = cardHeight > 0 && cardHeight <= containerHeight;
+          setCardFits(fitsInContainer);
+        } else {
+          // Fallback: always show if no scroll container provided
+          setCardFits(true);
+        }
+      }
+    };
+
+    // Check immediately
+    checkCardFit();
+
+    // Listen for image load
+    const img = imgRef.current;
+    const onImageLoad = () => checkCardFit();
+    img.addEventListener('load', onImageLoad);
+
+    // Recheck on resize/scroll
+    const onResize = () => checkCardFit();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onResize);
+
+    return () => {
+      img.removeEventListener('load', onImageLoad);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', onResize);
+    };
+  }, [scrollContainer]);
 
   const openNewTab = () => {
     try {
@@ -355,7 +414,11 @@ function CaseCardInteractive({
       <motion.div
         className={wrapperClass}
         initial={{ filter: 'blur(10px)', opacity: 0, y: 16 }}
-        whileInView={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
+        animate={{ 
+          filter: imageLoaded && cardFits ? 'blur(0px)' : 'blur(10px)',
+          opacity: imageLoaded && cardFits ? 1 : 0,
+          y: imageLoaded && cardFits ? 0 : 16
+        }}
         viewport={{ once: true, amount: 0.25 }}
         transition={{
           duration: 0.55,
@@ -369,7 +432,7 @@ function CaseCardInteractive({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          <CaseCard item={item} />
+          <CaseCard item={item} imgRef={imgRef} />
           {overlay(hovered, 'desktop')}
         </div>
       </motion.div>
@@ -381,8 +444,11 @@ function CaseCardInteractive({
     <motion.div
       className={wrapperClass}
       initial={{ filter: 'blur(10px)', opacity: 0, y: 16 }}
-      whileInView={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
+      animate={{ 
+        filter: imageLoaded && cardFits ? 'blur(0px)' : 'blur(10px)',
+        opacity: imageLoaded && cardFits ? 1 : 0,
+        y: imageLoaded && cardFits ? 0 : 16
+      }}
       transition={{
         duration: 0.55,
         delay: Math.min(0.4, idx * 0.06),
@@ -390,7 +456,7 @@ function CaseCardInteractive({
       }}
     >
       <div ref={cardRef} className="relative w-full h-full rounded-[20px] overflow-hidden">
-        <CaseCard item={item} />
+        <CaseCard item={item} imgRef={imgRef} />
         {overlay(inView, 'mobile')}
       </div>
     </motion.div>
@@ -923,6 +989,7 @@ export function CasesSection({
                       item={item}
                       idx={idx}
                       onOpenPopup={(title, url) => setPopup({ title, url })}
+                      scrollContainer={scrollContainerRef.current}
                     />
                   );
                 })}
