@@ -1,6 +1,6 @@
 'use client';
 
-import { RefObject } from 'react';
+import { RefObject, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navigation } from './Navigation';
 import { VideoBackground } from './VideoBackground';
@@ -37,8 +37,16 @@ export function HeroSection({
     preloadFirstFrame: true,
   });
 
-  // NOTE: Avoid keyed remount here; remounting causes the UI to disappear instantly
-  // rather than animate out when `showUI` flips false (e.g. on scroll transitions).
+  // Detect mobile/touch device
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1199px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
 
   return (
     <section
@@ -81,7 +89,7 @@ export function HeroSection({
                 ease: [0.23, 1, 0.32, 1],
               }}
             >
-              *scroll to discover
+              {isMobile ? '*swipe to discover' : '*scroll to discover'}
             </motion.div>
           </div>
         </div>
