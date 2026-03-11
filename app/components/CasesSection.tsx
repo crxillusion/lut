@@ -485,15 +485,17 @@ export function CasesSection({
 
   /**
    * Normalized insets (0..1) relative to the *rendered frame image rect*.
-   * These should match the transparent cutout margins in `Cases_png_transparent.png`.
-   * Tweak these values to align perfectly across breakpoints.
+   * These match the transparent cutout margins in `Cases_png_transparent.png`.
+   * Calculated by analyzing the frame image:
+   * - Image size: 1920x1920px
+   * - Transparent window: 1105x619px at (425, 652) to (1529, 1270)
    */
   const WINDOW_INSETS = useMemo(
     () => ({
-      left: 0.20,
-      right: 0.18,
-      top: 0.18,
-      bottom: 0.12,
+      left: 0.2214,
+      right: 0.2031,
+      top: 0.3396,
+      bottom: 0.3380,
     }),
     []
   );
@@ -504,6 +506,8 @@ export function CasesSection({
     width: number;
     height: number;
   } | null>(null);
+
+  const [bottomMarginPx, setBottomMarginPx] = useState<number>(0);
 
   const [titleMaxPx, setTitleMaxPx] = useState<number>(155);
 
@@ -595,26 +599,66 @@ export function CasesSection({
   useEffect(() => {
     if (!isVisible) return;
     if (!showFrame) {
+      homeLogger.debug('[Cases] showFrame is false, skipping window positioning');
       setWindowRect(null);
       return;
     }
 
     const img = frameImgRef.current;
-    if (!img) return;
+    if (!img) {
+      homeLogger.debug('[Cases] frameImgRef not available');
+      return;
+    }
+
+    homeLogger.debug('[Cases] Setting up frame/window measurement', { showFrame, isVisible });
 
     const update = () => {
       const r = img.getBoundingClientRect();
+      const section = sectionRef.current;
+      const sr = section?.getBoundingClientRect();
+      
+      // Responsive positioning based on frame dimensions
+      // For ultrawide (1920x720): left: 425, top: 25, width: 1105
+      // For regular (1260x760): left: 250, top: 145, width: 780
+      
+      // Determine if this is ultrawide or regular aspect ratio
+      const frameAspectRatio = r.width / r.height;
+      const isUltrawide = frameAspectRatio > 2.0; // ~1920/720 = 2.67
+      
+      let left, top, width, bottomMargin;
+      
+      if (isUltrawide) {
+        // Ultrawide: 1920x720 style positioning
+        const widthRatio = r.width / 1920;
+        const heightRatio = r.height / 720;
+        const topOffset = Math.round(25 * Math.max(widthRatio, heightRatio));
+        left = Math.round(r.left + 425 * widthRatio);
+        top = Math.round(r.top + topOffset);
+        width = Math.round(1105 * widthRatio);
+        bottomMargin = Math.round(topOffset); // Match top margin
+      } else {
+        // Regular/taller aspect ratio: 1260x760 style positioning
+        const widthRatio = r.width / 1260;
+        const heightRatio = r.height / 760;
+        left = Math.round(r.left + 250 * widthRatio);
+        top = Math.round(r.top + 140 * heightRatio);
+        width = Math.round(780 * widthRatio);
+        bottomMargin = Math.round(240 * heightRatio);
+      }
+      
+      // Height: from window top to viewport bottom
+      // The CSS uses calc(100vh - {top}px), so we need to return the same calculation
+      const height = Math.round(window.innerHeight - top);
+      
       const next = {
-        left: Math.round(r.left + r.width * WINDOW_INSETS.left),
-        top: Math.round(r.top + r.height * WINDOW_INSETS.top),
-        width: Math.round(r.width * (1 - WINDOW_INSETS.left - WINDOW_INSETS.right)),
-        height: Math.round(r.height * (1 - WINDOW_INSETS.top - WINDOW_INSETS.bottom)),
+        left,
+        top,
+        width,
+        height,
       };
 
       // Convert viewport coords -> section-local coords, since the scroll container is absolutely positioned
       // inside the fixed section.
-      const section = sectionRef.current;
-      const sr = section?.getBoundingClientRect();
       const local = sr
         ? {
             left: next.left - sr.left,
@@ -626,27 +670,40 @@ export function CasesSection({
 
       setWindowRect(local);
 
+      // Store bottomMargin for CSS calc formula
+      setBottomMarginPx(bottomMargin);
+
       // Title uses window width so the lettering stays inside the cutout.
       const titleNext = Math.round(Math.max(96, Math.min(210, local.width * 0.28)));
       setTitleMaxPx(titleNext);
 
+      const frameRect = {
+        x: Math.round(r.left),
+        y: Math.round(r.top),
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      };
       homeLogger.debug('[Cases] frame/window metrics', {
-        frameRect: {
-          x: Math.round(r.left),
-          y: Math.round(r.top),
-          w: Math.round(r.width),
-          h: Math.round(r.height),
-        },
+        frameRect,
         windowInsets: WINDOW_INSETS,
         windowRect: local,
         titleMaxPx: titleNext,
+        viewportSize: {
+          w: window.innerWidth,
+          h: window.innerHeight,
+        },
+        devicePixelRatio: window.devicePixelRatio,
       });
+      console.log('[Cases] EXPANDED:', { frameRect, local, titleMaxPx });
     };
 
     // Image may not be laid out immediately.
     const raf = requestAnimationFrame(update);
 
-    const ro = new ResizeObserver(() => update());
+    const ro = new ResizeObserver(() => {
+      homeLogger.debug('[Cases] ResizeObserver triggered');
+      update();
+    });
     ro.observe(img);
 
     window.addEventListener('resize', update);
@@ -920,7 +977,7 @@ export function CasesSection({
                       left: `${windowRect.left}px`,
                       top: `${windowRect.top}px`,
                       width: `${windowRect.width}px`,
-                      height: `${windowRect.height}px`,
+                      height: `calc(-${bottomMarginPx}px + 100vh)`,
                     }
                   : {
                       // Fallback while frame measures
