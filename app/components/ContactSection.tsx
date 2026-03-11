@@ -314,7 +314,7 @@ export function ContactSection({
                 or contact via phone number
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 gap-4 md:gap-6">
                 <div className="text-center">
                   <p className="font-outfit font-medium text-white leading-[150%] tracking-[-0.011em] text-[14px] md:text-[16px]">
                     Los Angeles studio
