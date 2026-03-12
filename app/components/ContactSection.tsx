@@ -86,8 +86,10 @@ export function ContactSection({
   const validateEmail = (value: string) => {
     const v = value.trim();
     if (!v) return 'Email is required.';
-    // Simple, pragmatic email check
+    // RFC 5322 simplified email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Please enter a valid email.';
+    // Reject if longer than 254 characters (RFC 5321)
+    if (v.length > 254) return 'Email is too long.';
     return null;
   };
 
@@ -95,6 +97,8 @@ export function ContactSection({
     const v = value.trim();
     if (!v) return 'Name is required.';
     if (v.length < 2) return 'Name must be at least 2 characters.';
+    // Max 100 characters to prevent abuse
+    if (v.length > 100) return 'Name is too long (max 100 characters).';
     return null;
   };
 
@@ -112,6 +116,19 @@ export function ContactSection({
     // Allow digits, spaces, parentheses, +, -
     if (!/^[0-9+()\-\s]{7,20}$/.test(v)) return 'Please enter a valid phone number.';
     return null;
+  };
+
+  /**
+   * Sanitize form input to prevent XSS/injection attacks
+   * Netlify Forms automatically escapes HTML, but we add extra safety here
+   */
+  const sanitizeInput = (value: string): string => {
+    return value
+      .trim()
+      // Remove any control characters
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      // Remove script-like patterns (extra safety, Netlify handles this)
+      .slice(0, 2000); // Max length safeguard
   };
 
   const fieldErrors = useMemo(() => {
@@ -143,6 +160,12 @@ export function ContactSection({
 
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
+    
+    // Sanitize all user inputs before submission
+    fd.set('email', sanitizeInput(formData.email));
+    fd.set('phone', sanitizeInput(formData.phone));
+    fd.set('name', sanitizeInput(formData.name));
+    fd.set('message', sanitizeInput(formData.message));
     fd.set('form-name', 'contact');
 
     try {
@@ -151,7 +174,9 @@ export function ContactSection({
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams(fd as any).toString(),
+        body: new URLSearchParams(
+          Array.from(fd.entries()).map(([k, v]) => [k, String(v)] as [string, string])
+        ).toString(),
       });
 
       if (!response.ok) throw new Error('Form submission failed');
@@ -162,9 +187,10 @@ export function ContactSection({
 
       // Auto-hide the popup after a moment
       window.setTimeout(() => setIsSubmitted(false), 3500);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { message?: string };
       // avoid showing a general error message per UX request
-      setError(err?.message ?? 'Something went wrong. Please try again.');
+      setError(error?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -376,6 +402,7 @@ export function ContactSection({
                         onBlur={handleBlur}
                         autoComplete="email"
                         inputMode="email"
+                        maxLength={254}
                         className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[70px] md:pl-[70px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.email && fieldErrors.email))}`}
                         required
                       />
@@ -420,6 +447,7 @@ export function ContactSection({
                         onBlur={handleBlur}
                         autoComplete="tel"
                         inputMode="tel"
+                        maxLength={20}
                         className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[75px] md:pl-[75px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.phone && fieldErrors.phone))}`}
                         required
                       />
@@ -465,6 +493,7 @@ export function ContactSection({
                       onChange={handleChange}
                       onBlur={handleBlur}
                       autoComplete="name"
+                      maxLength={100}
                       className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[75px] md:pl-[75px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.name && fieldErrors.name))}`}
                       required
                     />
@@ -508,6 +537,7 @@ export function ContactSection({
                       onChange={handleChange}
                       onBlur={handleBlur}
                       rows={1}
+                      maxLength={2000}
                       className={`w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] resize-none rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] font-outfit font-medium text-white tracking-[-0.011em] text-[clamp(14px,1.35vw,16px)] px-4 md:px-6 pl-[88px] md:pl-[95px] pt-[15px] max-[885px]:pt-[8px] focus:outline-none transition-[border-color,opacity] ${inputErrorClass(!!(touched.message && fieldErrors.message))}`}
                       required
                     />

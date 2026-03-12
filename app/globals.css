@@ -31,6 +31,24 @@ body {
   width: 100vw;
 }
 
+/* Prevent autofill from changing input background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+}
+
+/* Adjust transition delay for autofill */
+input:-webkit-autofill {
+  -webkit-transition-delay: 99999s;
+}
+
 /* Hide scrollbar for all browsers */
 ::-webkit-scrollbar {
   display: none;
