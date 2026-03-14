@@ -145,7 +145,7 @@ export default function Home() {
   });
 
   return (
-    <>
+    <div suppressHydrationWarning className="contents">
       {loadingScreenMounted && (
         <LoadingScreen
           progress={loadingProgress}
@@ -170,6 +170,6 @@ export default function Home() {
       />
 
       <HomeOverlay nav={nav} showHero={showHero} />
-    </>
+    </div>
   );
 }

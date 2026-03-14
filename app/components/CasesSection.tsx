@@ -269,10 +269,10 @@ function CaseCardInteractive({
   }, []);
 
   const wrapperClass = item.wide
-    ? 'md:col-span-2 min-h-[320px]'
+    ? 'md:col-span-2 min-h-[420px]'
     : isSmallMobile
       ? 'min-h-[450px]'
-      : 'min-h-[320px]';
+      : 'min-h-[420px]';
 
   useEffect(() => {
     if (!isMobile) return;

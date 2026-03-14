@@ -1,3 +1,5 @@
+'use client';
+
 import { RefObject, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
@@ -240,6 +242,7 @@ export function ContactSection({
 
   return (
     <section
+      suppressHydrationWarning
       className={`fixed inset-0 w-full h-screen transition-opacity duration-0 ${
         shouldShow ? 'opacity-100 z-20' : 'opacity-0 pointer-events-none z-0'
       }`}
@@ -290,7 +293,7 @@ export function ContactSection({
         <style>{`@media (max-height: 885px){ .contact-ready-title { display:none !important; } }`}</style>
 
         <div className="min-h-full flex items-center justify-center py-5 max-h-[885px]:py-6 max-h-[700px]:py-4">
-          <div className="w-full max-w-[845px] pb-24 max-h-[885px]:pb-28">
+          <div className="w-full max-w-[845px] pb-24 max-sm:pb-50 max-h-[885px]:pb-28">
             {/* Title (layered/blurred effect) */}
             <motion.div
               className="contact-ready-title relative mb-[-2.5rem] md:mb-[-4rem] max-h-[885px]:mb-0 z-[1] max-h-[885px]:hidden"
@@ -322,7 +325,7 @@ export function ContactSection({
 
             {/* Contact Us Card */}
             <motion.div
-              className="relative z-[2] w-full max-w-[845px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] md:px-[20px] py-[10px] xl:py-[42px] max-h-[885px]:py-[18px] mb-9 xl:mb-5 max-h-[885px]:mb-4"
+              className="relative z-[2] w-full max-w-[845px] rounded-[20px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] backdrop-blur-[1.44px] px-[18px] md:px-[20px] py-[10px] xl:py-[25px] max-h-[885px]:py-[18px] mb-9 xl:mb-5 max-h-[885px]:mb-4"
               initial={motionCommon.initial}
               animate={motionCommon.animate}
               transition={{ ...motionCommon.transitionBase, delay: 0.2 }}
@@ -340,19 +343,19 @@ export function ContactSection({
                 or contact via phone number
               </p>
 
-              <div className="grid grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 gap-4 md:gap-6" suppressHydrationWarning>
                 <div className="text-center">
-                  <p className="font-outfit font-medium text-white leading-[150%] tracking-[-0.011em] text-[14px] md:text-[16px]">
+                  <p className="font-outfit font-medium text-white leading-[150%] tracking-[-0.011em] text-[14px] md:text-[16px]" suppressHydrationWarning>
                     Los Angeles studio
                     <br />
-                    +1 (424) 3030572
+                    <span suppressHydrationWarning>+1 (424) 3030572</span>
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="font-outfit font-medium text-white leading-[150%] tracking-[-0.011em] text-[14px] md:text-[16px]">
+                  <p className="font-outfit font-medium text-white leading-[150%] tracking-[-0.011em] text-[14px] md:text-[16px]" suppressHydrationWarning>
                     Yerevan studio
                     <br />
-                    +374 (99) 499838
+                    <span suppressHydrationWarning>+374 (99) 499838</span>
                   </p>
                 </div>
               </div>

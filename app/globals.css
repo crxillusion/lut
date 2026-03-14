@@ -58,6 +58,6 @@ html {
   -ms-overflow-style: none;
   scrollbar-width: none;
   overflow: hidden;
-  /* Disable zoom with keyboard shortcuts */
-  touch-action: manipulation;
+  /* Allow pinch-to-zoom on mobile, but disable double-tap zoom for better performance */
+  touch-action: pan-x pan-y;
 }
