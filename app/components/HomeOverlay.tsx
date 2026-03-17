@@ -1,6 +1,7 @@
 'use client';
 
 import { SocialLinks } from './SocialLinks';
+import { ScreenIndicator } from './ScreenIndicator';
 import type { UseHomeNavigationResult } from '../hooks/useHomeNavigation';
 
 interface HomeOverlayProps {
@@ -24,6 +25,11 @@ export function HomeOverlay({ nav, showHero }: HomeOverlayProps) {
           showEmailButton={isCases}
           onEmailClick={isCases ? nav.transitions.toContactFromCases : undefined}
         />
+      </div>
+      
+      {/* Screen Indicator - always visible */}
+      <div className="pointer-events-none">
+        <ScreenIndicator currentSection={nav.currentSection} />
       </div>
     </div>
   );
