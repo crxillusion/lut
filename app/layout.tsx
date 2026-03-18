@@ -98,6 +98,20 @@ export default function RootLayout({
           href={`${BASE_PATH}/Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav`}
           type="audio/wav"
         />
+
+        {/* Navigation transition sounds */}
+        <link
+          rel="preload"
+          as="audio"
+          href={`${BASE_PATH}/Forward.wav`}
+          type="audio/wav"
+        />
+        <link
+          rel="preload"
+          as="audio"
+          href={`${BASE_PATH}/Backward.wav`}
+          type="audio/wav"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}

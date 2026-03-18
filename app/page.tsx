@@ -8,13 +8,14 @@ import { HomeOverlay } from './components/HomeOverlay';
 import { HOME_PRELOAD_VIDEO_PATHS } from './constants/homePreloadVideos';
 import { HOME_PRELOAD_IMAGE_PATHS } from './constants/homePreloadImages';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
+import { useAudioPreloader } from './hooks/useAudioPreloader';
 import { useAssetPreloader } from './hooks/useAssetPreloader';
 import { useScrollTransition } from './hooks/useScrollTransition';
 import { useVideoRefs } from './hooks/useVideoRefs';
 import { useLoadingAndOpening } from './hooks/useLoadingAndOpening';
 import { useHomeNavigation } from './hooks/useHomeNavigation';
 import { useContactVisibility } from './hooks/useContactVisibility';
-import { BASE_PATH } from './constants/config';
+import { BASE_PATH, SOUND_PATHS } from './constants/config';
 import { useBgAudioAutoplay } from './hooks/useBgAudioAutoplay';
 
 export default function Home() {
@@ -34,6 +35,10 @@ export default function Home() {
   } = videoRefs;
 
   const { isLoading, loadingProgress } = useVideoPreloader(HOME_PRELOAD_VIDEO_PATHS);
+
+  // Preload all audio files (forward, backward, background)
+  const audioPathsArray = Object.values(SOUND_PATHS).filter((p): p is string => typeof p === 'string');
+  useAudioPreloader(audioPathsArray);
 
   // Pre-cache the lottie file BEFORE LoadingScreen component mounts/renders
   // This ensures DotLottieReact finds it in cache when it requests it
