@@ -55,9 +55,9 @@ export const VIDEO_PATHS = {
 } as const;
 
 export const SOUND_PATHS = {
-  forward: assetUrl('/Forward.wav'),
-  backward: assetUrl('/Backward.wav'),
-  bgAudio: assetUrl('/Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav'),
+  forward: assetUrl('/audios/Forward.wav'),
+  backward: assetUrl('/audios/Backward.wav'),
+  bgAudio: assetUrl('/audios/Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav'),
 } as const;
 
 export type Section = 

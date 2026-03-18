@@ -14,21 +14,25 @@ export function useAudioPreloader(audioPaths: string[]) {
     let isCancelled = false;
 
     // Audio files are typically much smaller than videos, so we can preload all of them
-    // We'll use a simple fetch strategy to warm the browser cache
+    // We'll use a simple fetch strategy to warm the browser cache with CORS mode
     const preloadAudio = async () => {
       const audioUrls = uniqueAudioPaths;
 
       try {
         await Promise.all(
           audioUrls.map((url) =>
-            fetch(url, { cache: 'default' })
+            fetch(url, { 
+              cache: 'default',
+              mode: 'cors',
+              credentials: 'omit'
+            })
               .then((response) => {
                 if (!response.ok) {
-                  console.warn(`Failed to preload audio: ${url}`);
+                  console.warn(`Failed to preload audio: ${url} (status ${response.status})`);
                 }
               })
               .catch((err) => {
-                console.warn(`Error preloading audio ${url}:`, err);
+                console.warn(`Error preloading audio ${url}:`, err.message);
               })
           )
         );
