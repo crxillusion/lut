@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import type { Section } from '../constants/config';
 import { VIDEO_PATHS } from '../constants/config';
 import { homeLogger } from '../utils/logger';
+import { videoPlaybackManager } from '../utils/VideoPlaybackManager';
 import { useNavigationSound } from './useNavigationSound';
 import type { NavigationState, NavigationStateActions, NavigationStateRefs } from './useNavigationState';
 
@@ -103,11 +104,9 @@ export function useNavigationTransitions(
       const targetVideo = targetVideoRef.current;
       if (targetVideo) {
         if (targetSection !== 'contact') {
-          targetVideo.currentTime = 0;
+          videoPlaybackManager.stop(targetVideoRef, true);
         }
-        if (targetVideo.readyState < 2) {
-          targetVideo.load();
-        }
+        videoPlaybackManager.load(targetVideoRef);
       }
 
       // Small delay to ensure src swap committed before playback attempts
@@ -121,24 +120,24 @@ export function useNavigationTransitions(
 
           // Prepare transition video for playback
           transitionEl.preload = 'auto';
-          transitionEl.currentTime = 0;
-          if (transitionEl.readyState < 2) {
-            transitionEl.load();
-          }
+          videoPlaybackManager.stop(videoRefs.transitionVideoRef, true);
+          videoPlaybackManager.load(videoRefs.transitionVideoRef);
 
           const handleCanPlay = () => {
             homeLogger.info('[Transition] canplay -> start playback', {
               from: state.currentSection,
               to: targetSection,
             });
-            transitionEl.play().catch((err) => {
-              homeLogger.warn('Transition video play error:', err.name);
-              // Fail open - advance to target section even if video fails
-              actions.setCurrentSection(targetSection);
-              actions.setIsTransitioning(false);
-              refs.isTransitioningRef.current = false;
-              targetVideoRef.current?.play().catch(() => {});
-            });
+            videoPlaybackManager
+              .play(videoRefs.transitionVideoRef)
+              .catch((err) => {
+                homeLogger.warn('Transition video play error:', (err as Error).message);
+                // Fail open - advance to target section even if video fails
+                actions.setCurrentSection(targetSection);
+                actions.setIsTransitioning(false);
+                refs.isTransitioningRef.current = false;
+                videoPlaybackManager.play(targetVideoRef).catch(() => {});
+              });
           };
 
           const handleTransitionEnd = () => {
@@ -151,10 +150,7 @@ export function useNavigationTransitions(
             transitionEl.removeEventListener('canplay', handleCanPlay);
 
             // Prepare target video playback
-            if (targetVideoRef.current) {
-              targetVideoRef.current.currentTime = 0;
-              targetVideoRef.current.play().catch(() => {});
-            }
+            videoPlaybackManager.play(targetVideoRef).catch(() => {});
 
             // Use requestAnimationFrame to batch state updates
             requestAnimationFrame(() => {

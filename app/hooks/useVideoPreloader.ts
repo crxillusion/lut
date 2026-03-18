@@ -2,12 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { LOADING_TIMEOUT } from '../constants/config';
 import { videoLogger } from '../utils/logger';
 import { VIDEO_PATHS } from '../constants/config';
+import { videoPlaybackManager } from '../utils/VideoPlaybackManager';
 
 export function useVideoPreloader(videoPaths: string[]) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
 
-  // Ensure stable, de-duped ordering.
   const uniqueVideoPaths = useMemo(
     () => Array.from(new Set(videoPaths)).filter(Boolean),
     [videoPaths]
@@ -18,11 +18,9 @@ export function useVideoPreloader(videoPaths: string[]) {
     let essentialSettled = false;
 
     const startAt = performance.now();
+    const startTime = Date.now();
 
-    // Treat the incoming list as the curated "must-have" set.
     const essentialVideos = uniqueVideoPaths;
-
-    // Best-effort: background warm any other known videos (non-blocking).
     const allKnownVideos = Array.from(
       new Set(Object.values(VIDEO_PATHS).filter((v): v is string => typeof v === 'string'))
     );
@@ -30,9 +28,9 @@ export function useVideoPreloader(videoPaths: string[]) {
 
     const totalVideos = essentialVideos.length;
 
-    // Dynamically scale concurrency based on network conditions (when available).
+    // Dynamically scale concurrency and timeout based on network conditions
     const connection = (navigator as any).connection as
-      | { effectiveType?: string; saveData?: boolean }
+      | { effectiveType?: string; saveData?: boolean; downlink?: number }
       | undefined;
 
     const isSlow =
@@ -40,89 +38,74 @@ export function useVideoPreloader(videoPaths: string[]) {
       connection?.effectiveType === 'slow-2g' ||
       connection?.effectiveType === '2g';
 
-    const ESSENTIAL_CONCURRENCY = isSlow ? 1 : 3;
+    const isModerate = connection?.effectiveType === '3g';
 
-    const PER_VIDEO_TIMEOUT_MS = Math.min(15000, LOADING_TIMEOUT);
+    // More aggressive timeout scaling based on actual network
+    let ESSENTIAL_CONCURRENCY = isSlow ? 1 : isModerate ? 2 : 3;
+    let PER_VIDEO_TIMEOUT_MS = isSlow ? 15000 : isModerate ? 12000 : 10000;
+
+    // Dynamic adjustment: if network is detected as fast, use tighter timeouts
+    const downlink = connection?.downlink || 0;
+    if (downlink > 2) {
+      ESSENTIAL_CONCURRENCY = 4;
+      PER_VIDEO_TIMEOUT_MS = 8000;
+    }
 
     const gifDuration = 6400;
-    const startTime = Date.now();
 
     let loadedCount = 0;
     let successfullyLoadedCount = 0;
+    let failureCount = 0;
 
     videoLogger.info(
-      `Preloading ${totalVideos} essential video(s) (of ${uniqueVideoPaths.length} total) with concurrency=${ESSENTIAL_CONCURRENCY}`
+      `Preloading ${totalVideos} essential video(s) with concurrency=${ESSENTIAL_CONCURRENCY}, timeout=${PER_VIDEO_TIMEOUT_MS}ms (${connection?.effectiveType || 'unknown'} network)`
     );
 
-    const videoElements: HTMLVideoElement[] = [];
+    // Early abort if failure rate exceeds threshold
+    let shouldAbortRemaining = false;
 
-    const loadOneVideo = (path: string) =>
-      new Promise<void>((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'auto';
-        video.muted = true;
-        video.playsInline = true;
-        video.src = path;
-        videoElements.push(video);
-
-        let settled = false;
-
-        const settle = (ok: boolean, reason?: string) => {
-          if (settled) return;
-          settled = true;
-
-          if (!isCancelled) {
-            loadedCount += 1;
-            if (ok) successfullyLoadedCount += 1;
-
-            const progress = totalVideos
-              ? Math.min(99, Math.floor((loadedCount / totalVideos) * 100))
-              : 99;
-            setLoadingProgress(progress);
-
-            if (ok) {
-              videoLogger.debug(
-                `✅ ${loadedCount}/${totalVideos} loaded (${progress}%): ${path.split('/').pop()}`
-              );
-            } else {
-              videoLogger.warn(
-                `❌ ${loadedCount}/${totalVideos} errored (${progress}%): ${path.split('/').pop()}${reason ? ` (${reason})` : ''}`
-              );
-            }
-          }
-
-          cleanup();
-          resolve();
-        };
-
-        const handleCanPlay = () => settle(true);
-        const handleError = (e: Event) => {
-          videoLogger.error(`❌ Failed to load: ${path}`, e);
-          settle(false, 'error');
-        };
-
-        const timeoutId = window.setTimeout(() => {
-          videoLogger.warn(`⏱️ Timeout loading (${PER_VIDEO_TIMEOUT_MS}ms): ${path}`);
-          settle(false, 'timeout');
-        }, PER_VIDEO_TIMEOUT_MS);
-
-        const cleanup = () => {
-          window.clearTimeout(timeoutId);
-          video.removeEventListener('canplaythrough', handleCanPlay);
-          video.removeEventListener('error', handleError);
-        };
-
-        video.addEventListener('canplaythrough', handleCanPlay);
-        video.addEventListener('error', handleError);
-
-        video.load();
+    const loadOneVideo = async (path: string, attempt = 1) => {
+      const maxAttempts = 2; // Allow one retry for transient failures
+      
+      const result = await videoPlaybackManager.preloadVideo(path, {
+        timeout: PER_VIDEO_TIMEOUT_MS,
       });
+
+      if (!isCancelled) {
+        if (result.success) {
+          successfullyLoadedCount += 1;
+          videoLogger.debug(`✅ ${path.split('/').pop()}`);
+        } else if (attempt < maxAttempts && result.reason === 'timeout') {
+          // Retry once on timeout with longer timeout
+          videoLogger.debug(`⏱️ Retry ${path.split('/').pop()} (attempt ${attempt}/${maxAttempts})`);
+          await new Promise((r) => setTimeout(r, 200 + Math.random() * 300));
+          return loadOneVideo(path, attempt + 1);
+        } else {
+          failureCount += 1;
+          videoLogger.warn(`❌ ${path.split('/').pop()} (${result.reason})`);
+
+          // Early abort if too many failures
+          const failureRate = failureCount / (loadedCount + 1);
+          if (failureRate > 0.5 && loadedCount > 2) {
+            shouldAbortRemaining = true;
+            videoLogger.warn(
+              `High failure rate (${(failureRate * 100).toFixed(0)}%). Cancelling remaining videos.`
+            );
+          }
+        }
+
+        loadedCount += 1;
+
+        const progress = totalVideos ? Math.min(99, Math.floor((successfullyLoadedCount / totalVideos) * 100)) : 99;
+        setLoadingProgress(progress);
+      }
+    };
 
     const runWithConcurrency = async () => {
       let cursor = 0;
 
       const worker = async () => {
-        while (!isCancelled) {
+        while (!isCancelled && !shouldAbortRemaining) {
           const idx = cursor;
           cursor += 1;
           if (idx >= essentialVideos.length) return;
@@ -145,10 +128,17 @@ export function useVideoPreloader(videoPaths: string[]) {
 
       const perfElapsedMs = Math.round(performance.now() - startAt);
       const wallElapsedMs = Date.now() - startTime;
+      const successRate = totalVideos > 0 ? ((successfullyLoadedCount / totalVideos) * 100).toFixed(0) : 'N/A';
 
       videoLogger.info(
-        `Essential video preload settled in ~${perfElapsedMs}ms (wall=${wallElapsedMs}ms). loaded=${loadedCount}/${totalVideos}, ok=${successfullyLoadedCount}/${totalVideos}`
+        `Essential video preload settled in ~${perfElapsedMs}ms (wall=${wallElapsedMs}ms). success=${successfullyLoadedCount}/${totalVideos} (${successRate}%), failed=${failureCount}`
       );
+
+      if (successfullyLoadedCount < totalVideos * 0.5) {
+        videoLogger.warn(
+          `⚠️ Less than 50% of videos loaded successfully. User may experience delays.`
+        );
+      }
 
       const currentGifPosition = wallElapsedMs % gifDuration;
       const remainingTime = gifDuration - currentGifPosition;
@@ -167,11 +157,6 @@ export function useVideoPreloader(videoPaths: string[]) {
           videoLogger.info('isLoading=false (loading screen can start hiding)');
           setIsLoading(false);
 
-          // Keep the essential preload elements around just a bit while the UI swaps.
-          setTimeout(() => {
-            videoElements.forEach(v => v.remove());
-          }, 1500);
-
           // Background warm everything else (non-blocking).
           preloadRemainingVideos(remainingVideos);
         }, 500);
@@ -181,18 +166,16 @@ export function useVideoPreloader(videoPaths: string[]) {
     // Safety watchdog: only relevant while essential preload is still running.
     let maxTimeoutId: number | null = window.setTimeout(() => {
       if (isCancelled || essentialSettled) return;
-      videoLogger.warn('Maximum timeout reached, forcing load complete');
+      videoLogger.warn(`Maximum timeout (${LOADING_TIMEOUT}ms) reached, forcing load complete`);
       setIsLoading(false);
-      videoElements.forEach(v => v.remove());
+      shouldAbortRemaining = true;
       preloadRemainingVideos(remainingVideos);
     }, LOADING_TIMEOUT);
 
     return () => {
       isCancelled = true;
       if (maxTimeoutId) window.clearTimeout(maxTimeoutId);
-      videoElements.forEach(v => v.remove());
     };
-    // caller passes constants; uniqueVideoPaths memoizes
   }, [uniqueVideoPaths]);
 
   return { isLoading, loadingProgress };
@@ -201,67 +184,32 @@ export function useVideoPreloader(videoPaths: string[]) {
 // Background preloader - loads remaining videos without blocking UI
 function preloadRemainingVideos(videoPaths: string[]) {
   const unique = Array.from(new Set(videoPaths)).filter(Boolean);
-  videoLogger.debug(`Background preload: ${unique.length} additional video(s)...`);
   if (unique.length === 0) return;
 
   const connection = (navigator as any).connection as
     | { effectiveType?: string; saveData?: boolean }
     | undefined;
+
   const isSlow =
     connection?.saveData === true ||
     connection?.effectiveType === 'slow-2g' ||
     connection?.effectiveType === '2g';
 
-  const BG_CONCURRENCY = isSlow ? 1 : 2;
-  const BG_STAGGER_MS = 400;
+  const isModerate = connection?.effectiveType === '3g';
 
-  let cursor = 0;
+  // Very conservative on slow connections, normal on faster
+  const BG_CONCURRENCY = isSlow ? 1 : isModerate ? 2 : 3;
+  const BG_STAGGER_MS = isSlow ? 400 : isModerate ? 300 : 200;
+  const BG_TIMEOUT_MS = isSlow ? 20000 : isModerate ? 15000 : 12000;
 
-  const loadNext = () => {
-    const idx = cursor++;
-    if (idx >= unique.length) return;
+  videoLogger.debug(
+    `Background preload: ${unique.length} video(s) (concurrency=${BG_CONCURRENCY}, timeout=${BG_TIMEOUT_MS}ms)`
+  );
 
-    const path = unique[idx];
-
-    const video = document.createElement('video');
-    video.preload = 'auto';
-    video.muted = true;
-    video.playsInline = true;
-    video.src = path;
-
-    let settled = false;
-    const cleanup = () => {
-      video.removeEventListener('canplaythrough', handleCanPlay);
-      video.removeEventListener('error', handleError);
-      video.remove();
-    };
-
-    const handleCanPlay = () => {
-      if (settled) return;
-      settled = true;
-      videoLogger.debug(`Background loaded: ${path.split('/').pop()}`);
-      cleanup();
-      loadNext();
-    };
-
-    const handleError = () => {
-      if (settled) return;
-      settled = true;
-      videoLogger.warn(`Background failed: ${path.split('/').pop()}`);
-      cleanup();
-      loadNext();
-    };
-
-    video.addEventListener('canplaythrough', handleCanPlay);
-    video.addEventListener('error', handleError);
-
-    // Stagger starts slightly to avoid spiking bandwidth.
-    setTimeout(() => {
-      video.load();
-    }, idx * BG_STAGGER_MS);
-  };
-
-  for (let i = 0; i < Math.min(BG_CONCURRENCY, unique.length); i += 1) {
-    loadNext();
-  }
+  // Fire and forget - don't wait for background preload
+  videoPlaybackManager.preloadVideos(unique, {
+    concurrency: BG_CONCURRENCY,
+    stagger: BG_STAGGER_MS,
+    timeout: BG_TIMEOUT_MS,
+  });
 }

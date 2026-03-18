@@ -1,5 +1,6 @@
 import { RefObject, useEffect } from 'react';
 import { videoLogger } from '../utils/logger';
+import { videoPlaybackManager } from '../utils/VideoPlaybackManager';
 
 export interface UseManagedVideoPlaybackOptions {
   enabled: boolean;
@@ -14,19 +15,13 @@ export interface UseManagedVideoPlaybackOptions {
 }
 
 /**
- * Shared, production-safe video playback manager.
- *
- * - When `enabled` becomes true, attempts to play once the element has data.
- * - When `enabled` becomes false, pauses.
- * - Optionally warms the first frame while hidden.
+ * Hook wrapper for managed video playback using VideoPlaybackManager.
  */
 export function useManagedVideoPlayback(
   videoRef: RefObject<HTMLVideoElement | null>,
   { enabled, name, minReadyState = 2, preloadFirstFrame = false }: UseManagedVideoPlaybackOptions
 ) {
   // Warm first frame when hidden.
-  // IMPORTANT: do not force `currentTime = 0` while hidden; seeking during section switches
-  // can trigger `waiting` and present as a black-frame blink.
   useEffect(() => {
     if (!preloadFirstFrame) return;
     const video = videoRef.current;
@@ -34,13 +29,8 @@ export function useManagedVideoPlayback(
 
     const handleLoadedData = () => {
       if (!enabled && video.paused) {
-        // Encourage browser to keep data buffered without forcing a seek.
         if (video.readyState < 2) {
-          try {
-            video.load();
-          } catch {
-            // ignore
-          }
+          videoPlaybackManager.load(videoRef);
         }
       }
     };
@@ -62,23 +52,13 @@ export function useManagedVideoPlayback(
     if (!video) return;
 
     if (enabled) {
-      const attemptPlay = () => {
-        if (video.readyState >= minReadyState) {
-          void video.play().catch(err => {
-            // Autoplay can fail for various reasons; only log in dev.
-            videoLogger.debug(`Playback blocked for ${name}:`, err);
-          });
-        } else {
-          video.addEventListener('loadeddata', attemptPlay, { once: true });
-        }
-      };
-
-      attemptPlay();
-      return () => {
-        video.removeEventListener('loadeddata', attemptPlay);
-      };
+      videoPlaybackManager
+        .play(videoRef, { minReadyState })
+        .catch((err) => {
+          videoLogger.debug(`Playback blocked for ${name}:`, (err as Error).message);
+        });
+    } else {
+      videoPlaybackManager.pause(videoRef);
     }
-
-    video.pause();
   }, [enabled, minReadyState, name, videoRef]);
 }
