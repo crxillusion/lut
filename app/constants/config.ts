@@ -54,6 +54,11 @@ export const VIDEO_PATHS = {
   contactLoop: assetUrl('/videos/Contact_loop.mp4'),
 } as const;
 
+export const SOUND_PATHS = {
+  forward: '/Forward.wav',
+  backward: '/Backward.wav',
+} as const;
+
 export type Section = 
   | 'hero' 
   | 'showreel' 

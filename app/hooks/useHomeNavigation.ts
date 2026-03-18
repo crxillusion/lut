@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Section } from '../constants/config';
 import { VIDEO_PATHS } from '../constants/config';
 import { homeLogger } from '../utils/logger';
+import { useNavigationSound } from './useNavigationSound';
 
 export interface HomeNavigationVideoRefs {
   heroVideoRef: React.RefObject<HTMLVideoElement | null>;
@@ -83,6 +84,7 @@ export function useHomeNavigation(
   const previousSectionRef = useRef<Section>('hero');
 
   const { transitionVideoRef } = refs;
+  const { playSound } = useNavigationSound();
 
   const handleTransition = useCallback(
     (
@@ -117,6 +119,15 @@ export function useHomeNavigation(
 
       isTransitioningRef.current = true;
       setTransitionVideoSrc(transitionVideo);
+
+      // Play navigation sounds at the start of transition
+      if (currentSection === 'hero' && targetSection !== 'hero') {
+        // User is leaving hero: play forward sound
+        playSound('forward');
+      } else if (currentSection !== 'hero' && targetSection === 'hero') {
+        // User is returning to hero: play backward sound
+        playSound('backward');
+      }
 
       const targetVideo = targetVideoRef.current;
       if (targetVideo) {
@@ -208,6 +219,7 @@ export function useHomeNavigation(
                 homeLogger.info('[Transition] commit section', {
                   to: targetSection,
                 });
+                
                 setCurrentSection(targetSection);
                 setIsTransitioning(false);
                 isTransitioningRef.current = false;
@@ -235,7 +247,7 @@ export function useHomeNavigation(
         }
       }, 50);
     },
-    [currentSection, setAboutStartVisible, setHeroVisible, transitionVideoRef]
+    [currentSection, setAboutStartVisible, setHeroVisible, transitionVideoRef, playSound]
   );
 
   const transitions = useMemo(
