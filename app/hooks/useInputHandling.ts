@@ -2,33 +2,31 @@ import { useEffect, useRef } from 'react';
 import { SCROLL_COOLDOWN } from '../constants/config';
 import type { Section } from '../constants/config';
 
-interface UseScrollTransitionProps {
+interface UseInputHandlingProps {
   currentSection: Section;
   isTransitioning: boolean;
-  isWaiting?: boolean; // Block scrolls while waiting for hero loop to complete
+  isWaiting?: boolean;
   onScrollDown: () => void;
   onScrollUp: () => void;
 }
 
-export function useScrollTransition({
+export function useInputHandling({
   currentSection,
   isTransitioning,
   isWaiting = false,
   onScrollDown,
   onScrollUp,
-}: UseScrollTransitionProps) {
+}: UseInputHandlingProps) {
   const lastScrollTime = useRef<number>(0);
   const touchStartY = useRef<number | null>(null);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
-    // Cases has its own internal scroll container and wheel interception.
-    // On mobile, global swipe transitions fight with that UX and can accidentally
-    // navigate to Contact/Partner while the user is trying to scroll.
+    // Cases has its own internal scroll container
+    // Global swipe transitions would conflict with internal scrolling
     if (currentSection === 'cases') return;
 
     const canTrigger = () => {
-      // Disable all scrolling on contact section
       if (currentSection === 'contact') return false;
       if (isTransitioning || isWaiting) return false;
 
@@ -37,16 +35,6 @@ export function useScrollTransition({
 
       lastScrollTime.current = now;
       return true;
-    };
-
-    const triggerDown = () => {
-      if (!canTrigger()) return;
-      onScrollDown();
-    };
-
-    const triggerUp = () => {
-      if (!canTrigger()) return;
-      onScrollUp();
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -60,6 +48,7 @@ export function useScrollTransition({
 
       lastScrollTime.current = now;
 
+      // Positive deltaY = scroll down, negative = scroll up
       if (e.deltaY > 0) {
         onScrollDown();
       } else if (e.deltaY < 0) {
@@ -67,6 +56,9 @@ export function useScrollTransition({
       }
     };
 
+    /**
+     * Touch start handler - record initial position
+     */
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       touchStartY.current = e.touches[0].clientY;
@@ -74,41 +66,43 @@ export function useScrollTransition({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      // Prevent native scroll while transitioning/waiting to avoid fighting the overlay.
       if (isTransitioning || isWaiting) {
         e.preventDefault();
       }
     };
 
+    /**
+     * Touch end handler - detect swipes and trigger navigation
+     */
     const handleTouchEnd = (e: TouchEvent) => {
+      if (e.changedTouches.length !== 1) return;
+      if (!canTrigger()) return;
+
       const startY = touchStartY.current;
       const startX = touchStartX.current;
-      touchStartY.current = null;
-      touchStartX.current = null;
 
-      if (startY == null || startX == null) return;
-      if (e.changedTouches.length !== 1) return;
+      if (startY === null || startX === null) return;
 
       const endY = e.changedTouches[0].clientY;
       const endX = e.changedTouches[0].clientX;
 
-      const dy = startY - endY; // positive => swipe up => go down
-      const dx = startX - endX;
+      const deltaY = startY - endY;
+      const deltaX = startX - endX;
+      const SWIPE_THRESHOLD = 30;
 
-      const absDy = Math.abs(dy);
-      const absDx = Math.abs(dx);
+      const verticalSwipe = Math.abs(deltaY) > Math.abs(deltaX);
 
-      // Basic swipe heuristics: mostly vertical and above threshold.
-      const SWIPE_MIN_PX = 50;
-      const VERTICAL_RATIO = 1.2;
-      if (absDy < SWIPE_MIN_PX) return;
-      if (absDy < absDx * VERTICAL_RATIO) return;
-
-      if (dy > 0) {
-        triggerDown();
-      } else {
-        triggerUp();
+      if (verticalSwipe && Math.abs(deltaY) > SWIPE_THRESHOLD) {
+        // Swipe up = scroll down, swipe down = scroll up
+        if (deltaY > 0) {
+          onScrollDown();
+        } else {
+          onScrollUp();
+        }
       }
+
+      touchStartY.current = null;
+      touchStartX.current = null;
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });

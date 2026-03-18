@@ -61,8 +61,8 @@ export function HomeSections({
 
       <TransitionVideo
         videoRef={transitionVideoRef}
-        forwardSrc={nav.transitionVideoSrc}
-        reverseSrc={nav.transitionVideoSrc}
+        forwardSrc={nav.transitionVideoSrc || ''}
+        reverseSrc={nav.transitionVideoSrc || ''}
         direction="forward"
         isVisible={nav.isTransitioning}
       />
