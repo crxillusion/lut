@@ -55,8 +55,8 @@ export const VIDEO_PATHS = {
 } as const;
 
 export const SOUND_PATHS = {
-  forward: '/Forward.wav',
-  backward: '/Backward.wav',
+  forward: `${BASE_PATH}/Forward.wav`,
+  backward: `${BASE_PATH}/Backward.wav`,
 } as const;
 
 export type Section = 
