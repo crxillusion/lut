@@ -49,31 +49,21 @@ export function useVideoPreloader(videoPaths: string[]) {
       window.location.hostname === 'localhost' || 
       window.location.hostname === '127.0.0.1';
 
-    // Conservative defaults for production: When network detection is unavailable or unreliable,
-    // assume slow/moderate connection to handle distant regions (e.g., Armenia via US VPN)
-    // Navigator.connection API is unreliable for international connections.
-    // However, localhost tests are typically fast (local network stack + R2 CDN has good performance)
+    // Network detection on Navigator.connection is unreliable in production
+    // Even "4g" detection can mean slow international connections
+    // We use very conservative timeouts everywhere except localhost
     let ESSENTIAL_CONCURRENCY: number;
     let PER_VIDEO_TIMEOUT_MS: number;
 
     if (isLocalhost) {
-      // Localhost: use more aggressive settings (we know it's a fast test environment)
+      // Localhost: use aggressive settings (local test environment)
       ESSENTIAL_CONCURRENCY = 4;
-      PER_VIDEO_TIMEOUT_MS = 12000; // 12s for localhost → R2 CDN (accounts for R2 latency)
-    } else if (isSlow) {
-      ESSENTIAL_CONCURRENCY = 1;
-      PER_VIDEO_TIMEOUT_MS = 22000;
-    } else if (isModerate) {
-      ESSENTIAL_CONCURRENCY = 2;
-      PER_VIDEO_TIMEOUT_MS = 18000;
-    } else if (networkDetected) {
-      // Network detected as 4g or 5g
-      ESSENTIAL_CONCURRENCY = 3;
-      PER_VIDEO_TIMEOUT_MS = 12000;
+      PER_VIDEO_TIMEOUT_MS = 8000; // 8s for localhost is plenty
     } else {
-      // Unknown network: assume slow (conservative fallback for distant regions)
-      ESSENTIAL_CONCURRENCY = 1;
-      PER_VIDEO_TIMEOUT_MS = 22000;
+      // Production: be ultra-conservative regardless of network detection
+      // Real-world shows even "4g" can be 2-10 Mbps on poor CDN routes
+      ESSENTIAL_CONCURRENCY = 2;
+      PER_VIDEO_TIMEOUT_MS = 30000; // 30s - give videos plenty of time to start loading
     }
 
     const gifDuration = 6400;
@@ -230,33 +220,22 @@ function preloadRemainingVideos(videoPaths: string[]) {
     window.location.hostname === 'localhost' || 
     window.location.hostname === '127.0.0.1';
 
-  // Background preload settings: more aggressive on fast/localhost, conservative on slow
+  // Background preload settings: aggressive on localhost, conservative on production
   let BG_CONCURRENCY: number;
   let BG_STAGGER_MS: number;
   let BG_TIMEOUT_MS: number;
 
   if (isLocalhost) {
-    // Localhost: be aggressive
+    // Localhost: be aggressive for fast test/development feedback
     BG_CONCURRENCY = 4;
     BG_STAGGER_MS = 100;
-    BG_TIMEOUT_MS = 12000;
-  } else if (isSlow) {
-    BG_CONCURRENCY = 1;
-    BG_STAGGER_MS = 400;
-    BG_TIMEOUT_MS = 25000;
-  } else if (isModerate) {
-    BG_CONCURRENCY = 2;
-    BG_STAGGER_MS = 300;
-    BG_TIMEOUT_MS = 20000;
-  } else if (networkDetected) {
-    BG_CONCURRENCY = 3;
-    BG_STAGGER_MS = 200;
-    BG_TIMEOUT_MS = 15000;
+    BG_TIMEOUT_MS = 10000;
   } else {
-    // Unknown network: assume slow
+    // Production: be ultra-conservative (same philosophy as essential preloader)
+    // Network detection is unreliable, so use worst-case timeouts
     BG_CONCURRENCY = 1;
     BG_STAGGER_MS = 300;
-    BG_TIMEOUT_MS = 25000;
+    BG_TIMEOUT_MS = 30000;
   }
 
   videoLogger.debug(

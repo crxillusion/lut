@@ -5,7 +5,7 @@ import { assetUrl } from '@/app/utils/assetUrl';
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
-export const LOADING_TIMEOUT = 20000; // 20 seconds - accommodate slow international connections (e.g., distant VPN)
+export const LOADING_TIMEOUT = 35000; // 35 seconds - accommodate extremely slow CDN routes and international connections
 export const LOADING_DELAY = 7000; // 7 seconds - balanced loading time for branding
 
 export const VIDEO_PATHS = {
