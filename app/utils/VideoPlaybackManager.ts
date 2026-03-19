@@ -176,7 +176,7 @@ export class VideoPlaybackManager {
     path: string,
     options: PreloadOptions = {}
   ): Promise<{ success: boolean; reason?: string }> {
-    const { timeout = 15000 } = options;
+    const { timeout = 22000 } = options;
 
     const video = document.createElement('video');
     video.preload = 'auto';

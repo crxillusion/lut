@@ -39,16 +39,41 @@ export function useVideoPreloader(videoPaths: string[]) {
       connection?.effectiveType === '2g';
 
     const isModerate = connection?.effectiveType === '3g';
+    
+    // Detect if network type was actually detected (not unknown/undefined)
+    const networkDetected = connection?.effectiveType !== undefined && connection?.effectiveType !== null;
+    
+    // Localhost detection - test environments with R2 CDN usually perform well
+    // Check at the time the effect runs (not during render)
+    const isLocalhost = 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1';
 
-    // More aggressive timeout scaling based on actual network
-    let ESSENTIAL_CONCURRENCY = isSlow ? 1 : isModerate ? 2 : 3;
-    let PER_VIDEO_TIMEOUT_MS = isSlow ? 15000 : isModerate ? 12000 : 10000;
+    // Conservative defaults for production: When network detection is unavailable or unreliable,
+    // assume slow/moderate connection to handle distant regions (e.g., Armenia via US VPN)
+    // Navigator.connection API is unreliable for international connections.
+    // However, localhost tests are typically fast (local network stack + R2 CDN has good performance)
+    let ESSENTIAL_CONCURRENCY: number;
+    let PER_VIDEO_TIMEOUT_MS: number;
 
-    // Dynamic adjustment: if network is detected as fast, use tighter timeouts
-    const downlink = connection?.downlink || 0;
-    if (downlink > 2) {
+    if (isLocalhost) {
+      // Localhost: use more aggressive settings (we know it's a fast test environment)
       ESSENTIAL_CONCURRENCY = 4;
-      PER_VIDEO_TIMEOUT_MS = 8000;
+      PER_VIDEO_TIMEOUT_MS = 12000; // 12s for localhost → R2 CDN (accounts for R2 latency)
+    } else if (isSlow) {
+      ESSENTIAL_CONCURRENCY = 1;
+      PER_VIDEO_TIMEOUT_MS = 22000;
+    } else if (isModerate) {
+      ESSENTIAL_CONCURRENCY = 2;
+      PER_VIDEO_TIMEOUT_MS = 18000;
+    } else if (networkDetected) {
+      // Network detected as 4g or 5g
+      ESSENTIAL_CONCURRENCY = 3;
+      PER_VIDEO_TIMEOUT_MS = 12000;
+    } else {
+      // Unknown network: assume slow (conservative fallback for distant regions)
+      ESSENTIAL_CONCURRENCY = 1;
+      PER_VIDEO_TIMEOUT_MS = 22000;
     }
 
     const gifDuration = 6400;
@@ -196,11 +221,43 @@ function preloadRemainingVideos(videoPaths: string[]) {
     connection?.effectiveType === '2g';
 
   const isModerate = connection?.effectiveType === '3g';
+  
+  // Detect if network type was actually detected
+  const networkDetected = connection?.effectiveType !== undefined && connection?.effectiveType !== null;
+  
+  // Localhost detection
+  const isLocalhost = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1';
 
-  // Very conservative on slow connections, normal on faster
-  const BG_CONCURRENCY = isSlow ? 1 : isModerate ? 2 : 3;
-  const BG_STAGGER_MS = isSlow ? 400 : isModerate ? 300 : 200;
-  const BG_TIMEOUT_MS = isSlow ? 20000 : isModerate ? 15000 : 12000;
+  // Background preload settings: more aggressive on fast/localhost, conservative on slow
+  let BG_CONCURRENCY: number;
+  let BG_STAGGER_MS: number;
+  let BG_TIMEOUT_MS: number;
+
+  if (isLocalhost) {
+    // Localhost: be aggressive
+    BG_CONCURRENCY = 4;
+    BG_STAGGER_MS = 100;
+    BG_TIMEOUT_MS = 12000;
+  } else if (isSlow) {
+    BG_CONCURRENCY = 1;
+    BG_STAGGER_MS = 400;
+    BG_TIMEOUT_MS = 25000;
+  } else if (isModerate) {
+    BG_CONCURRENCY = 2;
+    BG_STAGGER_MS = 300;
+    BG_TIMEOUT_MS = 20000;
+  } else if (networkDetected) {
+    BG_CONCURRENCY = 3;
+    BG_STAGGER_MS = 200;
+    BG_TIMEOUT_MS = 15000;
+  } else {
+    // Unknown network: assume slow
+    BG_CONCURRENCY = 1;
+    BG_STAGGER_MS = 300;
+    BG_TIMEOUT_MS = 25000;
+  }
 
   videoLogger.debug(
     `Background preload: ${unique.length} video(s) (concurrency=${BG_CONCURRENCY}, timeout=${BG_TIMEOUT_MS}ms)`

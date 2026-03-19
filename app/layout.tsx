@@ -86,10 +86,10 @@ export default function RootLayout({
         />
 
         {/* UI icons (overlay) */}
-        <link rel="preload" as="image" href={`${BASE_PATH}/back-arrow.svg`} />
-        <link rel="preload" as="image" href={`${BASE_PATH}/instagram.svg`} />
-        <link rel="preload" as="image" href={`${BASE_PATH}/linkedin.svg`} />
-        <link rel="preload" as="image" href={`${BASE_PATH}/sound.svg`} />
+        <link rel="preload" as="image" href={`${BASE_PATH}/back-arrow.svg`} type="image/svg+xml" />
+        <link rel="preload" as="image" href={`${BASE_PATH}/instagram.svg`} type="image/svg+xml" />
+        <link rel="preload" as="image" href={`${BASE_PATH}/linkedin.svg`} type="image/svg+xml" />
+        <link rel="preload" as="image" href={`${BASE_PATH}/sound.svg`} type="image/svg+xml" />
 
         {/* Background audio */}
         <link
