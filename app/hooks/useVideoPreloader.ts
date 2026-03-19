@@ -57,8 +57,9 @@ export function useVideoPreloader(videoPaths: string[]) {
 
     if (isLocalhost) {
       // Localhost: use aggressive settings (local test environment)
+      // 4 concurrent requests mean each video needs more time to start
       ESSENTIAL_CONCURRENCY = 4;
-      PER_VIDEO_TIMEOUT_MS = 8000; // 8s for localhost is plenty
+      PER_VIDEO_TIMEOUT_MS = 15000; // 15s for localhost (concurrency=4 means slower per-video start)
     } else {
       // Production: be ultra-conservative regardless of network detection
       // Real-world shows even "4g" can be 2-10 Mbps on poor CDN routes
@@ -227,9 +228,10 @@ function preloadRemainingVideos(videoPaths: string[]) {
 
   if (isLocalhost) {
     // Localhost: be aggressive for fast test/development feedback
+    // Match essential timeout (15s) for consistency
     BG_CONCURRENCY = 4;
     BG_STAGGER_MS = 100;
-    BG_TIMEOUT_MS = 10000;
+    BG_TIMEOUT_MS = 15000;
   } else {
     // Production: be ultra-conservative (same philosophy as essential preloader)
     // Network detection is unreliable, so use worst-case timeouts
