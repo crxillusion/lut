@@ -169,14 +169,13 @@ export class VideoPlaybackManager {
   }
 
   /**
-   * Preload a single video - waits for loadeddata (first frame + metadata)
-   * This is faster than canplaythrough which requires full buffering
+   * Preload a single video
    */
   async preloadVideo(
     path: string,
     options: PreloadOptions = {}
   ): Promise<{ success: boolean; reason?: string }> {
-    const { timeout = 22000 } = options;
+    const { timeout = 18000 } = options;
 
     const video = document.createElement('video');
     video.preload = 'auto';
@@ -188,12 +187,25 @@ export class VideoPlaybackManager {
       let settled = false;
 
       const cleanup = () => {
-        video.removeEventListener('loadeddata', onLoadedData);
+        video.removeEventListener('canplaythrough', onCanPlay);
+        video.removeEventListener('canplay', onCanPlay);
         video.removeEventListener('error', onError);
+        video.removeEventListener('loadedmetadata', onLoadedMetadata);
         video.remove();
       };
 
-      const onLoadedData = () => {
+      // Resolve immediately if we get metadata (we can play the video)
+      const onLoadedMetadata = () => {
+        if (settled) return;
+        if (video.readyState >= 1) {
+          settled = true;
+          videoLogger.debug(`Preloaded (metadata ready): ${path.split('/').pop()}`);
+          cleanup();
+          resolve({ success: true });
+        }
+      };
+
+      const onCanPlay = () => {
         if (settled) return;
         settled = true;
         videoLogger.debug(`Preloaded: ${path.split('/').pop()}`);
@@ -217,7 +229,8 @@ export class VideoPlaybackManager {
         resolve({ success: false, reason: 'timeout' });
       }, timeout);
 
-      video.addEventListener('loadeddata', onLoadedData);
+      video.addEventListener('loadedmetadata', onLoadedMetadata);
+      video.addEventListener('canplay', onCanPlay);
       video.addEventListener('error', onError);
 
       video.load();
@@ -231,7 +244,7 @@ export class VideoPlaybackManager {
     paths: string[],
     options: PreloadOptions = {}
   ): Promise<{ succeeded: string[]; failed: string[] }> {
-    const { concurrency = 3, stagger = 0, timeout = 15000 } = options;
+    const { concurrency = 3, stagger = 0 } = options;
     const unique = Array.from(new Set(paths)).filter(Boolean);
 
     if (unique.length === 0) {
@@ -253,7 +266,7 @@ export class VideoPlaybackManager {
           await new Promise((resolve) => setTimeout(resolve, idx * stagger));
         }
 
-        const result = await this.preloadVideo(path, { timeout });
+        const result = await this.preloadVideo(path, options);
         if (result.success) {
           succeeded.push(path);
         } else {

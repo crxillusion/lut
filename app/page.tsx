@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
 import { OpeningTransition } from './components/OpeningTransition';
 import { HomeSections } from './components/HomeSections';
 import { HomeOverlay } from './components/HomeOverlay';
 import { HOME_PRELOAD_VIDEO_PATHS } from './constants/homePreloadVideos';
-import { HOME_PRELOAD_IMAGE_PATHS } from './constants/homePreloadImages';
+import { CRITICAL_PRELOAD_IMAGES, getHighPriorityImages, getMediumPriorityImages } from './constants/homePreloadImages';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useAudioPreloader } from './hooks/useAudioPreloader';
 import { useAssetPreloader } from './hooks/useAssetPreloader';
@@ -50,12 +50,36 @@ export default function Home() {
       .catch(err => console.warn('[Home] Lottie cache-warm failed:', err.message));
   }, []);
 
-  // Image preloading
+  // Image preloading - Intelligent phased approach
+  // Memoize function outputs to prevent unnecessary re-renders
+  const highPriorityImages = useMemo(() => getHighPriorityImages(), []);
+  const mediumPriorityImages = useMemo(() => getMediumPriorityImages(), []);
+
+  // Phase 1: Critical assets only (block until complete, ~3s)
+  const { immediateDone: criticalDone } = useAssetPreloader({
+    enabled: true,
+    immediate: CRITICAL_PRELOAD_IMAGES,
+    backgroundStaggerMs: 250,
+    immediateConcurrency: 1, // Single request for critical (just loading-bg.jpg)
+    immediateTimeoutMs: 8000, // Only 8s for single critical image
+  });
+
+  // Phase 2: High priority assets (load while opening plays, non-blocking)
+  // These will load in parallel with video preloading
+  useAssetPreloader({
+    enabled: criticalDone,
+    immediate: highPriorityImages,
+    backgroundStaggerMs: 250,
+    immediateConcurrency: 2,
+    immediateTimeoutMs: 10000, // More generous for high-priority (About section background)
+  });
+
+  // Phase 3: Medium priority assets (load in background after page interactive)
   useAssetPreloader({
     enabled: true,
-    immediate: HOME_PRELOAD_IMAGE_PATHS,
-    background: [],
-    backgroundStaggerMs: 300,
+    immediate: [],
+    background: mediumPriorityImages,
+    backgroundStaggerMs: 500, // Stagger more to avoid blocking scrolling
   });
 
   // Opening sequence state

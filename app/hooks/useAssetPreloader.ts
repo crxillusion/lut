@@ -23,10 +23,10 @@ type AssetPreloaderOptions = {
   /** Optional per-asset delay for background assets (ms). */
   backgroundStaggerMs?: number;
 
-  /** Max number of concurrent immediate requests. Defaults to 4. */
+  /** Max number of concurrent immediate requests. Defaults to 6. */
   immediateConcurrency?: number;
 
-  /** Per-asset timeout (ms) for immediate assets. Defaults to 20000 (20 seconds for slow CDN). */
+  /** Per-asset timeout (ms) for immediate assets. Defaults to 15000. */
   immediateTimeoutMs?: number;
 };
 
@@ -35,8 +35,8 @@ export function useAssetPreloader({
   immediate,
   background = [],
   backgroundStaggerMs = 250,
-  immediateConcurrency = 4,
-  immediateTimeoutMs = 20000,
+  immediateConcurrency = 6,
+  immediateTimeoutMs = 15000,
 }: AssetPreloaderOptions) {
   const [immediateDone, setImmediateDone] = useState(false);
 

@@ -20,12 +20,8 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
   const [dotLottie, setDotLottie] = useState<DotLottie | null>(null);
   const firedRef = useRef(false);
   const mountTimeRef = useRef<number>(Date.now());
-  // Minimum time to display the loading screen (in ms)
-  // On localhost: 1s (fast feedback for development)
-  // On production: 2.5s (ensure animation is visible)
-  const isLocalhost = typeof window !== 'undefined' && 
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const MIN_DISPLAY_TIME = isLocalhost ? 1000 : 2500;
+  // Minimum time to display the loading screen (in ms) - ensures animation is visible
+  const MIN_DISPLAY_TIME = 2500;
 
   useEffect(() => {
     console.log('[LoadingScreen] Component mounted, isVisible:', isVisible);
@@ -62,20 +58,7 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
       return;
     }
 
-    // On localhost: fire immediately after MIN_DISPLAY_TIME (fast feedback for development)
-    // On production: wait for loop end (better for branding visibility)
-    if (isLocalhost) {
-      console.log('[LoadingScreen] Localhost detected - firing immediately after MIN_DISPLAY_TIME');
-      const t = window.setTimeout(() => {
-        if (firedRef.current) return;
-        firedRef.current = true;
-        console.log('[LoadingScreen] Localhost ready, firing onLoopEndAfterComplete');
-        onLoopEndAfterComplete?.();
-      }, 300); // Small delay to ensure animation is visible
-      return () => window.clearTimeout(t);
-    }
-
-    // Wait until the end of the *current* loop on production.
+    // Wait until the end of the *current* loop.
     // dotLottie.currentFrame is in frames; totalFrames is frame count.
     const totalFrames = Number(dotLottie.totalFrames);
     const currentFrame = Number(dotLottie.currentFrame);
@@ -85,7 +68,7 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
         : 0;
 
     const remainingMs = Math.max(0, Math.round(durationMs * (1 - progressInLoop)));
-    console.log('[LoadingScreen] Production mode - scheduling onLoopEndAfterComplete in', remainingMs, 'ms');
+    console.log('[LoadingScreen] Scheduling onLoopEndAfterComplete in', remainingMs, 'ms');
     const t = window.setTimeout(() => {
       if (firedRef.current) return;
       firedRef.current = true;
