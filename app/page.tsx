@@ -55,21 +55,15 @@ export default function Home() {
   const highPriorityImages = useMemo(() => getHighPriorityImages(), []);
   const mediumPriorityImages = useMemo(() => getMediumPriorityImages(), []);
 
-  // Detect slow networks to skip critical image preloading
-  const [isSlow] = useState(() => {
-    if (typeof navigator === 'undefined') return false;
-    const conn = (navigator as any).connection;
-    return conn?.saveData === true || 
-           conn?.effectiveType === 'slow-2g' || 
-           conn?.effectiveType === '2g' ||
-           conn?.effectiveType === '3g';
-  });
+  // On production (GitHub Pages), skip critical image preloading to avoid blocking
+  // Dev environments can preload the critical image (faster local CDN)
+  const skipCriticalImage = process.env.NODE_ENV === 'production';
 
   // Phase 1: Critical assets only (block until complete, ~3s)
-  // Skip on slow networks to avoid blocking the entire loading sequence
+  // Skip in production (GitHub Pages) to avoid blocking the entire loading sequence
   const { immediateDone: criticalDone } = useAssetPreloader({
-    enabled: !isSlow, // Skip on slow networks
-    immediate: isSlow ? [] : CRITICAL_PRELOAD_IMAGES,
+    enabled: !skipCriticalImage, // Skip in production
+    immediate: skipCriticalImage ? [] : CRITICAL_PRELOAD_IMAGES,
     backgroundStaggerMs: 250,
     immediateConcurrency: 1, // Single request for critical (just loading-bg.jpg)
     immediateTimeoutMs: 8000, // Only 8s for single critical image
@@ -78,7 +72,7 @@ export default function Home() {
   // Phase 2: High priority assets (load while opening plays, non-blocking)
   // These will load in parallel with video preloading
   useAssetPreloader({
-    enabled: isSlow ? true : criticalDone, // Load immediately on slow networks, after critical on fast
+    enabled: skipCriticalImage ? true : criticalDone, // Load immediately in production, after critical in dev
     immediate: highPriorityImages,
     backgroundStaggerMs: 250,
     immediateConcurrency: 2,

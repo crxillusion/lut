@@ -116,6 +116,7 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
         />
       </picture>
       <div className="flex flex-col items-center">
+        {/* Lottie animation only */}
         <div className="w-96 h-96 md:w-128 md:h-128 relative overflow-hidden">
           <DotLottieReact
             src={`${BASE_PATH}/5Z8KeWup2u.lottie`}
@@ -128,14 +129,14 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
                 isLoaded: instance?.isLoaded,
                 canvas: instance?.canvas ? 'exists' : 'null',
               });
-              setDotLottie(instance);
-              // `duration` is provided by @lottiefiles/dotlottie-web (milliseconds).
               if (instance?.isLoaded) {
                 console.log('[LoadingScreen] Lottie loaded immediately - duration (ms):', instance.duration);
+                setDotLottie(instance);
               } else if (instance) {
                 console.log('[LoadingScreen] Lottie not loaded yet, waiting for load event');
                 instance.addEventListener('load', () => {
                   console.log('[LoadingScreen] Lottie load event fired - duration (ms):', instance.duration);
+                  setDotLottie(instance);
                 });
               }
             }}

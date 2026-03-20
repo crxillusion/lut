@@ -39,11 +39,11 @@ export function useVideoPreloader(videoPaths: string[]) {
       connection?.effectiveType === '2g';
 
     const ESSENTIAL_CONCURRENCY = isSlow ? 1 : 3;
-    // For production (GitHub Pages), use longer timeouts due to slow CDN
+    // For production (GitHub Pages), use much longer timeouts due to slow CDN
     // For development (local R2 CDN), use shorter timeouts
     const isProd = process.env.NODE_ENV === 'production';
     const PER_VIDEO_TIMEOUT_MS = isProd 
-      ? Math.min(35000, LOADING_TIMEOUT - 5000)  // 35s per video in production
+      ? 50000  // 50s per video in production (GitHub Pages is very slow)
       : Math.min(18000, LOADING_TIMEOUT - 2000); // 18s per video in development
     const gifDuration = 6400;
 
