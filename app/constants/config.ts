@@ -5,7 +5,8 @@ import { assetUrl } from '@/app/utils/assetUrl';
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 export const SCROLL_COOLDOWN = 1500; // milliseconds
-export const LOADING_TIMEOUT = 20000; // 20 seconds - for slow GitHub Pages LFS downloads
+// Increase timeout for GitHub Pages (slow CDN) - 40 seconds max
+export const LOADING_TIMEOUT = process.env.NODE_ENV === 'production' ? 40000 : 20000;
 export const LOADING_DELAY = 7000; // 7 seconds - balanced loading time for branding
 
 export const VIDEO_PATHS = {

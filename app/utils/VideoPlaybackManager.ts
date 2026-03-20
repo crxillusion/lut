@@ -169,13 +169,13 @@ export class VideoPlaybackManager {
   }
 
   /**
-   * Preload a single video
+   * Preload a single video - Uses canplaythrough for reliability
    */
   async preloadVideo(
     path: string,
     options: PreloadOptions = {}
   ): Promise<{ success: boolean; reason?: string }> {
-    const { timeout = 18000 } = options;
+    const { timeout = 20000 } = options;
 
     const video = document.createElement('video');
     video.preload = 'auto';
@@ -187,28 +187,16 @@ export class VideoPlaybackManager {
       let settled = false;
 
       const cleanup = () => {
+        window.clearTimeout(timeoutId);
         video.removeEventListener('canplaythrough', onCanPlay);
-        video.removeEventListener('canplay', onCanPlay);
         video.removeEventListener('error', onError);
-        video.removeEventListener('loadedmetadata', onLoadedMetadata);
         video.remove();
-      };
-
-      // Resolve immediately if we get metadata (we can play the video)
-      const onLoadedMetadata = () => {
-        if (settled) return;
-        if (video.readyState >= 1) {
-          settled = true;
-          videoLogger.debug(`Preloaded (metadata ready): ${path.split('/').pop()}`);
-          cleanup();
-          resolve({ success: true });
-        }
       };
 
       const onCanPlay = () => {
         if (settled) return;
         settled = true;
-        videoLogger.debug(`Preloaded: ${path.split('/').pop()}`);
+        videoLogger.debug(`Preloaded (metadata ready): ${path.split('/').pop()}`);
         cleanup();
         resolve({ success: true });
       };
@@ -229,8 +217,7 @@ export class VideoPlaybackManager {
         resolve({ success: false, reason: 'timeout' });
       }, timeout);
 
-      video.addEventListener('loadedmetadata', onLoadedMetadata);
-      video.addEventListener('canplay', onCanPlay);
+      video.addEventListener('canplaythrough', onCanPlay);
       video.addEventListener('error', onError);
 
       video.load();
