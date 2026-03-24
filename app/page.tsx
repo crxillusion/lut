@@ -6,7 +6,7 @@ import { OpeningTransition } from './components/OpeningTransition';
 import { HomeSections } from './components/HomeSections';
 import { HomeOverlay } from './components/HomeOverlay';
 import { HOME_PRELOAD_VIDEO_PATHS } from './constants/homePreloadVideos';
-import { CRITICAL_PRELOAD_IMAGES, getHighPriorityImages, getMediumPriorityImages } from './constants/homePreloadImages';
+import { CRITICAL_PRELOAD_IMAGES, getHighPriorityImages, getMediumPriorityImages, getCasesImages } from './constants/homePreloadImages';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
 import { useAudioPreloader } from './hooks/useAudioPreloader';
 import { useAssetPreloader } from './hooks/useAssetPreloader';
@@ -54,6 +54,7 @@ export default function Home() {
   // Memoize function outputs to prevent unnecessary re-renders
   const highPriorityImages = useMemo(() => getHighPriorityImages(), []);
   const mediumPriorityImages = useMemo(() => getMediumPriorityImages(), []);
+  const casesImages = useMemo(() => getCasesImages(), []);
 
   // On production (GitHub Pages), skip critical image preloading to avoid blocking
   // Dev environments can preload the critical image (faster local CDN)
@@ -83,7 +84,7 @@ export default function Home() {
   useAssetPreloader({
     enabled: true,
     immediate: [],
-    background: mediumPriorityImages,
+    background: [...mediumPriorityImages, ...casesImages],
     backgroundStaggerMs: 500, // Stagger more to avoid blocking scrolling
   });
 

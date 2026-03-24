@@ -55,27 +55,29 @@ export const getMediumPriorityImages = (): string[] => {
   ];
 };
 
-// Phase 3: LOW PRIORITY - Lazy load on-demand
-// Load only when user scrolls near the section (via IntersectionObserver)
-export const LOW_PRIORITY_PRELOAD_IMAGES = {
-  // Cases section - load all case card images when user scrolls to Cases
-  cases: [
-    `${BASE_PATH}/cases-bg.png`,
-    `${BASE_PATH}/cases/5f74027c328b57bc4440ab05dfa0115e909245e3.png`,
-    `${BASE_PATH}/cases/f7f9a59fb629bc50bd16b0d625b4121f2ced0c0c.png`,
-    `${BASE_PATH}/cases/f52f8354b0cae68738cfcd2bfd7e2f28c24e56eb.png`,
-    `${BASE_PATH}/cases/7a43535bda67a565f92d4c59b40208caca25857c.jpg`,
-    `${BASE_PATH}/cases/9cb8ae990c7485afbbdad3534bbb2fb9f0b95ba0.png`,
-    `${BASE_PATH}/cases/a947072b922f94c359fe8d47a6f82546cd6251ba.png`,
-    `${BASE_PATH}/cases/614242dcf847675c792606557d89585df622ca2d.png`,
-    `${BASE_PATH}/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg`,
-    `${BASE_PATH}/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg`,
-    `${BASE_PATH}/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png`,
+// Helper function to generate cases section images (card thumbnails + bg)
+// These are loaded as background assets so they're ready before the user reaches Cases.
+export const getCasesImages = (): string[] => [
+  `${BASE_PATH}/cases-bg.png`,
+  `${BASE_PATH}/cases/5f74027c328b57bc4440ab05dfa0115e909245e3.png`,
+  `${BASE_PATH}/cases/f7f9a59fb629bc50bd16b0d625b4121f2ced0c0c.png`,
+  `${BASE_PATH}/cases/f52f8354b0cae68738cfcd2bfd7e2f28c24e56eb.png`,
+  `${BASE_PATH}/cases/7a43535bda67a565f92d4c59b40208caca25857c.jpg`,
+  `${BASE_PATH}/cases/9cb8ae990c7485afbbdad3534bbb2fb9f0b95ba0.png`,
+  `${BASE_PATH}/cases/a947072b922f94c359fe8d47a6f82546cd6251ba.png`,
+  `${BASE_PATH}/cases/614242dcf847675c792606557d89585df622ca2d.png`,
+  `${BASE_PATH}/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg`,
+  `${BASE_PATH}/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg`,
+  `${BASE_PATH}/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png`,
+  // Section frame overlays
+  `${BASE_PATH}/Cases_png_transparent.png`,
+  `${BASE_PATH}/Showreel_png_transparent.png`,
+];
 
-    // Section frame overlays
-    `${BASE_PATH}/Cases_png_transparent.png`,
-    `${BASE_PATH}/Showreel_png_transparent.png`,
-  ],
+// Phase 3: LOW PRIORITY - Lazy load on-demand
+// Kept for backward compatibility; prefer getCasesImages() + the background preloader phase.
+export const LOW_PRIORITY_PRELOAD_IMAGES = {
+  cases: getCasesImages(),
 };
 
 // DEPRECATED: Use phase-based approach instead
