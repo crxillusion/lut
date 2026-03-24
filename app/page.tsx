@@ -65,7 +65,6 @@ export default function Home() {
   const { immediateDone: criticalDone } = useAssetPreloader({
     enabled: !skipCriticalImage, // Skip in production
     immediate: skipCriticalImage ? [] : CRITICAL_PRELOAD_IMAGES,
-    backgroundStaggerMs: 250,
     immediateConcurrency: 1, // Single request for critical (just loading-bg.jpg)
     immediateTimeoutMs: 8000, // Only 8s for single critical image
   });
@@ -75,17 +74,15 @@ export default function Home() {
   useAssetPreloader({
     enabled: skipCriticalImage ? true : criticalDone, // Load immediately in production, after critical in dev
     immediate: highPriorityImages,
-    backgroundStaggerMs: 250,
     immediateConcurrency: 2,
     immediateTimeoutMs: 10000, // More generous for high-priority (About section background)
   });
 
-  // Phase 3: Medium priority assets (load in background after page interactive)
+  // Phase 3: Medium priority assets + cases images (load in background after page interactive)
   useAssetPreloader({
     enabled: true,
     immediate: [],
     background: [...mediumPriorityImages, ...casesImages],
-    backgroundStaggerMs: 500, // Stagger more to avoid blocking scrolling
   });
 
   // Opening sequence state

@@ -20,9 +20,6 @@ type AssetPreloaderOptions = {
    */
   background?: string[];
 
-  /** Optional per-asset delay for background assets (ms). */
-  backgroundStaggerMs?: number;
-
   /** Max number of concurrent immediate requests. Defaults to 6. */
   immediateConcurrency?: number;
 
@@ -34,7 +31,6 @@ export function useAssetPreloader({
   enabled,
   immediate,
   background = [],
-  backgroundStaggerMs = 250,
   immediateConcurrency = 6,
   immediateTimeoutMs = 15000,
 }: AssetPreloaderOptions) {
@@ -219,6 +215,9 @@ export function useAssetPreloader({
   ]);
 
   // Fire-and-forget background warm.
+  // IMPORTANT: No cleanup/cancellation — these are intentional fire-and-forget requests.
+  // Cancelling them on re-render is what caused images to never load (stagger timers
+  // were wiped before they fired, and the dedup guard then blocked re-scheduling).
   useEffect(() => {
     if (!enabled) return;
     if (!immediateDone) return;
@@ -233,26 +232,21 @@ export function useAssetPreloader({
     assetLogger.info(`Background image warm: ${uniqueBg.length} asset(s)`);
     if (uniqueBg.length === 0) return;
 
-    const timers: number[] = [];
-    const imgEls: HTMLImageElement[] = [];
-
-    uniqueBg.forEach((src, idx) => {
-      const t = window.setTimeout(() => {
-        assetLogger.debug(`↪️ background request: ${src}`);
-        const img = new Image();
-        img.decoding = 'async';
-        img.loading = 'eager';
-        img.src = src;
-        imgEls.push(img);
-      }, idx * backgroundStaggerMs);
-      timers.push(t);
+    // Fire all requests immediately — no stagger. The browser manages its own
+    // connection pool (typically 6 concurrent per host), so there's no benefit
+    // to artificial staggering, and it risks images not loading before the user
+    // reaches the section if the component re-renders and cleanup fires.
+    uniqueBg.forEach((src) => {
+      assetLogger.debug(`↪️ background request: ${src}`);
+      const img = new Image();
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
     });
 
-    return () => {
-      timers.forEach(t => window.clearTimeout(t));
-      imgEls.length = 0;
-    };
-  }, [enabled, immediateDone, uniqueBg, backgroundStaggerMs]);
+    // No cleanup — these Image() loads are fire-and-forget and must not be
+    // cancelled when the component re-renders.
+  }, [enabled, immediateDone, uniqueBg]);
 
   return { immediateDone };
 }
