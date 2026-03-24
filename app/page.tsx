@@ -38,8 +38,11 @@ export default function Home() {
   // Video preloading
   const { isLoading, loadingProgress } = useVideoPreloader(HOME_PRELOAD_VIDEO_PATHS);
 
-  // Audio preloading
-  const audioPathsArray = Object.values(SOUND_PATHS).filter((p): p is string => typeof p === 'string');
+  // Audio preloading — memoised so the array reference is stable across renders
+  const audioPathsArray = useMemo(
+    () => Object.values(SOUND_PATHS).filter((p): p is string => typeof p === 'string'),
+    []
+  );
   useAudioPreloader(audioPathsArray);
 
   // Lottie preloading

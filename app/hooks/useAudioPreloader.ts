@@ -2,54 +2,25 @@
 
 import { useEffect, useMemo } from 'react';
 import { SOUND_PATHS } from '../constants/config';
+import { audioPool } from '../utils/audioPool';
 
 export function useAudioPreloader(audioPaths: string[]) {
-  // Ensure stable, de-duped ordering
+  // Stable, de-duped list — keyed by joined string so a new array with the
+  // same URLs doesn't re-fire the effect.
   const uniqueAudioPaths = useMemo(
     () => Array.from(new Set(audioPaths)).filter(Boolean),
-    [audioPaths]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [audioPaths.join('|')]
   );
 
   useEffect(() => {
-    let isCancelled = false;
+    if (uniqueAudioPaths.length === 0) return;
 
-    // Audio files are typically much smaller than videos, so we can preload all of them
-    // We'll use a simple fetch strategy to warm the browser cache with CORS mode
-    const preloadAudio = async () => {
-      const audioUrls = uniqueAudioPaths;
-
-      try {
-        await Promise.all(
-          audioUrls.map((url) =>
-            fetch(url, { 
-              cache: 'default',
-              mode: 'cors',
-              credentials: 'omit'
-            })
-              .then((response) => {
-                if (!response.ok) {
-                  console.warn(`Failed to preload audio: ${url} (status ${response.status})`);
-                }
-              })
-              .catch((err) => {
-                console.warn(`Error preloading audio ${url}:`, err.message);
-              })
-          )
-        );
-
-        if (!isCancelled) {
-          console.debug(`✅ All audio files preloaded (${audioUrls.length} files)`);
-        }
-      } catch (err) {
-        console.warn('Error during audio preload batch:', err);
-      }
-    };
-
-    preloadAudio();
-
-    return () => {
-      isCancelled = true;
-    };
+    // Create real HTMLAudioElement instances and call .load() so the browser
+    // buffers the audio bytes into each element's own media pipeline cache.
+    // fetch() only warms the HTTP cache which is NOT reused by Audio elements.
+    audioPool.prime(uniqueAudioPaths);
+    console.debug(`✅ Audio pool primed (${uniqueAudioPaths.length} files)`);
   }, [uniqueAudioPaths]);
 }
 

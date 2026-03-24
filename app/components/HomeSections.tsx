@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { VIDEO_PATHS } from '../constants/config';
 import type { VideoRefs } from '../hooks/useVideoRefs';
 import { HeroSection } from './HeroSection';
@@ -47,9 +47,10 @@ export function HomeSections({
   // current transition. Sections use this so they only go invisible once they are
   // actually covered — eliminating the black flash between section hide and overlay show.
   const [transitionVideoReady, setTransitionVideoReady] = useState(false);
-  // Tracks the src we pre-loaded into transitionVideoRef while idle, so we can
-  // pass it as forwardSrc to TransitionVideo and prevent React from clearing it.
-  const preWarmSrcRef = useRef<string>('');
+  // Tracks the src pre-loaded into transitionVideoRef while idle. Must be state
+  // (not a ref) so the new value is passed to VideoBackground via a re-render,
+  // preventing React from clearing the src attribute and wiping the buffer.
+  const [preWarmSrc, setPreWarmSrc] = useState<string>('');
 
   const handleTransitionVideoReady = useCallback(() => {
     homeLogger.debug('[HomeSections] TransitionVideo ready — safeIsTransitioning=true');
@@ -100,7 +101,7 @@ export function HomeSections({
       video: targetSrc.split('/').pop(),
     });
 
-    preWarmSrcRef.current = targetSrc;
+    setPreWarmSrc(targetSrc);
     el.preload = 'auto';
     el.src = targetSrc;
     el.load();
@@ -126,8 +127,8 @@ export function HomeSections({
 
       <TransitionVideo
         videoRef={transitionVideoRef}
-        forwardSrc={nav.transitionVideoSrc || preWarmSrcRef.current}
-        reverseSrc={nav.transitionVideoSrc || preWarmSrcRef.current}
+        forwardSrc={nav.transitionVideoSrc || preWarmSrc}
+        reverseSrc={nav.transitionVideoSrc || preWarmSrc}
         direction="forward"
         isVisible={nav.isTransitioning}
         onReady={handleTransitionVideoReady}
