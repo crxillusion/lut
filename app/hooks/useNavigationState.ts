@@ -24,6 +24,9 @@ export interface NavigationStateActions {
 export interface NavigationStateRefs {
   isTransitioningRef: React.MutableRefObject<boolean>;
   previousSectionRef: React.MutableRefObject<Section>;
+  /** Set to true synchronously when leaving contact, before the 450ms fade delay elapses.
+   *  Cleared when the video transition actually starts. Guards against double-fire. */
+  isLeavingContactRef: React.MutableRefObject<boolean>;
 }
 
 export function useNavigationState() {
@@ -37,6 +40,7 @@ export function useNavigationState() {
 
   const isTransitioningRef = useRef(false);
   const previousSectionRef = useRef<Section>('hero');
+  const isLeavingContactRef = useRef(false);
 
   const state: NavigationState = {
     currentSection,
@@ -61,6 +65,7 @@ export function useNavigationState() {
   const refs: NavigationStateRefs = {
     isTransitioningRef,
     previousSectionRef,
+    isLeavingContactRef,
   };
 
   return { state, actions, refs };

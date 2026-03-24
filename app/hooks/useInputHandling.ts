@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { SCROLL_COOLDOWN } from '../constants/config';
 import type { Section } from '../constants/config';
+import { inputLogger } from '../utils/logger';
 
 interface UseInputHandlingProps {
   currentSection: Section;
@@ -24,14 +25,25 @@ export function useInputHandling({
   useEffect(() => {
     // Cases has its own internal scroll container
     // Global swipe transitions would conflict with internal scrolling
-    if (currentSection === 'cases') return;
+    if (currentSection === 'cases') {
+      inputLogger.debug('[useInputHandling] Skipping event binding — section is "cases" (uses internal scroll)');
+      return;
+    }
+
+    inputLogger.debug('[useInputHandling] Binding input handlers', { currentSection, isTransitioning, isWaiting });
 
     const canTrigger = () => {
-      if (currentSection === 'contact') return false;
-      if (isTransitioning || isWaiting) return false;
+      if (isTransitioning || isWaiting) {
+        inputLogger.debug('[useInputHandling] canTrigger=false — isTransitioning or isWaiting', { isTransitioning, isWaiting });
+        return false;
+      }
 
       const now = Date.now();
-      if (now - lastScrollTime.current < SCROLL_COOLDOWN) return false;
+      const elapsed = now - lastScrollTime.current;
+      if (elapsed < SCROLL_COOLDOWN) {
+        inputLogger.debug('[useInputHandling] canTrigger=false — cooldown active', { elapsed, SCROLL_COOLDOWN });
+        return false;
+      }
 
       lastScrollTime.current = now;
       return true;
@@ -40,18 +52,33 @@ export function useInputHandling({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
 
-      if (currentSection === 'contact') return;
-      if (isTransitioning || isWaiting) return;
+      inputLogger.debug('[useInputHandling] wheel event', {
+        deltaY: e.deltaY,
+        currentSection,
+        isTransitioning,
+        isWaiting,
+      });
+
+      if (isTransitioning || isWaiting) {
+        inputLogger.debug('[useInputHandling] wheel ignored — transitioning/waiting');
+        return;
+      }
 
       const now = Date.now();
-      if (now - lastScrollTime.current < SCROLL_COOLDOWN) return;
+      const elapsed = now - lastScrollTime.current;
+      if (elapsed < SCROLL_COOLDOWN) {
+        inputLogger.debug('[useInputHandling] wheel ignored — cooldown', { elapsed });
+        return;
+      }
 
       lastScrollTime.current = now;
 
       // Positive deltaY = scroll down, negative = scroll up
       if (e.deltaY > 0) {
+        inputLogger.info('[useInputHandling] 🖱️ Scroll DOWN →', currentSection);
         onScrollDown();
       } else if (e.deltaY < 0) {
+        inputLogger.info('[useInputHandling] 🖱️ Scroll UP →', currentSection);
         onScrollUp();
       }
     };
@@ -63,6 +90,7 @@ export function useInputHandling({
       if (e.touches.length !== 1) return;
       touchStartY.current = e.touches[0].clientY;
       touchStartX.current = e.touches[0].clientX;
+      inputLogger.debug('[useInputHandling] touchstart', { y: touchStartY.current, x: touchStartX.current });
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -76,7 +104,6 @@ export function useInputHandling({
      */
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.changedTouches.length !== 1) return;
-      if (!canTrigger()) return;
 
       const startY = touchStartY.current;
       const startX = touchStartX.current;
@@ -92,11 +119,17 @@ export function useInputHandling({
 
       const verticalSwipe = Math.abs(deltaY) > Math.abs(deltaX);
 
+      inputLogger.debug('[useInputHandling] touchend', { deltaY, deltaX, verticalSwipe, currentSection });
+
+      if (!canTrigger()) return;
+
       if (verticalSwipe && Math.abs(deltaY) > SWIPE_THRESHOLD) {
         // Swipe up = scroll down, swipe down = scroll up
         if (deltaY > 0) {
+          inputLogger.info('[useInputHandling] 👆 Swipe UP (scroll down) →', currentSection);
           onScrollDown();
         } else {
+          inputLogger.info('[useInputHandling] 👇 Swipe DOWN (scroll up) →', currentSection);
           onScrollUp();
         }
       }
@@ -111,6 +144,7 @@ export function useInputHandling({
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
+      inputLogger.debug('[useInputHandling] Removing input handlers', { currentSection });
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);

@@ -1,17 +1,24 @@
 import { useCallback } from 'react';
 import { SOUND_PATHS } from '../constants/config';
+import { soundLogger } from '../utils/logger';
 
 export function useNavigationSound() {
   const playSound = useCallback((soundType: 'forward' | 'backward') => {
+    const src = SOUND_PATHS[soundType];
+    soundLogger.info(`🔊 playSound("${soundType}") → src: ${src}`);
     try {
-      const audio = new Audio(SOUND_PATHS[soundType]);
-      audio.volume = 0.5; // Set volume to 50% to avoid being too loud
-      audio.play().catch((err) => {
-        // Silently fail if audio can't play (e.g., user hasn't interacted with page yet)
-        console.debug(`Could not play ${soundType} sound:`, err.message);
-      });
+      const audio = new Audio(src);
+      audio.volume = 0.5;
+      const playPromise = audio.play();
+      playPromise
+        .then(() => {
+          soundLogger.debug(`✅ Sound "${soundType}" playing`);
+        })
+        .catch((err) => {
+          soundLogger.warn(`⚠️ Could not play "${soundType}" sound:`, (err as Error).message);
+        });
     } catch (err) {
-      console.debug(`Error creating audio element for ${soundType}:`, err);
+      soundLogger.error(`❌ Error creating Audio for "${soundType}":`, err);
     }
   }, []);
 

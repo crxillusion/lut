@@ -449,7 +449,7 @@ export function StaticSection({
     <section
       ref={sectionRef as any}
       className={`fixed inset-0 w-full h-screen ${
-        isVisible ? 'z-20' : 'pointer-events-none z-0'
+        isVisible ? 'z-20' : 'opacity-0 invisible pointer-events-none z-0'
       }`}
     >
       {/* Deterministic base layer so we never flash a previous video frame.

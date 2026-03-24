@@ -111,3 +111,6 @@ export const createLogger = (prefix: string) => new Logger(prefix);
 export const homeLogger = createLogger('Home');
 export const transitionLogger = createLogger('Transition');
 export const videoLogger = createLogger('Video');
+export const contactLogger = createLogger('Contact');
+export const inputLogger = createLogger('Input');
+export const soundLogger = createLogger('Sound');

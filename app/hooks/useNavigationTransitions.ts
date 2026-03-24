@@ -1,10 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import type { Section } from '../constants/config';
 import { VIDEO_PATHS } from '../constants/config';
-import { homeLogger } from '../utils/logger';
+import { homeLogger, contactLogger } from '../utils/logger';
 import { videoPlaybackManager } from '../utils/VideoPlaybackManager';
 import { useNavigationSound } from './useNavigationSound';
 import type { NavigationState, NavigationStateActions, NavigationStateRefs } from './useNavigationState';
+
+// How long (ms) to let the contact UI fade-out animation play before kicking off the
+// video transition (which sets isTransitioning=true and hides the contact section).
+// The Framer Motion exit duration is 0.4s; we add extra headroom for React commit lag.
+const CONTACT_FADEOUT_DELAY_MS = 600;
 
 export interface NavigationTransitionVideoRefs {
   heroVideoRef: React.RefObject<HTMLVideoElement | null>;
@@ -65,29 +70,37 @@ export function useNavigationTransitions(
       isDirectNavigation: boolean = false
     ) => {
       if (refs.isTransitioningRef.current) {
-        homeLogger.warn('[Transition] Already transitioning, ignoring');
+        homeLogger.warn('[Transition] ⛔ Already transitioning — ignoring request', {
+          from: state.currentSection,
+          to: targetSection,
+        });
         return;
       }
 
-      homeLogger.info('[Transition] request', {
+      homeLogger.info('[Transition] ▶️ START', {
         from: state.currentSection,
         to: targetSection,
         transitionVideo,
         isDirectNavigation,
+        'isTransitioningRef.current': refs.isTransitioningRef.current,
       });
 
+      // --- UI hide for current section ---
       if (state.currentSection === 'hero' && targetSection !== 'hero') {
+        homeLogger.debug('[Transition] Hiding hero UI (setHeroVisible false)');
         actions.setHeroVisible(false);
       }
       if (state.currentSection === 'aboutStart' && targetSection !== 'aboutStart') {
+        homeLogger.debug('[Transition] Hiding aboutStart UI (setAboutStartVisible false)');
         actions.setAboutStartVisible(false);
       }
-
       if (targetSection === 'aboutStart') {
+        homeLogger.debug('[Transition] Pre-hiding aboutStart UI before transition');
         actions.setAboutStartVisible(false);
       }
 
       if (isDirectNavigation && state.currentSection === 'hero') {
+        homeLogger.debug('[Transition] Saving previousSectionRef = hero (direct nav)');
         refs.previousSectionRef.current = 'hero';
       }
 
@@ -95,18 +108,41 @@ export function useNavigationTransitions(
       actions.setIsTransitioning(true);
       actions.setTransitionVideoSrc(transitionVideo);
 
+      homeLogger.debug('[Transition] State updated → isTransitioning=true, transitionVideoSrc set', {
+        transitionVideo,
+      });
+
+      // --- Sound ---
       if (state.currentSection === 'hero' && targetSection !== 'hero') {
+        homeLogger.info('[Transition] 🔊 Playing FORWARD sound (hero → other)');
         playSound('forward');
       } else if (state.currentSection !== 'hero' && targetSection === 'hero') {
+        homeLogger.info('[Transition] 🔊 Playing BACKWARD sound (other → hero)');
         playSound('backward');
+      } else {
+        homeLogger.debug('[Transition] No navigation sound for this route', {
+          from: state.currentSection,
+          to: targetSection,
+        });
       }
 
+      // --- Prepare target video ---
       const targetVideo = targetVideoRef.current;
+      homeLogger.debug('[Transition] Target video element', {
+        exists: !!targetVideo,
+        readyState: targetVideo?.readyState,
+        src: targetVideo?.currentSrc?.split('/').pop(),
+      });
+
       if (targetVideo) {
         if (targetSection !== 'contact') {
           videoPlaybackManager.stop(targetVideoRef, true);
+          homeLogger.debug('[Transition] Target video stopped+reset (non-contact)');
         }
         videoPlaybackManager.load(targetVideoRef);
+        homeLogger.debug('[Transition] Target video .load() called');
+      } else {
+        homeLogger.warn('[Transition] ⚠️ Target videoRef is null — cannot preload');
       }
 
       // Small delay to ensure src swap committed before playback attempts
@@ -114,25 +150,47 @@ export function useNavigationTransitions(
         try {
           const transitionEl = videoRefs.transitionVideoRef.current;
           if (!transitionEl) {
-            homeLogger.error('transitionVideoRef.current is null!');
+            homeLogger.error('[Transition] ❌ transitionVideoRef.current is null!');
+            // Fail open
+            actions.setCurrentSection(targetSection);
+            actions.setIsTransitioning(false);
+            refs.isTransitioningRef.current = false;
             return;
           }
+
+          homeLogger.debug('[Transition] transitionEl state (before load)', {
+            readyState: transitionEl.readyState,
+            src: transitionEl.currentSrc?.split('/').pop(),
+            duration: transitionEl.duration,
+            paused: transitionEl.paused,
+          });
 
           // Prepare transition video for playback
           transitionEl.preload = 'auto';
           videoPlaybackManager.stop(videoRefs.transitionVideoRef, true);
           videoPlaybackManager.load(videoRefs.transitionVideoRef);
 
+          homeLogger.debug('[Transition] transitionEl after stop+load', {
+            readyState: transitionEl.readyState,
+          });
+
           const handleCanPlay = () => {
-            homeLogger.info('[Transition] canplay -> start playback', {
+            homeLogger.info('[Transition] ▶️ canplay fired → starting transition video playback', {
               from: state.currentSection,
               to: targetSection,
+              readyState: transitionEl.readyState,
             });
             videoPlaybackManager
               .play(videoRefs.transitionVideoRef)
+              .then(() => {
+                homeLogger.debug('[Transition] Transition video play() resolved');
+              })
               .catch((err) => {
-                homeLogger.warn('Transition video play error:', (err as Error).message);
-                // Fail open - advance to target section even if video fails
+                homeLogger.warn('[Transition] ⚠️ Transition video play() error — failing open', {
+                  error: (err as Error).message,
+                  to: targetSection,
+                });
+                // Fail open
                 actions.setCurrentSection(targetSection);
                 actions.setIsTransitioning(false);
                 refs.isTransitioningRef.current = false;
@@ -141,7 +199,7 @@ export function useNavigationTransitions(
           };
 
           const handleTransitionEnd = () => {
-            homeLogger.info('[Transition] ended, advancing to target section', {
+            homeLogger.info('[Transition] ✅ Transition video ended → advancing to target section', {
               to: targetSection,
             });
 
@@ -150,20 +208,30 @@ export function useNavigationTransitions(
             transitionEl.removeEventListener('canplay', handleCanPlay);
 
             // Prepare target video playback
-            videoPlaybackManager.play(targetVideoRef).catch(() => {});
+            videoPlaybackManager.play(targetVideoRef).catch((err) => {
+              homeLogger.warn('[Transition] ⚠️ Target video play() error after transition', {
+                to: targetSection,
+                error: (err as Error).message,
+              });
+            });
 
             // Use requestAnimationFrame to batch state updates
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
+                homeLogger.debug('[Transition] rAF: setting currentSection and clearing isTransitioning', {
+                  to: targetSection,
+                });
                 actions.setCurrentSection(targetSection);
                 actions.setIsTransitioning(false);
                 refs.isTransitioningRef.current = false;
 
                 // Show UI when entering hero or aboutStart
                 if (targetSection === 'hero') {
+                  homeLogger.debug('[Transition] Showing hero UI (setHeroVisible true)');
                   actions.setHeroVisible(true);
                 }
                 if (targetSection === 'aboutStart') {
+                  homeLogger.debug('[Transition] Showing aboutStart UI (setAboutStartVisible true)');
                   actions.setAboutStartVisible(true);
                 }
               });
@@ -174,13 +242,14 @@ export function useNavigationTransitions(
 
           // If transition video is already ready, play immediately
           if (transitionEl.readyState >= 3) {
+            homeLogger.debug('[Transition] transitionEl already HAVE_FUTURE_DATA — calling handleCanPlay immediately');
             handleCanPlay();
           } else {
-            // Wait for canplay event to start playback
+            homeLogger.debug('[Transition] Waiting for "canplay" event on transition video');
             transitionEl.addEventListener('canplay', handleCanPlay, { once: true });
           }
         } catch (err) {
-          homeLogger.error('Transition error:', err);
+          homeLogger.error('[Transition] ❌ Unexpected error in transition setTimeout', err);
           actions.setCurrentSection(targetSection);
           actions.setIsTransitioning(false);
           refs.isTransitioningRef.current = false;
@@ -216,6 +285,7 @@ export function useNavigationTransitions(
             reverseVideo = VIDEO_PATHS.contactToHero;
             break;
           default:
+            homeLogger.warn('[transitions.toHero] No reverse video for section', { currentSection: state.currentSection });
             return;
         }
         refs.previousSectionRef.current = 'hero';
@@ -256,6 +326,7 @@ export function useNavigationTransitions(
 
   const transitionToAboutStart = useCallback(
     (viaScroll: boolean = false) => {
+      homeLogger.info('[transitionToAboutStart] viaScroll=' + viaScroll);
       handleTransition('aboutStart', VIDEO_PATHS.heroToAboutStart, videoRefs.aboutStartVideoRef, true);
     },
     [handleTransition, videoRefs.aboutStartVideoRef]
@@ -263,6 +334,7 @@ export function useNavigationTransitions(
 
   const transitionToAbout = useCallback(
     (viaScroll: boolean = false) => {
+      homeLogger.info('[transitionToAbout] viaScroll=' + viaScroll);
       handleTransition('about', VIDEO_PATHS.aboutStartToAbout, videoRefs.aboutVideoRef);
     },
     [handleTransition, videoRefs.aboutVideoRef]
@@ -270,39 +342,99 @@ export function useNavigationTransitions(
 
   const transitionBackToHeroFromAboutStart = useCallback(
     (viaScroll: boolean = false) => {
+      homeLogger.info('[transitionBackToHeroFromAboutStart] viaScroll=' + viaScroll);
       refs.previousSectionRef.current = 'hero';
       handleTransition('hero', VIDEO_PATHS.aboutStartToHero, videoRefs.heroVideoRef);
     },
     [handleTransition, videoRefs.heroVideoRef, refs]
   );
 
+  /**
+   * Leave the contact section:
+   * 1. Immediately set isLeavingContactRef (sync guard) + fade out contact UI
+   * 2. After CONTACT_FADEOUT_DELAY_MS, begin the actual video transition so the
+   *    section stays visible long enough for the fade-out animation to complete.
+   */
   const transitionBackFromContact = useCallback(() => {
-    if (state.currentSection !== 'contact') return;
+    contactLogger.info('[transitionBackFromContact] 🚀 Triggered', {
+      currentSection: state.currentSection,
+      isTransitioningRef: refs.isTransitioningRef.current,
+      isLeavingContactRef: refs.isLeavingContactRef.current,
+      contactVideoReadyState: videoRefs.contactVideoRef.current?.readyState,
+      contactVideoDuration: videoRefs.contactVideoRef.current?.duration,
+      contactVideoCurrentTime: videoRefs.contactVideoRef.current?.currentTime,
+    });
 
+    if (state.currentSection !== 'contact') {
+      contactLogger.warn('[transitionBackFromContact] ⛔ Not on contact section — ignoring', {
+        currentSection: state.currentSection,
+      });
+      return;
+    }
+
+    if (refs.isTransitioningRef.current) {
+      contactLogger.warn('[transitionBackFromContact] ⛔ Already transitioning (isTransitioningRef) — ignoring');
+      return;
+    }
+
+    // Guard against double-fire during the fade window (isTransitioningRef is still false here)
+    if (refs.isLeavingContactRef.current) {
+      contactLogger.warn('[transitionBackFromContact] ⛔ Already leaving contact (isLeavingContactRef) — ignoring');
+      return;
+    }
+
+    // Set the sync guard immediately so any re-render during the delay can't re-trigger
+    refs.isLeavingContactRef.current = true;
+    contactLogger.info('[transitionBackFromContact] ✅ isLeavingContactRef=true (sync guard set)');
+
+    // Step 1: Fade out the contact UI elements immediately
+    contactLogger.info('[transitionBackFromContact] Step 1 — Fade out UI (setLeavingContact=true, setContactVisible=false)');
     actions.setLeavingContact(true);
     actions.setContactVisible(false);
 
+    // Pause the contact loop video
     const contactEl = videoRefs.contactVideoRef.current;
     if (contactEl) {
       const dur = Number.isFinite(contactEl.duration) ? contactEl.duration : null;
+      contactLogger.debug('[transitionBackFromContact] contactEl state', {
+        duration: dur,
+        currentTime: contactEl.currentTime,
+        paused: contactEl.paused,
+        readyState: contactEl.readyState,
+      });
       try {
         if (dur) contactEl.currentTime = Math.max(0, dur - 0.01);
-      } catch {
-        // ignore
+      } catch (e) {
+        contactLogger.warn('[transitionBackFromContact] Could not seek contactEl to near-end', e);
       }
       try {
         contactEl.pause();
         contactEl.playbackRate = 1.0;
-      } catch {
-        // ignore
+        contactLogger.debug('[transitionBackFromContact] contactEl paused');
+      } catch (e) {
+        contactLogger.warn('[transitionBackFromContact] Could not pause contactEl', e);
       }
+    } else {
+      contactLogger.warn('[transitionBackFromContact] ⚠️ contactVideoRef.current is null');
     }
 
     refs.previousSectionRef.current = 'hero';
-    handleTransition('hero', VIDEO_PATHS.contactToHero, videoRefs.heroVideoRef);
+
+    // Step 2: After fade-out animation completes, begin the video transition
+    contactLogger.info(`[transitionBackFromContact] Step 2 — Scheduling handleTransition in ${CONTACT_FADEOUT_DELAY_MS}ms`);
+    setTimeout(() => {
+      contactLogger.info('[transitionBackFromContact] Step 2 — Delay elapsed → calling handleTransition(hero, contactToHero)', {
+        isTransitioningRef: refs.isTransitioningRef.current,
+        isLeavingContactRef: refs.isLeavingContactRef.current,
+      });
+      // Clear the leaving guard — isTransitioningRef takes over from here
+      refs.isLeavingContactRef.current = false;
+      handleTransition('hero', VIDEO_PATHS.contactToHero, videoRefs.heroVideoRef);
+    }, CONTACT_FADEOUT_DELAY_MS);
   }, [state.currentSection, actions, videoRefs.contactVideoRef, videoRefs.heroVideoRef, handleTransition, refs]);
 
   const handleScrollDown = useCallback(() => {
+    homeLogger.debug('[handleScrollDown] currentSection=' + state.currentSection);
     switch (state.currentSection) {
       case 'hero':
         transitionToAboutStart(true);
@@ -330,12 +462,16 @@ export function useNavigationTransitions(
         transitions.toContactFromCases();
         break;
       case 'contact':
+        homeLogger.info('[handleScrollDown] On contact → calling transitionBackFromContact (scroll down = exit)');
         transitionBackFromContact();
         break;
+      default:
+        homeLogger.debug('[handleScrollDown] No scroll-down handler for', state.currentSection);
     }
   }, [state.currentSection, transitions, transitionToAboutStart, transitionToAbout, transitionBackFromContact, refs]);
 
   const handleScrollUp = useCallback(() => {
+    homeLogger.debug('[handleScrollUp] currentSection=' + state.currentSection);
     switch (state.currentSection) {
       case 'showreel':
         transitions.toHero();
@@ -359,6 +495,7 @@ export function useNavigationTransitions(
         transitions.toOfferFromPartner();
         break;
       case 'cases':
+        homeLogger.debug('[handleScrollUp] cases → previousSectionRef=' + refs.previousSectionRef.current);
         if (refs.previousSectionRef.current === 'hero') {
           transitions.toHero();
         } else {
@@ -367,12 +504,16 @@ export function useNavigationTransitions(
         }
         break;
       case 'contact':
+        homeLogger.info('[handleScrollUp] On contact → calling transitionBackFromContact');
         transitionBackFromContact();
         break;
+      default:
+        homeLogger.debug('[handleScrollUp] No scroll-up handler for', state.currentSection);
     }
   }, [state.currentSection, transitions, transitionBackToHeroFromAboutStart, transitionBackFromContact, refs]);
 
   const handleBackClick = useCallback(() => {
+    homeLogger.info('[handleBackClick] currentSection=' + state.currentSection);
     switch (state.currentSection) {
       case 'showreel':
       case 'cases':
@@ -397,8 +538,11 @@ export function useNavigationTransitions(
         transitions.toOfferFromPartner();
         break;
       case 'contact':
+        homeLogger.info('[handleBackClick] On contact → calling transitionBackFromContact');
         transitionBackFromContact();
         break;
+      default:
+        homeLogger.debug('[handleBackClick] No back handler for', state.currentSection);
     }
   }, [state.currentSection, transitions, transitionBackToHeroFromAboutStart, transitionBackFromContact]);
 

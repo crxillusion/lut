@@ -4,6 +4,7 @@ import { RefObject, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { VideoBackground } from './VideoBackground';
 import { useManagedVideoPlayback } from '../hooks/useManagedVideoPlayback';
+import { contactLogger } from '../utils/logger';
 
 interface ContactSectionProps {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -35,6 +36,18 @@ export function ContactSection({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // --- Debug logging for visibility/transition state ---
+  useEffect(() => {
+    contactLogger.debug('[ContactSection] Props changed', {
+      isVisible,
+      isTransitioning,
+      showUI,
+      shouldShow,
+      videoReadyState: videoRef.current?.readyState,
+      videoCurrentTime: videoRef.current?.currentTime,
+    });
+  }, [isVisible, isTransitioning, showUI, shouldShow, videoRef]);
+
   useManagedVideoPlayback(videoRef, {
     enabled: shouldShow,
     name: 'ContactLoop',
@@ -50,6 +63,10 @@ export function ContactSection({
     // IMPORTANT: do NOT force a seek-to-0 here; seeks during transitions can cause `waiting`
     // and a visible black flash.
     if (!shouldShow) {
+      contactLogger.debug('[ContactSection] loop-guard: shouldShow=false → pausing video', {
+        paused: video.paused,
+        currentTime: video.currentTime,
+      });
       try {
         video.pause();
       } catch {
@@ -59,21 +76,29 @@ export function ContactSection({
     }
 
     const handleEnded = () => {
+      contactLogger.debug('[ContactSection] video "ended"', { shouldShow, showUI, isTransitioning });
       // Only loop while contact is fully active (UI visible) and not transitioning away.
-      if (!shouldShow || !showUI || isTransitioning) return;
+      if (!shouldShow || !showUI || isTransitioning) {
+        contactLogger.debug('[ContactSection] Not looping — conditions not met', { shouldShow, showUI, isTransitioning });
+        return;
+      }
 
       // Restart on the next frame.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           // If we started leaving between frames, abort.
-          if (!showUI || isTransitioning) return;
+          if (!showUI || isTransitioning) {
+            contactLogger.debug('[ContactSection] Aborting loop restart — conditions changed between rAF frames');
+            return;
+          }
+          contactLogger.debug('[ContactSection] Restarting contact loop video');
           try {
             video.currentTime = 0;
           } catch {
             // ignore
           }
-          void video.play().catch(() => {
-            // ignore
+          void video.play().catch((err) => {
+            contactLogger.warn('[ContactSection] Loop restart play() failed:', (err as Error).message);
           });
         });
       });

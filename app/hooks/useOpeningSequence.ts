@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Section } from '../constants/config';
-import { homeLogger } from '../utils/logger';
+import { homeLogger, contactLogger } from '../utils/logger';
 
 interface UseOpeningSequenceProps {
   loadingProgress: number;
@@ -92,10 +92,18 @@ export function useContactVisibility({
   setLeavingContact,
 }: UseContactVisibilityProps) {
   useEffect(() => {
+    contactLogger.debug('[useContactVisibility] effect ran', {
+      currentSection,
+      showHero,
+      contactVisible,
+      leavingContact,
+    });
+
     // Enter contact: show UI after a short delay (only if not leaving)
     if (currentSection === 'contact' && showHero && !contactVisible && !leavingContact) {
+      contactLogger.info('[useContactVisibility] Entering contact → scheduling setContactVisible(true) in 100ms');
       const timer = setTimeout(() => {
-        homeLogger.debug('Setting contactVisible to true');
+        contactLogger.info('[useContactVisibility] ✅ setContactVisible(true)');
         setContactVisible(true);
       }, 100);
       return () => clearTimeout(timer);
@@ -104,11 +112,11 @@ export function useContactVisibility({
     // After leaving contact section, reset state
     if (currentSection !== 'contact' && (contactVisible || leavingContact)) {
       if (contactVisible) {
-        homeLogger.debug('Leaving contact section, resetting contactVisible to false');
+        contactLogger.info('[useContactVisibility] Left contact section → setContactVisible(false)');
         setContactVisible(false);
       }
       if (leavingContact) {
-        homeLogger.debug('Resetting leavingContact flag after leaving contact');
+        contactLogger.info('[useContactVisibility] Left contact section → setLeavingContact(false)');
         setLeavingContact(false);
       }
     }
