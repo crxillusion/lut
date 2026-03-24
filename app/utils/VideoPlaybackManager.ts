@@ -23,6 +23,15 @@ export interface PreloadOptions {
 export class VideoPlaybackManager {
   private static instance: VideoPlaybackManager;
 
+  /**
+   * Keeps preloaded <video> elements alive so the browser retains their
+   * media buffers. Video elements that are removed from the DOM (or GC'd)
+   * can have their cached byte ranges evicted, forcing a re-fetch when the
+   * real playback element requests the same URL. By keeping a reference here
+   * the buffer stays warm for the lifetime of the page.
+   */
+  private preloadPool: Map<string, HTMLVideoElement> = new Map();
+
   private constructor() {}
 
   static getInstance(): VideoPlaybackManager {
@@ -169,7 +178,11 @@ export class VideoPlaybackManager {
   }
 
   /**
-   * Preload a single video - Uses canplaythrough for reliability
+   * Preload a single video.
+   *
+   * The <video> element is kept alive in `preloadPool` after loading so the
+   * browser retains the media buffer. If the same URL is requested again the
+   * cached element is returned immediately (already buffered, no network hit).
    */
   async preloadVideo(
     path: string,
@@ -177,11 +190,26 @@ export class VideoPlaybackManager {
   ): Promise<{ success: boolean; reason?: string }> {
     const { timeout = 20000 } = options;
 
+    // Return immediately if we already preloaded this URL.
+    if (this.preloadPool.has(path)) {
+      videoLogger.debug(`Preload cache hit (already buffered): ${path.split('/').pop()}`);
+      return { success: true };
+    }
+
     const video = document.createElement('video');
     video.preload = 'auto';
     video.muted = true;
     video.playsInline = true;
+    // Keep it off-screen but in the DOM so the browser retains its buffer.
+    // Detached elements risk having their media cache evicted on some browsers.
+    video.style.cssText = 'position:fixed;width:1px;height:1px;top:-2px;left:-2px;opacity:0;pointer-events:none;';
     video.src = path;
+
+    // Store immediately so concurrent calls for the same URL don't double-fetch.
+    this.preloadPool.set(path, video);
+
+    // Attach to DOM so the browser keeps the media buffer alive.
+    document.body?.appendChild(video);
 
     return new Promise((resolve) => {
       let settled = false;
@@ -190,7 +218,7 @@ export class VideoPlaybackManager {
         window.clearTimeout(timeoutId);
         video.removeEventListener('canplaythrough', onCanPlay);
         video.removeEventListener('error', onError);
-        video.remove();
+        // Do NOT remove() the element — keep it in preloadPool so the buffer lives.
       };
 
       const onCanPlay = () => {
@@ -205,7 +233,11 @@ export class VideoPlaybackManager {
         if (settled) return;
         settled = true;
         videoLogger.warn(`Failed to preload: ${path.split('/').pop()}`);
-        cleanup();
+        // Remove from pool on error so a retry attempt can re-fetch.
+        this.preloadPool.delete(path);
+        video.removeEventListener('canplaythrough', onCanPlay);
+        video.removeEventListener('error', onError);
+        window.clearTimeout(timeoutId);
         resolve({ success: false, reason: 'load_error' });
       };
 
@@ -213,7 +245,9 @@ export class VideoPlaybackManager {
         if (settled) return;
         settled = true;
         videoLogger.warn(`Timeout preloading: ${path.split('/').pop()}`);
-        cleanup();
+        // Keep in pool even on timeout — whatever was buffered is still useful.
+        video.removeEventListener('canplaythrough', onCanPlay);
+        video.removeEventListener('error', onError);
         resolve({ success: false, reason: 'timeout' });
       }, timeout);
 

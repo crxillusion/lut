@@ -294,61 +294,45 @@ export function useNavigationTransitions(
     [state.currentSection, actions, refs, videoRefs, playSound]
   );
 
-  // --- Pre-warm the real transitionVideoRef element with the hero-reachable transition
-  // videos once the page becomes interactive. This loads each video's first segment into
-  // the browser's media buffer so that when the user actually clicks, the video is
-  // already buffered and plays immediately instead of waiting for a CDN fetch.
+  // --- Pre-warm transition videos into the VideoPlaybackManager's pool ---
+  // Each video gets its own kept-alive <video> element so the browser retains
+  // the media buffer (Range-request bytes) for the full session. When the real
+  // transitionVideoRef later requests the same URL its byte-range requests are
+  // served from the same in-memory media cache, making canplay fire in <100ms
+  // instead of waiting for a full CDN round-trip.
   //
-  // We cycle through the 4 direct-nav videos (heroToCases, heroToContact,
-  // heroToShowreel, heroToAboutStart) with a short delay between each so we
-  // don't saturate bandwidth during the opening animation.
+  // We run all fetches in parallel (the CDN supports concurrent connections)
+  // so even if the user clicks immediately after the hero appears, most
+  // buffers will already be populated.
   useEffect(() => {
     if (!pageReady) return;
     if (preWarmDoneRef.current) return;
     preWarmDoneRef.current = true;
 
-    const el = videoRefs.transitionVideoRef.current;
-    if (!el) return;
-
-    // Priority order: most-used first
+    // All videos reachable from hero — most important ones first
     const videos = [
       VIDEO_PATHS.heroToCases,
       VIDEO_PATHS.heroToContact,
       VIDEO_PATHS.heroToShowreel,
+      VIDEO_PATHS.heroToAboutStart,
       VIDEO_PATHS.casesToHero,
       VIDEO_PATHS.contactToHero,
+      VIDEO_PATHS.showreelToHero,
+      VIDEO_PATHS.aboutStartToHero,
     ].filter(Boolean) as string[];
 
-    homeLogger.debug('[Transition] Pre-warming transition videos into real element', {
+    homeLogger.debug('[Transition] Pre-warming transition videos into pool (parallel)', {
       count: videos.length,
     });
 
-    let idx = 0;
-    let timerId: ReturnType<typeof setTimeout>;
-
-    const loadNext = () => {
-      if (idx >= videos.length) return;
-      if (refs.isTransitioningRef.current) {
-        // Don't interfere with an active transition — reschedule
-        timerId = setTimeout(loadNext, 500);
-        return;
-      }
-      const src = videos[idx++];
+    // Fire parallel preloads — videoPlaybackManager keeps the elements alive.
+    videos.forEach((src) => {
       homeLogger.debug(`[Transition] Pre-warm: loading ${src.split('/').pop()}`);
-      el.preload = 'auto';
-      el.src = src;
-      el.load();
-      // Give each video ~3s to buffer before moving to the next.
-      // The last-loaded video stays in the element (best candidate = heroToCases).
-      timerId = setTimeout(loadNext, 3000);
-    };
+      videoPlaybackManager.preloadVideo(src, { timeout: 60000 }).catch(() => {});
+    });
 
-    // Start after a short delay so we don't compete with the opening animation's
-    // own video loads.
-    timerId = setTimeout(loadNext, 1500);
-
-    return () => clearTimeout(timerId);
-  }, [pageReady, videoRefs.transitionVideoRef, refs.isTransitioningRef]);
+    // No cleanup needed — pool elements are intentionally long-lived.
+  }, [pageReady]);
 
   const transitions = useMemo(
     () => ({
