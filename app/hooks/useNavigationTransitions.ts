@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Section } from '../constants/config';
 import { VIDEO_PATHS } from '../constants/config';
 import { homeLogger, contactLogger } from '../utils/logger';
@@ -58,9 +58,12 @@ export function useNavigationTransitions(
   videoRefs: NavigationTransitionVideoRefs,
   state: NavigationState,
   actions: NavigationStateActions,
-  refs: NavigationStateRefs
+  refs: NavigationStateRefs,
+  /** True once the opening transition has completed and the hero is shown. */
+  pageReady: boolean = false
 ): UseNavigationTransitionsResult {
   const { playSound } = useNavigationSound();
+  const preWarmDoneRef = useRef(false);
 
   const handleTransition = useCallback(
     (
@@ -112,6 +115,36 @@ export function useNavigationTransitions(
         transitionVideo,
       });
 
+      // --- Imperatively load transition video NOW, before React re-renders ---
+      // Setting src + calling .load() here means the browser starts fetching immediately.
+      // If we waited for the React render cycle (triggered by setTransitionVideoSrc above)
+      // to update the <video src> prop, we'd lose ~50ms+ and risk the .load() call inside
+      // the setTimeout firing against the OLD src (before React commits the new one).
+      const transitionElEarly = videoRefs.transitionVideoRef.current;
+      if (transitionElEarly) {
+        transitionElEarly.preload = 'auto';
+        transitionElEarly.pause();
+        transitionElEarly.currentTime = 0;
+        if (transitionElEarly.src !== transitionVideo) {
+          homeLogger.debug('[Transition] Imperatively setting transition video src + load()', {
+            oldSrc: transitionElEarly.src?.split('/').pop(),
+            newSrc: transitionVideo.split('/').pop(),
+          });
+          transitionElEarly.src = transitionVideo;
+          transitionElEarly.load();
+        } else {
+          homeLogger.debug('[Transition] Transition video src already correct, just calling load()', {
+            src: transitionVideo.split('/').pop(),
+            readyState: transitionElEarly.readyState,
+          });
+          if (transitionElEarly.readyState < 2) {
+            transitionElEarly.load();
+          }
+        }
+      } else {
+        homeLogger.warn('[Transition] transitionVideoRef is null at imperative-load step');
+      }
+
       // --- Sound ---
       if (state.currentSection === 'hero' && targetSection !== 'hero') {
         homeLogger.info('[Transition] 🔊 Playing FORWARD sound (hero → other)');
@@ -145,7 +178,8 @@ export function useNavigationTransitions(
         homeLogger.warn('[Transition] ⚠️ Target videoRef is null — cannot preload');
       }
 
-      // Small delay to ensure src swap committed before playback attempts
+      // Small delay to let React commit the new transitionVideoSrc prop to the DOM,
+      // then attach the canplay listener. The actual .load() was already called above.
       setTimeout(() => {
         try {
           const transitionEl = videoRefs.transitionVideoRef.current;
@@ -158,21 +192,22 @@ export function useNavigationTransitions(
             return;
           }
 
-          homeLogger.debug('[Transition] transitionEl state (before load)', {
+          homeLogger.debug('[Transition] transitionEl state (after imperative load)', {
             readyState: transitionEl.readyState,
-            src: transitionEl.currentSrc?.split('/').pop(),
+            src: transitionEl.currentSrc?.split('/').pop() || transitionEl.src?.split('/').pop(),
             duration: transitionEl.duration,
             paused: transitionEl.paused,
           });
 
-          // Prepare transition video for playback
-          transitionEl.preload = 'auto';
-          videoPlaybackManager.stop(videoRefs.transitionVideoRef, true);
-          videoPlaybackManager.load(videoRefs.transitionVideoRef);
-
-          homeLogger.debug('[Transition] transitionEl after stop+load', {
-            readyState: transitionEl.readyState,
-          });
+          // If React's render already changed src back somehow, re-correct it.
+          if (transitionEl.src !== transitionVideo) {
+            homeLogger.warn('[Transition] ⚠️ transitionEl.src changed after React render — correcting', {
+              actual: transitionEl.src?.split('/').pop(),
+              expected: transitionVideo.split('/').pop(),
+            });
+            transitionEl.src = transitionVideo;
+            transitionEl.load();
+          }
 
           const handleCanPlay = () => {
             homeLogger.info('[Transition] ▶️ canplay fired → starting transition video playback', {
@@ -258,6 +293,62 @@ export function useNavigationTransitions(
     },
     [state.currentSection, actions, refs, videoRefs, playSound]
   );
+
+  // --- Pre-warm the real transitionVideoRef element with the hero-reachable transition
+  // videos once the page becomes interactive. This loads each video's first segment into
+  // the browser's media buffer so that when the user actually clicks, the video is
+  // already buffered and plays immediately instead of waiting for a CDN fetch.
+  //
+  // We cycle through the 4 direct-nav videos (heroToCases, heroToContact,
+  // heroToShowreel, heroToAboutStart) with a short delay between each so we
+  // don't saturate bandwidth during the opening animation.
+  useEffect(() => {
+    if (!pageReady) return;
+    if (preWarmDoneRef.current) return;
+    preWarmDoneRef.current = true;
+
+    const el = videoRefs.transitionVideoRef.current;
+    if (!el) return;
+
+    // Priority order: most-used first
+    const videos = [
+      VIDEO_PATHS.heroToCases,
+      VIDEO_PATHS.heroToContact,
+      VIDEO_PATHS.heroToShowreel,
+      VIDEO_PATHS.casesToHero,
+      VIDEO_PATHS.contactToHero,
+    ].filter(Boolean) as string[];
+
+    homeLogger.debug('[Transition] Pre-warming transition videos into real element', {
+      count: videos.length,
+    });
+
+    let idx = 0;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const loadNext = () => {
+      if (idx >= videos.length) return;
+      if (refs.isTransitioningRef.current) {
+        // Don't interfere with an active transition — reschedule
+        timerId = setTimeout(loadNext, 500);
+        return;
+      }
+      const src = videos[idx++];
+      homeLogger.debug(`[Transition] Pre-warm: loading ${src.split('/').pop()}`);
+      el.preload = 'auto';
+      el.src = src;
+      el.load();
+      // Give each video ~3s to buffer before moving to the next.
+      // The last-loaded video stays in the element (best candidate = heroToCases).
+      timerId = setTimeout(loadNext, 3000);
+    };
+
+    // Start after a short delay so we don't compete with the opening animation's
+    // own video loads.
+    timerId = setTimeout(loadNext, 1500);
+
+    return () => clearTimeout(timerId);
+  }, [pageReady, videoRefs.transitionVideoRef, refs.isTransitioningRef]);
 
   const transitions = useMemo(
     () => ({

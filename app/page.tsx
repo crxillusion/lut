@@ -135,7 +135,8 @@ export default function Home() {
     },
     navState,
     navActions,
-    navRefs
+    navRefs,
+    showHero, // pageReady — true once the opening transition completes
   );
 
   // Contact section visibility management
