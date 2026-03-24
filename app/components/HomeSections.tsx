@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { VIDEO_PATHS } from '../constants/config';
 import type { VideoRefs } from '../hooks/useVideoRefs';
 import { HeroSection } from './HeroSection';
@@ -47,6 +47,9 @@ export function HomeSections({
   // current transition. Sections use this so they only go invisible once they are
   // actually covered — eliminating the black flash between section hide and overlay show.
   const [transitionVideoReady, setTransitionVideoReady] = useState(false);
+  // Tracks the src we pre-loaded into transitionVideoRef while idle, so we can
+  // pass it as forwardSrc to TransitionVideo and prevent React from clearing it.
+  const preWarmSrcRef = useRef<string>('');
 
   const handleTransitionVideoReady = useCallback(() => {
     homeLogger.debug('[HomeSections] TransitionVideo ready — safeIsTransitioning=true');
@@ -60,6 +63,48 @@ export function HomeSections({
       setTransitionVideoReady(false);
     }
   }, [nav.isTransitioning]);
+
+  // Pre-load the most likely next transition video directly into transitionVideoRef
+  // while idle, so the element already has readyState >= 3 when the user clicks.
+  // This is the only reliable way to avoid a CDN round-trip: the same physical
+  // element must hold the buffered bytes (browser media caches are per-element,
+  // not shared across different <video> instances loading the same URL).
+  useEffect(() => {
+    if (nav.isTransitioning) return;
+
+    const el = transitionVideoRef.current;
+    if (!el) return;
+
+    // Map each section to the video most likely to be triggered next.
+    const nextVideo: Partial<Record<typeof nav.currentSection, string>> = {
+      hero:      VIDEO_PATHS.heroToContact,   // contact button is most prominent
+      contact:   VIDEO_PATHS.contactToHero,
+      cases:     VIDEO_PATHS.casesToHero,
+      showreel:  VIDEO_PATHS.showreelToHero,
+      aboutStart: VIDEO_PATHS.heroToAboutStart,
+      about:     VIDEO_PATHS.aboutToAboutStart,
+      team1:     VIDEO_PATHS.teamToAbout,
+      team2:     VIDEO_PATHS.team2ToTeam1,
+      offer:     VIDEO_PATHS.offerToTeam2,
+      partner:   VIDEO_PATHS.partnerToOffer,
+    };
+
+    const targetSrc = nextVideo[nav.currentSection];
+    if (!targetSrc) return;
+
+    // Already loaded with this video — nothing to do.
+    if (el.src === targetSrc && el.readyState >= 3) return;
+
+    homeLogger.debug('[HomeSections] Pre-loading likely next transition into transitionVideoRef', {
+      section: nav.currentSection,
+      video: targetSrc.split('/').pop(),
+    });
+
+    preWarmSrcRef.current = targetSrc;
+    el.preload = 'auto';
+    el.src = targetSrc;
+    el.load();
+  }, [nav.currentSection, nav.isTransitioning, transitionVideoRef]);
 
   // Sections only go into their "transitioning-away" state once the overlay is painted.
   // This prevents the black gap between a section becoming opacity-0 and the overlay appearing.
@@ -81,8 +126,8 @@ export function HomeSections({
 
       <TransitionVideo
         videoRef={transitionVideoRef}
-        forwardSrc={nav.transitionVideoSrc || ''}
-        reverseSrc={nav.transitionVideoSrc || ''}
+        forwardSrc={nav.transitionVideoSrc || preWarmSrcRef.current}
+        reverseSrc={nav.transitionVideoSrc || preWarmSrcRef.current}
         direction="forward"
         isVisible={nav.isTransitioning}
         onReady={handleTransitionVideoReady}
