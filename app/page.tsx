@@ -156,7 +156,7 @@ export default function Home() {
   useInputHandling({
     currentSection: navState.currentSection,
     isTransitioning: navState.isTransitioning,
-    isWaiting: false,
+    isWaiting: loadingScreenMounted || !showHero,
     onScrollDown: navTransitions.handleScrollDown,
     onScrollUp: navTransitions.handleScrollUp,
   });
