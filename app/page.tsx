@@ -5,6 +5,7 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { OpeningTransition } from './components/OpeningTransition';
 import { HomeSections } from './components/HomeSections';
 import { HomeOverlay } from './components/HomeOverlay';
+import { MobilePage } from './components/MobilePage';
 import { HOME_PRELOAD_VIDEO_PATHS } from './constants/homePreloadVideos';
 import { CRITICAL_PRELOAD_IMAGES, getHighPriorityImages, getMediumPriorityImages, getCasesImages } from './constants/homePreloadImages';
 import { useVideoPreloader } from './hooks/useVideoPreloader';
@@ -19,7 +20,8 @@ import { BASE_PATH, SOUND_PATHS } from './constants/config';
 import { useBgAudioAutoplay } from './hooks/useBgAudioAutoplay';
 import type { UseHomeNavigationResult } from './hooks/useHomeNavigation';
 
-export default function Home() {
+// ── All desktop logic lives here so hooks are never called conditionally ──────
+function DesktopPage() {
   const videoRefs = useVideoRefs();
   const {
     hero: heroVideoRef,
@@ -222,4 +224,23 @@ export default function Home() {
       <HomeOverlay nav={nav} showHero={showHero} />
     </div>
   );
+}
+
+// ── Root page: detect mobile on client, render appropriate experience ─────────
+export default function Home() {
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileChecked, setMobileChecked] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    setMobileChecked(true);
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // Render nothing until we know viewport size to avoid a flash of wrong layout
+  if (!mobileChecked) return null;
+  return isMobile ? <MobilePage /> : <DesktopPage />;
 }
