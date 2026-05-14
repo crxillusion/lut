@@ -152,19 +152,67 @@ function SectionTitle({ text, size = 'large' }: { text: string; size?: 'large' |
 
 // ─── Video popup ───────────────────────────────────────────────────────────────
 function MobileVideoPopup({ title, url, onClose }: { title: string; url: string; onClose: () => void }) {
+  // Lock body scroll while popup is open.
+  // overflow:hidden alone doesn't stop iOS momentum scroll already in flight,
+  // so we use the position:fixed trick — it kills inertia dead, which is what
+  // makes touchend events inside cross-origin iframes cancelable again.
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const prev = {
+      position: document.body.style.position,
+      top:      document.body.style.top,
+      width:    document.body.style.width,
+      overflow: document.body.style.overflow,
+    };
+    document.body.style.position = 'fixed';
+    document.body.style.top      = `-${scrollY}px`;
+    document.body.style.width    = '100%';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.position = prev.position;
+      document.body.style.top      = prev.top;
+      document.body.style.width    = prev.width;
+      document.body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+  // Pause background audio while popup is open; resume when it closes.
+  // NOTE: no setInterval fades here — React Strict Mode double-fires effects,
+  // which causes intervals started in the first mount to be cleared immediately
+  // by the first cleanup before they tick even once. Synchronous pause/resume
+  // survives strict-mode correctly: each cleanup restores state before the next
+  // mount, so the final "real" mount always sees the audio playing and pauses it.
+  useEffect(() => {
+    const audio = document.querySelector<HTMLAudioElement>('audio[data-bg-audio="true"]');
+    if (!audio || audio.paused || audio.volume === 0) return;
+
+    const savedVolume = audio.volume;
+    audio.pause();
+
+    return () => {
+      // Don't resume if user explicitly muted while popup was open
+      if (localStorage.getItem('lut:audioMuted') === 'true') return;
+      audio.volume = savedVolume;
+      audio.play().catch(() => {});
+    };
+  }, []);
+
   return (
     <motion.div
-      className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 touch-none"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      // touch-none on the backdrop tells the browser: no scroll gestures start here.
+      // onPointerUp closes only when tapping directly on the backdrop (not the modal).
+      onPointerUp={(e) => { if (e.target === e.currentTarget) onClose(); }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
     >
       <motion.div
-        className="w-full max-w-lg rounded-2xl overflow-hidden bg-black border border-white/20 shadow-2xl"
+        className="w-full max-w-lg rounded-2xl overflow-hidden bg-black border border-white/20 shadow-2xl touch-none"
         onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, y: 24, scale: 0.94, filter: 'blur(14px)' }}
         animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
@@ -182,6 +230,11 @@ function MobileVideoPopup({ title, url, onClose }: { title: string; url: string;
             ✕
           </button>
         </div>
+        {/*
+          touch-action:none on the backdrop (above) prevents the browser from ever
+          entering scroll mode, so touchstart/touchend inside the cross-origin iframe
+          remain cancelable and Vimeo's controls work normally.
+        */}
         <div className="relative w-full aspect-video bg-black">
           <iframe
             className="absolute inset-0 w-full h-full"
@@ -421,9 +474,9 @@ export function MobilePage() {
             className="px-5 py-5 mb-6"
             style={{
                 ...CARD_STYLE,
-                background: `url(${BASE_PATH}/cases-bg.png), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
-                backgroundSize: 'contain'
-            
+                background: `url(${BASE_PATH}/cases-bg.png) no-repeat center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+                backgroundSize: 'contain',
+
             }}
             initial={{ opacity: 0, y: 16, filter: 'blur(10px)' }}
             whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
