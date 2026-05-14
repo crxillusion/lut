@@ -341,6 +341,56 @@ function DesktopBanner() {
   );
 }
 
+// ─── Showreel block ────────────────────────────────────────────────────────────
+const SHOWREEL_VIMEO = 'https://vimeo.com/1164666738?fl=pl&fe=sh';
+
+function ShowreelBlock() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="relative px-4 py-8">
+      <motion.div
+        className="relative flex items-center justify-between px-6 py-5 cursor-pointer"
+        style={{
+            ...CARD_STYLE,
+            background: `url(${BASE_PATH}/showreel_bg.png) no-repeat center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+            backgroundSize: 'cover',
+        }}
+        onClick={() => setOpen(true)}
+        initial={{ opacity: 0, y: 16, filter: 'blur(10px)' }}
+        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <span className="font-outfit font-semibold tracking-[0.3em] text-white text-[15px] uppercase">
+          Showreel
+        </span>
+
+        {/* Play button */}
+        <div
+          className="flex items-center justify-center rounded-full border border-white/60 bg-white/10 backdrop-blur-sm shrink-0"
+          style={{ width: 48, height: 48 }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M8 5v14l11-7L8 5z" />
+          </svg>
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {open && (
+          <MobileVideoPopup
+            title="LUT Studios — Showreel"
+            url={SHOWREEL_VIMEO}
+            onClose={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export function MobilePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -376,7 +426,7 @@ export function MobilePage() {
       {/* Fixed video background */}
       <video
         ref={videoRef}
-        src={assetUrl('/videos/Contact_loop.mp4')}
+        src={assetUrl('/videos/Homepage_loop.mp4')}
         className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none"
         muted
         playsInline
@@ -496,7 +546,10 @@ export function MobilePage() {
           </div>
         </section>
 
-        {/* ── 3. PARTNERS ── */}
+        {/* ── 3. SHOWREEL ── */}
+        <ShowreelBlock />
+
+        {/* ── 4. PARTNERS ── */}
         <section className="relative px-4 py-16">
           <SectionTitle text="PARTNERS" size="medium" />
 
