@@ -89,20 +89,31 @@ const CASES: CaseItem[] = [
 ];
 
 // ─── Partners data ─────────────────────────────────────────────────────────────
-const PARTNERS = [
-  { name: 'OVIO', img: '/partners/ovio.png' },
-  { name: 'IDBank', img: '/partners/id_bank.png' },
-  { name: 'Avanta', img: '/partners/avanta.png' },
-  { name: 'Ameriabank', img: '/partners/ameriabank.png' },
-  { name: 'Ararat', img: '/partners/ararat.png' },
-  { name: 'Vimpel', img: '/partners/vimpel.png' },
-  { name: 'The Bird Cage', img: '/partners/the_bird_cage.png' },
-  { name: 'Bar Phoenix', img: '/partners/bar_phoenix.png' },
-  { name: 'Mov', img: '/partners/mov.png' },
-  { name: 'Cofix', img: '/partners/cofix.png' },
-  { name: 'Shell', img: '/partners/shell.png' },
-  { name: 'Mercedes-Benz', img: '/partners/mercedes-benz.png' },
-  { name: 'Viva', img: '/partners/viva.png' },
+// colSpan/rowSpan drive the bento grid placement.
+// Layout (2-col, 120px base rows):
+//   [OVIO]       [IDBank]
+//   [Avanta ↕ ]  [Ameriabank]
+//   [Avanta ↕ ]  [Ararat]
+//   [Vimpel ←→←→←→←→←→←→]
+//   [BirdCage]   [BarPhoenix ↕]
+//   [Mov     ]   [BarPhoenix ↕]
+//   [Cofix   ]   [Shell]
+//   [Mercedes ←→←→←→←→←→←→]
+//   [Viva    ]   [YerevanMall]
+const PARTNERS: { name: string; img: string; colSpan?: 2; rowSpan?: 2 }[] = [
+  { name: 'OVIO',         img: '/partners/ovio.png' },
+  { name: 'IDBank',       img: '/partners/id_bank.png' },
+  { name: 'Avanta',       img: '/partners/avanta.png',        rowSpan: 2 },
+  { name: 'Ameriabank',   img: '/partners/ameriabank.png' },
+  { name: 'Ararat',       img: '/partners/ararat.png' },
+  { name: 'Vimpel',       img: '/partners/vimpel.png',        colSpan: 2, rowSpan: 2 },
+  { name: 'The Bird Cage',img: '/partners/the_bird_cage.png',rowSpan: 2 },
+  { name: 'Bar Phoenix',  img: '/partners/bar_phoenix.png',rowSpan: 2 },
+  { name: 'Shell',        img: '/partners/shell.png',rowSpan: 2 },
+  { name: 'Cofix',        img: '/partners/cofix.png' },
+  { name: 'Mov',          img: '/partners/mov.png',rowSpan: 2 },
+  { name: 'Mercedes-Benz',img: '/partners/mercedes-benz.png' },
+  { name: 'Viva',         img: '/partners/viva.png' },
   { name: 'Yerevan Mall', img: '/partners/yerevan_mall.png' },
 ];
 
@@ -414,12 +425,17 @@ export function MobilePage() {
         <section className="relative px-4 py-16">
           <SectionTitle text="PARTNERS" size="medium" />
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Bento grid — 2 cols, auto rows of 120px */}
+          <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: '80px' }}>
             {PARTNERS.map((partner, idx) => (
               <motion.div
                 key={partner.name}
-                className="flex items-center justify-center py-6 px-[30px]"
-                style={CARD_STYLE}
+                className="flex items-center justify-center px-[30px]"
+                style={{
+                  ...CARD_STYLE,
+                  gridColumn: partner.colSpan === 2 ? 'span 2' : undefined,
+                  gridRow:    partner.rowSpan === 2 ? 'span 2' : undefined,
+                }}
                 initial={{ opacity: 0, y: 16, filter: 'blur(10px)' }}
                 whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 viewport={{ once: true, amount: 0.2 }}
@@ -432,7 +448,8 @@ export function MobilePage() {
                 <img
                   src={`${BASE_PATH}${partner.img}`}
                   alt={partner.name}
-                  className="w-full max-h-[60px] object-contain"
+                  className="w-full object-contain"
+                  style={{ maxHeight: partner.rowSpan === 2 ? 150 : 60 }}
                   loading="lazy"
                 />
               </motion.div>
