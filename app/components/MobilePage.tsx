@@ -383,7 +383,12 @@ export function MobilePage() {
 
           <motion.div
             className="px-5 py-5 mb-6"
-            style={CARD_STYLE}
+            style={{
+                ...CARD_STYLE,
+                background: `url(${BASE_PATH}/cases-bg.png), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+                backgroundSize: 'contain'
+            
+            }}
             initial={{ opacity: 0, y: 16, filter: 'blur(10px)' }}
             whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             viewport={{ once: true, amount: 0.4 }}
