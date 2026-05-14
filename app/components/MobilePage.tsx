@@ -89,17 +89,6 @@ const CASES: CaseItem[] = [
 ];
 
 // ─── Partners data ─────────────────────────────────────────────────────────────
-// colSpan/rowSpan drive the bento grid placement.
-// Layout (2-col, 120px base rows):
-//   [OVIO]       [IDBank]
-//   [Avanta ↕ ]  [Ameriabank]
-//   [Avanta ↕ ]  [Ararat]
-//   [Vimpel ←→←→←→←→←→←→]
-//   [BirdCage]   [BarPhoenix ↕]
-//   [Mov     ]   [BarPhoenix ↕]
-//   [Cofix   ]   [Shell]
-//   [Mercedes ←→←→←→←→←→←→]
-//   [Viva    ]   [YerevanMall]
 const PARTNERS: { name: string; img: string; colSpan?: 2; rowSpan?: 2 }[] = [
   { name: 'OVIO',         img: '/partners/ovio.png' },
   { name: 'IDBank',       img: '/partners/id_bank.png' },
@@ -152,7 +141,7 @@ function SectionTitle({ text, size = 'large' }: { text: string; size?: 'large' |
       <h2 className={cls}>{text}</h2>
       <span
         aria-hidden
-        className={`pointer-events-none absolute inset-0 blur-[3px] [clip-path:inset(65%_0_0_0)] ${cls}`}
+        className={`pointer-events-none absolute inset-0 blur-[3px] [clip-path:inset(70%_0_0_0)] ${cls}`}
       >
         {text}
       </span>
@@ -353,26 +342,18 @@ export function MobilePage() {
 
         {/* ── 1. ABOUT ── */}
         <section className="relative flex items-center justify-center px-5 min-h-[100vh]">
-          <motion.div
-            className="relative z-10 w-full max-w-sm px-6 py-35 overflow-hidden"
-            style={CARD_STYLE}
-            initial={{ opacity: 0, y: 24, filter: 'blur(10px)' }}
-            whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.65, ease: [0.23, 1, 0.32, 1] }}
+          <div
+            className="relative z-10 w-full max-w-sm px-8 py-20 overflow-hidden"
+            style={{
+                border: '0.5px solid #FFFFFF',
+                boxShadow: '7px 9px 14.4px 0px #00000047',
+                background:
+                    `url(${BASE_PATH}/about-bg.png) no-repeat left center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+                backdropFilter: 'blur(1.44px)',
+                borderRadius: '20px',
+                backgroundSize: 'contain',
+            }}
           >
-            {/* Rotated background image — scoped to the card */}
-            <div className="absolute pointer-events-none w-full h-full left-0 top-0" aria-hidden>
-              <div
-                className="bg-center absolute bg-contain bg-no-repeat top-0"
-                style={{
-                  backgroundImage: `url(${BASE_PATH}/about-bg.png)`,
-                  transform: 'rotate(90deg) translate(20%, 70%)',
-                  width: '100cqh',
-                  height: '100cqw'
-                }}
-              />
-            </div>
             {/* Gradient + dark overlay on top of the rotated bg */}
             <div
               className="absolute inset-0 pointer-events-none"
@@ -386,14 +367,14 @@ export function MobilePage() {
 
             {/* Text — sits above the bg layers */}
             <p
-              className="relative z-10 font-outfit font-medium text-white text-center"
-              style={{ fontSize: 30, lineHeight: '150%', letterSpacing: '-0.011em' }}
+              className="relative z-10 font-outfit font-medium text-white text-center text-[clamp(16px,6vw,30px)]"
+              style={{ lineHeight: '150%', letterSpacing: '-0.011em' }}
             >
               Founded in 2022 by a group of creative individuals, LUT Studios is a team of innovative thinkers
               who thrive on turning challenges into opportunities. Our mission is to create extraordinary outcomes
               by finding creative solutions to every problem we encounter.
             </p>
-          </motion.div>
+          </div>
         </section>
 
         {/* ── 2. CASES ── */}
