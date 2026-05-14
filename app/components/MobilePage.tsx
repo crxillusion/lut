@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BASE_PATH } from '../constants/config';
 import { assetUrl } from '../utils/assetUrl';
 import { ContactForm } from './ContactForm';
+import { SoundToggle } from './SoundToggle';
 
 // ─── Cases data ────────────────────────────────────────────────────────────────
 type CaseItem = {
@@ -337,6 +338,41 @@ export function MobilePage() {
       {/* Fixed top banner */}
       <DesktopBanner />
 
+      {/* Fixed bottom bar — social links + sound toggle */}
+      <motion.div
+        className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-center gap-4 pb-6 pt-4 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)',
+        }}
+        initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 0.6, delay: 0.4, ease: [0.23, 1, 0.32, 1] }}
+      >
+        <div className="pointer-events-auto flex items-center gap-4">
+          <a
+            href="https://www.instagram.com/lutstudios"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:opacity-70 transition-opacity"
+            aria-label="Instagram"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={40} height={40} />
+          </a>
+          <a
+            href="https://www.linkedin.com/company/lutstudios/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white hover:opacity-70 transition-opacity"
+            aria-label="LinkedIn"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={40} height={40} />
+          </a>
+          <SoundToggle iconSize={40} />
+        </div>
+      </motion.div>
+
       {/* Scrollable content — sits above fixed layers in z-order */}
       <div className="relative z-10 flex flex-col">
 
@@ -444,7 +480,7 @@ export function MobilePage() {
         </section>
 
         {/* ── 4. CONTACT ── */}
-        <section className="relative px-4 pt-8 pb-16">
+        <section className="relative px-4 pt-8 pb-32">
           <SectionTitle text="READY?" />
 
           <motion.div
