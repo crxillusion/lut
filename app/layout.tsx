@@ -46,9 +46,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
+      <head suppressHydrationWarning>
         {/* Disable zoom on keyboard shortcuts */}
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               document.addEventListener('keydown', (e) => {
@@ -64,27 +65,6 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Loading screen background - preload modern formats with high priority */}
-        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.avif`} type="image/avif" />
-        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.webp`} type="image/webp" />
-        <link rel="preload" as="image" href={`${BASE_PATH}/loading-bg.jpg`} type="image/jpeg" />
-
-        {/* Loading animation (lottie) - preload immediately via fetch to warm browser cache */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Pre-cache lottie file immediately on page load
-              (function() {
-                const lottieUrl = '${BASE_PATH}/5Z8KeWup2u.lottie';
-                if (navigator.sendBeacon || fetch) {
-                  // Use fetch to preload with cache
-                  fetch(lottieUrl, { cache: 'default' }).catch(() => {});
-                }
-              })();
-            `,
-          }}
-        />
-
         {/* UI icons (overlay) */}
         <link rel="preload" as="image" href={`${BASE_PATH}/back-arrow.svg`} type="image/svg+xml" />
         <link rel="preload" as="image" href={`${BASE_PATH}/instagram.svg`} type="image/svg+xml" />
