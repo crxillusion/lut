@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { VIDEO_PATHS } from '../constants/config';
 
 interface LoadingScreenProps {
   progress?: number;
@@ -11,9 +12,7 @@ interface LoadingScreenProps {
 // Minimum time the loading screen stays visible (ms).
 const MIN_DISPLAY_TIME = 2000;
 
-// Vimeo background embed — muted + autoplay + loop, no controls
-const VIMEO_EMBED =
-  'https://player.vimeo.com/video/1164666738?autoplay=1&muted=1&loop=1&background=1&title=0&byline=0&portrait=0';
+const LOADING_VIDEO_SRC = VIDEO_PATHS.loading;
 
 export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete }: LoadingScreenProps) {
   const clamped = Math.max(0, Math.min(100, progress));
@@ -47,39 +46,62 @@ export function LoadingScreen({ isVisible, progress = 0, onLoopEndAfterComplete 
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >
-      {/* Fullscreen Vimeo showreel — background=1 hides all controls.
-          The iframe has a native 16/9 aspect ratio, so to make it cover the
-          viewport at any aspect ratio we use the same trick as a cover video:
-          size it to at least 100vw AND 100vh, then center it. */}
+      {/* Fullscreen background video — cover-fills the viewport like object-fit:cover */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
-        <iframe
-          src={VIMEO_EMBED}
+        <video
+          src={LOADING_VIDEO_SRC}
+          autoPlay
+          muted
+          loop
+          playsInline
           style={{
-            border: 'none',
             position: 'absolute',
-            // Center
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            // Cover: whichever dimension is the constraint, the other overflows
             width: 'calc(max(100vw, 100vh * (16/9)))',
             height: 'calc(max(100vh, 100vw * (9/16)))',
+            objectFit: 'cover',
           }}
-          allow="autoplay; fullscreen"
-          title="Showreel"
         />
       </div>
 
       {/* Scrim so the progress bar reads cleanly over the video */}
       <div className="absolute inset-0 bg-black/30 pointer-events-none" aria-hidden />
 
-      {/* Progress bar — centred near the bottom */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
-        <div className="w-[220px] md:w-[420px] h-[14px] rounded-[999px] border border-white/60 bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.18)_0%,rgba(240,240,240,0.18)_100%)] shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.22)] backdrop-blur-[1.44px] overflow-hidden">
+      {/* Progress bar with LOADING label inside — centred, raised from bottom */}
+      <div className="absolute bottom-40 left-1/2 -translate-x-1/2">
+        <div
+            className="relative w-[761px] h-[31px] rounded-[999px] overflow-hidden"
+            style={{
+              border: '0.5px solid #FFFFFF',
+              boxShadow: '7px 9px 14.4px 0px #00000047',
+              background: 'radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)',
+            }}
+          >
+          {/* Fill */}
           <div
-            className="h-full bg-white/95 transition-[width] duration-300 ease-out rounded-[999px]"
-            style={{ width: `${clamped}%` }}
+            className="absolute inset-y-0 left-0 transition-[width] duration-300 ease-out rounded-[999px]"
+            style={{
+              width: `${clamped}%`,
+              border: '0.5px solid #FFFFFF',
+              boxShadow: '7px 9px 14.4px 0px #00000047',
+              background: 'radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.62) 0%, rgba(240, 240, 240, 0.62) 100%)',
+            }}
           />
+          {/* Label */}
+          <span
+            className="absolute inset-0 flex items-center justify-center text-white select-none"
+            style={{
+              fontFamily: 'Outfit, sans-serif',
+              fontWeight: 700,
+              fontSize: 18,
+              lineHeight: '100%',
+              letterSpacing: '0.28em',
+            }}
+          >
+            LOADING
+          </span>
         </div>
       </div>
     </div>

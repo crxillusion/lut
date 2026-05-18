@@ -10,6 +10,9 @@ export const LOADING_TIMEOUT = process.env.NODE_ENV === 'production' ? 60000 : 2
 export const LOADING_DELAY = 7000; // 7 seconds - balanced loading time for branding
 
 export const VIDEO_PATHS = {
+  // Loading
+  loading: assetUrl('/videos/loading_showreel.mp4'),
+
   // Opening
   opening: assetUrl('/videos/loading_to_homepage.mp4'),
   
