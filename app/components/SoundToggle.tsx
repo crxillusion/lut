@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { BASE_PATH } from '../constants/config';
 import { createLogger } from '../utils/logger';
+import { audioPool } from '../utils/audioPool';
 
 const audioLogger = createLogger('Audio');
 
-const STORAGE_KEY = 'lut:audioMuted';
 const FADE_MS = 450;
 const TARGET_VOLUME = 0.6;
 
@@ -69,19 +69,14 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
     };
   };
 
-  // Initialize persisted mute state
+  // Initialize: always start unmuted — no persistence across sessions.
+  // audioPool._muted also starts false by default, so navigation sounds
+  // play immediately from the first scroll on every page load.
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'false') setIsMuted(false);
-      else setIsMuted(true);
-    } catch {
-      setIsMuted(true);
-    }
-
-    return () => {
-      clearFadeTimer();
-    };
+    console.log('[SoundToggle] init — starting unmuted (no localStorage restore)');
+    setIsMuted(true); // bg music still requires explicit user click to start
+    audioPool.setMuted(false, 'init');
+    return () => { clearFadeTimer(); };
   }, []);
 
   // Apply mute state to audio element (keep muted=false so we can fade volume)
@@ -95,11 +90,8 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
     a.loop = true;
     a.preload = 'auto';
 
-    try {
-      localStorage.setItem(STORAGE_KEY, String(isMuted));
-    } catch {
-      // ignore
-    }
+    // Sync audioPool when the user explicitly toggles.
+    console.log(`[SoundToggle] apply-state isMuted=${isMuted} hasInteracted=${hasInteracted}`);
 
     if (isMuted) {
       audioLogger.debug('Muting: fade volume to 0 then pause');
@@ -150,23 +142,19 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
 
     if (isActuallyPlaying) {
       audioLogger.debug('Toggle: audio is actually playing; muting');
-
-      // If the state is already muted, the effect won't re-run. Apply the fade
-      // directly so the mute is always smooth, then pause once volume hits 0.
-      if (a) {
-        fadeVolume(0, {
-          onDone: () => {
-            audioLogger.debug('Toggle fade-to-0 complete; pausing audio', { snapshot: snapshot() });
-            a.pause();
-          },
-        });
-      }
-
+      audioPool.setMuted(true, 'user-toggle');
+      fadeVolume(0, {
+        onDone: () => {
+          audioLogger.debug('Toggle fade-to-0 complete; pausing audio', { snapshot: snapshot() });
+          a.pause();
+        },
+      });
       setIsMuted(true);
       return;
     }
 
     audioLogger.debug('Toggle: audio not playing/audible; unmuting');
+    audioPool.setMuted(false, 'user-toggle');
     setIsMuted(false);
   };
 

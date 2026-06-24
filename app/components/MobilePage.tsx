@@ -6,6 +6,7 @@ import { BASE_PATH } from '../constants/config';
 import { assetUrl } from '../utils/assetUrl';
 import { ContactForm } from './ContactForm';
 import { SoundToggle } from './SoundToggle';
+import { audioPool } from '../utils/audioPool';
 
 // ─── Cases data ────────────────────────────────────────────────────────────────
 type CaseItem = {
@@ -193,7 +194,7 @@ function MobileVideoPopup({ title, url, onClose }: { title: string; url: string;
 
     return () => {
       // Don't resume if user explicitly muted while popup was open
-      if (localStorage.getItem('lut:audioMuted') === 'true') return;
+      if (audioPool.isMuted()) return;
       audio.volume = savedVolume;
       audio.play().catch(() => {});
     };

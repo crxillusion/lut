@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npx serve@latest out",
     "lint": "eslint",
     "upload:r2:videos": "node scripts/upload-r2-videos.mjs",
     "upload:r2:audios": "node scripts/upload-r2-audios.mjs",
