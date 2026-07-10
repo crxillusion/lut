@@ -282,7 +282,7 @@ export function ContactForm({ showUI = true, className = '' }: ContactFormProps)
 
         {/* Schedule */}
         <a
-          href="https://calendly.com/lutstudios-info/30min"
+          href="https://calendar.app.google/2p2siWDNBgX8U6mL8"
           target="_blank" rel="noopener noreferrer"
           className="w-full h-[46px] flex items-center justify-center rounded-[20px] border border-white/60 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] font-outfit font-bold text-white tracking-[0.22em] text-[14px] text-center bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%),linear-gradient(0deg,rgba(0,108,253,0.54),rgba(0,108,253,0.54))] hover:opacity-90 transition-opacity"
         >
