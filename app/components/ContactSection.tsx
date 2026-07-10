@@ -603,7 +603,7 @@ export function ContactSection({
 
                 {/* Schedule Meeting Button */}
                 <a
-                  href="https://calendly.com/lutstudios-info/30min"
+                  href="https://calendar.app.google/2p2siWDNBgX8U6mL8"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full h-[46px] md:h-[53px] max-[885px]:h-[42px] rounded-[20px] border border-white/60 shadow-[7px_9px_14.4px_0px_rgba(0,0,0,0.28)] font-outfit font-bold text-white tracking-[0.22em] md:tracking-[0.28em] text-[clamp(14px,1.35vw,16px)] text-center bg-[radial-gradient(66.79%_318.35%_at_34.13%_-210.76%,rgba(185,176,155,0.20)_0%,rgba(240,240,240,0.20)_100%),linear-gradient(0deg,rgba(0,108,253,0.54),rgba(0,108,253,0.54))] hover:opacity-90 transition-opacity flex items-center justify-center"
