@@ -6,13 +6,6 @@
   NEXT_PUBLIC_BASE_PATH = ""
   NEXT_PUBLIC_ASSET_PREFIX = "https://assets.lutstudios.com"
 
-# Disable the Next.js plugin — it is for SSR/ISR deployments only.
-# This site uses `output: 'export'` (static HTML) and does not need it.
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-  [plugins.inputs]
-    enabled = false
-
 # SPA fallback — serve index.html for all routes
 [[redirects]]
   from = "/*"
