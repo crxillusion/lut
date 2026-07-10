@@ -2,11 +2,36 @@
   command = "npm ci && npm run build"
   publish = "out"
 
-# Production deploys should use no basePath (root domain).
 [build.environment]
   NEXT_PUBLIC_BASE_PATH = ""
-  # Public asset host
   NEXT_PUBLIC_ASSET_PREFIX = "https://assets.lutstudios.com"
 
-# Optional: ensure Netlify uses the Next.js export output
-# and doesn't try to run a Next.js server.
+# Disable the Next.js plugin — it is for SSR/ISR deployments only.
+# This site uses `output: 'export'` (static HTML) and does not need it.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    enabled = false
+
+# SPA fallback — serve index.html for all routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Long-term cache for hashed Next.js static assets
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache partner/case images
+[[headers]]
+  for = "/partners/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/cases/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
