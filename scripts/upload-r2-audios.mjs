@@ -57,8 +57,12 @@ const contentTypeFor = (fileName) => {
 const toPosixKey = (p) => p.split(path.sep).join('/');
 
 (async () => {
-  // Audio files to upload
+  // Audio files to upload — optimized MP3s preferred, WAVs kept as fallback
   const audioFiles = [
+    'Forward.mp3',
+    'Backward.mp3',
+    'Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells_1.mp3',
+    // Original WAVs (kept as fallback, not referenced in code)
     'Forward.wav',
     'Backward.wav',
     'Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav',
