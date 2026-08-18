@@ -1,18 +1,21 @@
 /**
  * Builds a URL for static assets.
  *
- * - Videos (/videos/*) and audio (/audios/*) live exclusively on R2 — always use R2.
- * - All other assets (images, SVGs, etc.) use NEXT_PUBLIC_ASSET_PREFIX if set (CI/Netlify),
- *   otherwise fall back to a relative path so local /public is used in dev.
+ * R2 bucket key structure (mirrors upload scripts):
+ *   videos/*   → uploaded by upload-r2-videos.mjs  → CDN: <prefix>/videos/*
+ *   audios/*   → uploaded by upload-r2-audios.mjs  → CDN: <prefix>/audios/*
+ *   everything else → upload-r2-images.mjs         → CDN: <prefix>/images/*
+ *
+ * In local dev (no NEXT_PUBLIC_ASSET_PREFIX set) images/SVGs are served from
+ * /public directly, so no sub-prefix is added.
  *
  * Note: <img>, <video>, <audio> src and new Image() are NOT subject to CORS.
- * Only fetch()/XHR to cross-origin URLs requires CORS headers — we don't use fetch() for assets.
  */
 
 const R2_PUBLIC = 'https://pub-d2e341ccd5fc4ac59f6cce5ff14c3ead.r2.dev';
 
-// Paths that only exist on R2, never in /public
-const R2_ONLY = /^\/(videos|audios)\//i;
+// Paths served directly from their own R2 prefix (not under /images/)
+const NON_IMAGE = /^\/(videos|audios)\//i;
 
 function normalizePrefix(prefix: string) {
   return prefix.trim().replace(/\/+$/, '');
@@ -20,19 +23,23 @@ function normalizePrefix(prefix: string) {
 
 export function assetUrl(p: string): string {
   const normalizedPath = p.startsWith('/') ? p : `/${p}`;
+  const cdnPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX
+    ? normalizePrefix(process.env.NEXT_PUBLIC_ASSET_PREFIX)
+    : null;
 
-  // Videos & audio always come from R2 regardless of environment
-  if (R2_ONLY.test(normalizedPath)) {
-    const r2Prefix = normalizePrefix(process.env.NEXT_PUBLIC_ASSET_PREFIX || R2_PUBLIC);
-    return `${r2Prefix}${normalizedPath}`;
+  if (NON_IMAGE.test(normalizedPath)) {
+    // Videos & audio: <cdn>/videos/... or <cdn>/audios/...
+    // Always need R2 — they're never in /public
+    const base = cdnPrefix ?? normalizePrefix(R2_PUBLIC);
+    return `${base}${normalizedPath}`;
   }
 
-  // Images/SVGs/etc: use explicit prefix in CI/prod, otherwise serve locally
-  const rawPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX;
-  if (rawPrefix) {
-    return `${normalizePrefix(rawPrefix)}${normalizedPath}`;
+  // Images / SVGs / etc.
+  if (cdnPrefix) {
+    // On CDN they live under the /images/ sub-prefix
+    return `${cdnPrefix}/images${normalizedPath}`;
   }
 
-  // Local dev — serve from /public directly (no prefix = relative path)
+  // Local dev — serve directly from /public (relative path, no prefix)
   return normalizedPath;
 }
