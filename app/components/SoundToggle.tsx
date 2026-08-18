@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { BASE_PATH, SOUND_PATHS } from '../constants/config';
+import { SOUND_PATHS } from '../constants/config';
+import { assetUrl } from '../utils/assetUrl';
 import { createLogger } from '../utils/logger';
 import { audioPool } from '../utils/audioPool';
 
@@ -70,7 +71,6 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
   // audioPool._muted also starts false by default, so navigation sounds
   // play immediately from the first scroll on every page load.
   useEffect(() => {
-    console.log('[SoundToggle] init — starting unmuted (no localStorage restore)');
     setIsMuted(true); // bg music still requires explicit user click to start
     audioPool.setMuted(false, 'init');
     return () => { clearFadeTimer(); };
@@ -85,10 +85,6 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
 
     // Ensure baseline config
     a.loop = true;
-    a.preload = 'auto';
-
-    // Sync audioPool when the user explicitly toggles.
-    console.log(`[SoundToggle] apply-state isMuted=${isMuted} hasInteracted=${hasInteracted}`);
 
     if (isMuted) {
       audioLogger.debug('Muting: fade volume to 0 then pause');
@@ -190,7 +186,7 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
         aria-label={ariaLabel}
       >
         <Image
-          src={`${BASE_PATH}/sound.svg`}
+          src={assetUrl('/sound.svg')}
           alt="Sound"
           width={iconSize}
           height={iconSize}

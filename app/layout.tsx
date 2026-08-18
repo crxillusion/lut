@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
-import { BASE_PATH, SOUND_PATHS } from "./constants/config";
+import { SOUND_PATHS } from "./constants/config";
+import { assetUrl } from "./utils/assetUrl";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
   creator: "LUT Studios",
   publisher: "LUT Studios",
   icons: {
-    icon: [{ url: `${BASE_PATH}/favicon.png`, type: 'image/png' }],
+    icon: [{ url: assetUrl('/favicon.png'), type: 'image/png' }],
   },
   openGraph: {
     type: "website",
@@ -40,13 +41,13 @@ export const metadata: Metadata = {
     siteName: "LUT Studios",
     title: "LUT Studios — Every Frame Is a Painting",
     description: "A multidisciplinary creative production studio. VFX, CGI, animation, commercial production & sound design. Yerevan, Armenia.",
-    images: [{ url: `${BASE_PATH}/loading-bg.jpg`, width: 1920, height: 1080, alt: "LUT Studios Showreel" }],
+    images: [{ url: assetUrl('/loading-bg.jpg'), width: 1920, height: 1080, alt: "LUT Studios Showreel" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "LUT Studios — Every Frame Is a Painting",
     description: "A multidisciplinary creative production studio. VFX, CGI, animation, commercial production & sound design.",
-    images: [`${BASE_PATH}/loading-bg.jpg`],
+    images: [assetUrl('/loading-bg.jpg')],
   },
   other: {
     'x-ua-compatible': 'IE=edge',
@@ -121,10 +122,10 @@ export default function RootLayout({
           }}
         />
         {/* UI icons (overlay) */}
-        <link rel="preload" as="image" href={`${BASE_PATH}/back-arrow.svg`} type="image/svg+xml" />
-        <link rel="preload" as="image" href={`${BASE_PATH}/instagram.svg`} type="image/svg+xml" />
-        <link rel="preload" as="image" href={`${BASE_PATH}/linkedin.svg`} type="image/svg+xml" />
-        <link rel="preload" as="image" href={`${BASE_PATH}/sound.svg`} type="image/svg+xml" />
+        <link rel="preload" as="image" href={assetUrl('/back-arrow.svg')} type="image/svg+xml" />
+        <link rel="preload" as="image" href={assetUrl('/instagram.svg')} type="image/svg+xml" />
+        <link rel="preload" as="image" href={assetUrl('/linkedin.svg')} type="image/svg+xml" />
+        <link rel="preload" as="image" href={assetUrl('/sound.svg')} type="image/svg+xml" />
 
         {/* Background audio */}
         <link

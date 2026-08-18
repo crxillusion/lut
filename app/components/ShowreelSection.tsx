@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BASE_PATH } from '../constants/config';
+import { assetUrl } from '../utils/assetUrl';
 
 interface ShowreelSectionProps {
   isVisible: boolean;
@@ -354,7 +354,7 @@ export function ShowreelSection({ isVisible, onBackClick }: ShowreelSectionProps
         >
           <Image
             ref={frameImgRef as any}
-            src={`${BASE_PATH}/Showreel_png_transparent.png`}
+            src={assetUrl('/Showreel_png_transparent.png')}
             alt="Showreel frame"
             fill
             priority

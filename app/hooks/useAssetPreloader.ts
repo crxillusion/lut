@@ -90,113 +90,55 @@ export function useAssetPreloader({
 
       const src = uniqueImmediate[cursor++];
 
-      // Use fetch first to get bytes flowing ASAP (doesn't wait for decode).
-      // Then also create an Image() to populate the image cache.
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      // Use new Image() instead of fetch() — avoids CORS preflight entirely.
+      // Cross-origin <img> src requests are always allowed regardless of CORS headers.
+      const img = new Image();
+      img.decoding = 'async';
+      img.loading = 'eager';
+
+      const isCriticalOverlay = /\/((Cases|Showreel)_png_transparent)\.png$/i.test(src);
+      const isOptimizedStaticBg = /\/optimized\/.+--\d+\.(avif|webp)$/i.test(src);
 
       let settled = false;
       const settle = (ok: boolean, reason?: string) => {
         if (settled) return;
         settled = true;
+        window.clearTimeout(timeoutId);
         resolveOne(ok, src, reason);
         runNext();
       };
 
-      const timeoutId = window.setTimeout(() => {
+      const timeoutId = window.setTimeout(() => settle(false, 'timeout'), immediateTimeoutMs);
+      timers.push(timeoutId);
+
+      const warmRaster = () => {
         try {
-          controller?.abort();
+          const w = img.naturalWidth || 0;
+          const h = img.naturalHeight || 0;
+          if (w > 0 && h > 0) {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.min(64, w);
+            canvas.height = Math.min(64, h);
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
         } catch {
           // ignore
         }
-        settle(false, 'timeout');
-      }, immediateTimeoutMs);
-      timers.push(timeoutId);
+      };
 
-      // Kick off request
-      fetch(src, {
-        cache: 'force-cache',
-        signal: controller?.signal,
-      })
-        .then((r) => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          // Read the body so the browser actually downloads it.
-          return r.blob();
-        })
-        .then(() => {
-          // Also warm the image decode/cache path.
-          const img = new Image();
-          img.decoding = 'async';
-          img.loading = 'eager';
+      img.onload = async () => {
+        const shouldDecode =
+          (isCriticalOverlay || isOptimizedStaticBg) && typeof (img as any).decode === 'function';
+        if (shouldDecode) {
+          try { await (img as any).decode(); } catch { /* ignore */ }
+        }
+        if (isCriticalOverlay || isOptimizedStaticBg) warmRaster();
+        settle(true);
+      };
+      img.onerror = () => settle(false, 'img_error');
 
-          const isCriticalOverlay = /\/((Cases|Showreel)_png_transparent)\.png$/i.test(src);
-          const isOptimizedStaticBg = /\/optimized\/.+--\d+\.(avif|webp)$/i.test(src);
-
-          return new Promise<void>((resolve) => {
-            let done = false;
-            const finish = () => {
-              if (done) return;
-              done = true;
-              resolve();
-            };
-
-            // Safety timeout so preloading can't hang forever.
-            const decodeTimeout = window.setTimeout(() => finish(), 2500);
-
-            const warmRaster = () => {
-              // Try to force a raster/upload by drawing once.
-              // This helps avoid a black blip when the image is first painted full-screen.
-              try {
-                const w = (img as any).naturalWidth || 0;
-                const h = (img as any).naturalHeight || 0;
-                if (w > 0 && h > 0) {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = Math.min(64, w);
-                  canvas.height = Math.min(64, h);
-                  const ctx = canvas.getContext('2d');
-                  ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-                }
-              } catch {
-                // ignore
-              }
-            };
-
-            img.onload = async () => {
-              window.clearTimeout(decodeTimeout);
-              const shouldDecode =
-                (isCriticalOverlay || isOptimizedStaticBg) && typeof (img as any).decode === 'function';
-              if (shouldDecode) {
-                try {
-                  await (img as any).decode();
-                } catch {
-                  // ignore decode errors
-                }
-              }
-
-              if (isCriticalOverlay || isOptimizedStaticBg) {
-                warmRaster();
-              }
-
-              finish();
-            };
-            img.onerror = () => {
-              window.clearTimeout(decodeTimeout);
-              finish();
-            };
-
-            img.src = src;
-          });
-        })
-        .then(() => {
-          // Consider it done once bytes are fetched (and for critical overlays, decoded).
-          settle(true);
-        })
-        .catch((e) => {
-          assetLogger.warn(`Immediate fetch failed: ${src}`, e);
-          settle(false, 'fetch_error');
-        })
-        .finally(() => {
-          window.clearTimeout(timeoutId);
-        });
+      img.src = src;
     };
 
     const initial = Math.max(1, Math.min(immediateConcurrency, total));

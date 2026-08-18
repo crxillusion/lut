@@ -1,6 +1,6 @@
 'use client';
 
-import { BASE_PATH } from '../constants/config';
+import { assetUrl } from '../utils/assetUrl';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { memo, useState, useEffect } from 'react';
@@ -98,7 +98,7 @@ const SocialLinksComponent = ({
               className="text-white hover:opacity-70 transition-opacity"
               aria-label="Go back"
             >
-              <Image src={`${BASE_PATH}/back-arrow.svg`} alt="Back" width={effectiveIconSize} height={effectiveIconSize} />
+              <Image src={assetUrl('/back-arrow.svg')} alt="Back" width={effectiveIconSize} height={effectiveIconSize} />
             </button>
             
             {/* Divider */}
@@ -116,7 +116,7 @@ const SocialLinksComponent = ({
         aria-label="Instagram"
       >
         <Image
-          src={`${BASE_PATH}/instagram.svg`}
+          src={assetUrl('/instagram.svg')}
           alt="Instagram"
           width={effectiveIconSize}
           height={effectiveIconSize}
@@ -132,7 +132,7 @@ const SocialLinksComponent = ({
         aria-label="LinkedIn"
       >
         <Image
-          src={`${BASE_PATH}/linkedin.svg`}
+          src={assetUrl('/linkedin.svg')}
           alt="LinkedIn"
           width={effectiveIconSize}
           height={effectiveIconSize}
@@ -156,7 +156,7 @@ const SocialLinksComponent = ({
             transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
           >
             <Image
-              src={`${BASE_PATH}/email.svg`}
+              src={assetUrl('/email.svg')}
               alt="Email"
               width={effectiveIconSize}
               height={effectiveIconSize}

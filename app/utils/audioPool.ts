@@ -27,8 +27,7 @@ function getOrCreate(src: string): HTMLAudioElement {
 }
 
 export const audioPool = {
-  setMuted(muted: boolean, reason = 'unknown'): void {
-    console.log(`[AudioPool] setMuted(${muted}) reason="${reason}" — was: ${_muted}`);
+  setMuted(muted: boolean, _reason = 'unknown'): void {
     _muted = muted;
   },
 
@@ -44,7 +43,6 @@ export const audioPool = {
 
   play(src: string, volume = 0.5): void {
     if (typeof window === 'undefined') return;
-    console.log(`[AudioPool] play() _muted=${_muted} src="${src.split('/').pop()}"`);
     if (_muted) return;
 
     const el = getOrCreate(src);

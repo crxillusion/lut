@@ -3,7 +3,7 @@
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createLogger, videoLogger } from '../utils/logger';
-import { BASE_PATH } from '@/app/constants/config';
+import { assetUrl } from '@/app/utils/assetUrl';
 
 const staticLogger = createLogger('Static');
 
@@ -62,14 +62,14 @@ export function StaticSection({
   const avifSrcSet = useMemo(() => {
     if (!srcBase) return '';
     const base = isOptimizedBase ? srcBase : `/optimized${srcBase}`;
-    const basePath = `${BASE_PATH}${base}`;
+    const basePath = assetUrl(base);
     return widths.map(w => `${basePath}--${w}.avif ${w}w`).join(', ');
   }, [srcBase, isOptimizedBase]);
 
   const webpSrcSet = useMemo(() => {
     if (!srcBase) return '';
     const base = isOptimizedBase ? srcBase : `/optimized${srcBase}`;
-    const basePath = `${BASE_PATH}${base}`;
+    const basePath = assetUrl(base);
     return widths.map(w => `${basePath}--${w}.webp ${w}w`).join(', ');
   }, [srcBase, isOptimizedBase]);
 
@@ -163,7 +163,7 @@ export function StaticSection({
 
     let cancelled = false;
 
-    const url = `${BASE_PATH}${(isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp'}`;
+    const url = assetUrl((isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp');
     const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
 
     const run = async () => {
@@ -508,7 +508,7 @@ export function StaticSection({
             data-debug-shown={imgShown}
             data-debug-painted={bgPainted}
             data-debug-opacity={isVisible && imgShown && bgPainted ? 1 : 0}
-            src={`${BASE_PATH}${(isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp'}`}
+            src={assetUrl((isOptimizedBase ? srcBase : `/optimized${srcBase}`) + '--1280.webp')}
             className="absolute inset-0 w-full h-full object-cover"
             style={{
               objectFit: 'cover',

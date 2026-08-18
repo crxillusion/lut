@@ -16,7 +16,7 @@ import { useNavigationState } from './hooks/useNavigationState';
 import { useNavigationTransitions } from './hooks/useNavigationTransitions';
 import { useInputHandling } from './hooks/useInputHandling';
 import { useOpeningSequence, useContactVisibility } from './hooks/useOpeningSequence';
-import { BASE_PATH, SOUND_PATHS } from './constants/config';
+import { SOUND_PATHS } from './constants/config';
 import { useBgAudioAutoplay } from './hooks/useBgAudioAutoplay';
 import type { UseHomeNavigationResult } from './hooks/useHomeNavigation';
 
@@ -46,14 +46,6 @@ function DesktopPage() {
     []
   );
   useAudioPreloader(audioPathsArray);
-
-  // Lottie preloading
-  useEffect(() => {
-    const lottieUrl = `${BASE_PATH}/5Z8KeWup2u.lottie`;
-    fetch(lottieUrl, { method: 'GET', cache: 'no-cache' })
-      .then(r => r.blob())
-      .catch(err => console.warn('[Home] Lottie cache-warm failed:', err.message));
-  }, []);
 
   // Image preloading - Intelligent phased approach
   // Memoize function outputs to prevent unnecessary re-renders

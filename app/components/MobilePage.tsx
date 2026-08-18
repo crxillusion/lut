@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BASE_PATH } from '../constants/config';
 import { assetUrl } from '../utils/assetUrl';
 import { ContactForm } from './ContactForm';
 import { SoundToggle } from './SoundToggle';
@@ -280,11 +279,11 @@ function MobileCaseCard({ item }: { item: CaseItem }) {
       >
         {/* Optimised background image — browser picks avif → webp → original */}
         <picture className="absolute inset-0">
-          <source type="image/avif" srcSet={`${BASE_PATH}${item.img.replace(/\.(png|jpg|jpeg)$/i, '--800.avif')}`} />
-          <source type="image/webp" srcSet={`${BASE_PATH}${item.img.replace(/\.(png|jpg|jpeg)$/i, '--800.webp')}`} />
+          <source type="image/avif" srcSet={`${assetUrl(item.img.replace(/\.(png|jpg|jpeg)$/i, '--800.avif'))}`} />
+          <source type="image/webp" srcSet={`${assetUrl(item.img.replace(/\.(png|jpg|jpeg)$/i, '--800.webp'))}`} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${BASE_PATH}${item.img}`}
+            src={assetUrl(item.img)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
@@ -363,7 +362,7 @@ function ShowreelBlock() {
         className="relative flex items-center justify-between px-6 py-5 cursor-pointer"
         style={{
             ...CARD_STYLE,
-            background: `url(${BASE_PATH}/showreel_bg.png) no-repeat center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+            background: `url(${assetUrl('/showreel_bg.png')}) no-repeat center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
             backgroundSize: 'cover',
         }}
         onClick={() => setOpen(true)}
@@ -470,7 +469,7 @@ export function MobilePage() {
             aria-label="Instagram"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${BASE_PATH}/instagram.svg`} alt="Instagram" width={40} height={40} />
+            <img src={assetUrl('/instagram.svg')} alt="Instagram" width={40} height={40} />
           </a>
           <a
             href="https://www.linkedin.com/company/lutstudios/"
@@ -480,7 +479,7 @@ export function MobilePage() {
             aria-label="LinkedIn"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${BASE_PATH}/linkedin.svg`} alt="LinkedIn" width={40} height={40} />
+            <img src={assetUrl('/linkedin.svg')} alt="LinkedIn" width={40} height={40} />
           </a>
           <SoundToggle iconSize={40} />
         </div>
@@ -497,7 +496,7 @@ export function MobilePage() {
                 border: '0.5px solid #FFFFFF',
                 boxShadow: '7px 9px 14.4px 0px #00000047',
                 background:
-                    `url(${BASE_PATH}/about-bg.png) no-repeat left center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+                    `url(${assetUrl('/about-bg.png')}) no-repeat left center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
                 backdropFilter: 'blur(1.44px)',
                 borderRadius: '20px',
                 backgroundSize: 'contain',
@@ -534,7 +533,7 @@ export function MobilePage() {
             className="px-5 py-5 mb-6"
             style={{
                 ...CARD_STYLE,
-                background: `url(${BASE_PATH}/cases-bg.png) no-repeat center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
+                background: `url(${assetUrl('/cases-bg.png')}) no-repeat center, radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185, 176, 155, 0.2) 0%, rgba(240, 240, 240, 0.2) 100%)`,
                 backgroundSize: 'contain',
 
             }}
@@ -587,18 +586,18 @@ export function MobilePage() {
                   <source
                     type="image/avif"
                     srcSet={partner.widths
-                      .map(w => `${BASE_PATH}${partner.img.replace(/\.(png|jpg|jpeg)$/i, `--${w}.avif`)} ${w}w`)
+                      .map(w => `${assetUrl(partner.img.replace(/\.(png|jpg|jpeg)$/i, `--${w}.avif`))} ${w}w`)
                       .join(', ')}
                   />
                   <source
                     type="image/webp"
                     srcSet={partner.widths
-                      .map(w => `${BASE_PATH}${partner.img.replace(/\.(png|jpg|jpeg)$/i, `--${w}.webp`)} ${w}w`)
+                      .map(w => `${assetUrl(partner.img.replace(/\.(png|jpg|jpeg)$/i, `--${w}.webp`))} ${w}w`)
                       .join(', ')}
                   />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${BASE_PATH}${partner.img}`}
+                    src={assetUrl(partner.img)}
                     alt={partner.name}
                     className="w-full object-contain"
                     style={{ maxHeight: partner.rowSpan === 2 ? 150 : 60 }}

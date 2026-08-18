@@ -2,7 +2,7 @@
 
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BASE_PATH } from '../constants/config';
+import { assetUrl } from '../utils/assetUrl';
 import { homeLogger } from '../utils/logger';
 
 interface CasesSectionProps {
@@ -194,7 +194,7 @@ function VideoPopup({ title, url, onClose }: { title: string; url: string; onClo
 }
 
 function CaseCard({ item, imgRef }: { item: CaseItem; imgRef?: React.RefObject<HTMLImageElement | null> }) {
-  const bgUrl = `${BASE_PATH}${item.img}`;
+  const bgUrl = assetUrl(item.img);
   return (
     <div className={GRID_CARD_CLASS}>
       <img
@@ -694,7 +694,6 @@ export function CasesSection({
         },
         devicePixelRatio: window.devicePixelRatio,
       });
-      console.log('[Cases] EXPANDED:', { frameRect, local, titleMaxPx });
     };
 
     // Image may not be laid out immediately.
@@ -952,7 +951,7 @@ export function CasesSection({
         >
           <img
             ref={frameImgRef}
-            src={`${BASE_PATH}/Cases_png_transparent.png`}
+            src={assetUrl('/Cases_png_transparent.png')}
             alt="Cases frame"
             className="w-full h-full object-cover"
             draggable={false}
@@ -1021,7 +1020,7 @@ export function CasesSection({
               <motion.div
                 className={INTRO_CARD_CLASS}
                 style={{
-                  backgroundImage: `url(${BASE_PATH}/cases-bg.png), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185,176,155,0.20) 0%, rgba(240,240,240,0.20) 100%)`,
+                  backgroundImage: `url(${assetUrl('/cases-bg.png')}), radial-gradient(66.79% 318.35% at 34.13% -210.76%, rgba(185,176,155,0.20) 0%, rgba(240,240,240,0.20) 100%)`,
                 }}
                 initial={motionCommon.initial}
                 animate={motionCommon.animate}

@@ -1,4 +1,4 @@
-import { BASE_PATH } from './config';
+import { assetUrl } from '../utils/assetUrl';
 
 /**
  * Intelligent preloading strategy:
@@ -23,7 +23,7 @@ export const getOptimalImageVariant = (width?: number): number => {
 // Only what's absolutely necessary before user can interact
 export const CRITICAL_PRELOAD_IMAGES: string[] = [
   // Loading screen background (user sees immediately)
-  `${BASE_PATH}/loading-bg.jpg`,
+  assetUrl('/loading-bg.jpg'),
 ];
 
 // Helper function to generate high-priority images based on viewport
@@ -31,8 +31,8 @@ export const getHighPriorityImages = (): string[] => {
   const optimalWidth = getOptimalImageVariant();
   return [
     // About section (user will scroll to this first after hero)
-    `${BASE_PATH}/optimized/about--${optimalWidth}.avif`,
-    `${BASE_PATH}/optimized/about--${optimalWidth}.webp`,
+    assetUrl(`/optimized/about--${optimalWidth}.avif`),
+    assetUrl(`/optimized/about--${optimalWidth}.webp`),
   ];
 };
 
@@ -42,36 +42,36 @@ export const getMediumPriorityImages = (): string[] => {
   const optimalWidth = getOptimalImageVariant();
   return [
     // Team sections (adjacent to About)
-    `${BASE_PATH}/optimized/team1--${optimalWidth}.avif`,
-    `${BASE_PATH}/optimized/team1--${optimalWidth}.webp`,
-    `${BASE_PATH}/optimized/team2--${optimalWidth}.avif`,
-    `${BASE_PATH}/optimized/team2--${optimalWidth}.webp`,
+    assetUrl(`/optimized/team1--${optimalWidth}.avif`),
+    assetUrl(`/optimized/team1--${optimalWidth}.webp`),
+    assetUrl(`/optimized/team2--${optimalWidth}.avif`),
+    assetUrl(`/optimized/team2--${optimalWidth}.webp`),
     // Offer section (next in scroll order)
-    `${BASE_PATH}/optimized/offer--${optimalWidth}.avif`,
-    `${BASE_PATH}/optimized/offer--${optimalWidth}.webp`,
+    assetUrl(`/optimized/offer--${optimalWidth}.avif`),
+    assetUrl(`/optimized/offer--${optimalWidth}.webp`),
     // Partners section
-    `${BASE_PATH}/optimized/partners--${optimalWidth}.avif`,
-    `${BASE_PATH}/optimized/partners--${optimalWidth}.webp`,
+    assetUrl(`/optimized/partners--${optimalWidth}.avif`),
+    assetUrl(`/optimized/partners--${optimalWidth}.webp`),
   ];
 };
 
 // Helper function to generate cases section images (card thumbnails + bg)
 // These are loaded as background assets so they're ready before the user reaches Cases.
 export const getCasesImages = (): string[] => [
-  `${BASE_PATH}/cases-bg.png`,
-  `${BASE_PATH}/cases/5f74027c328b57bc4440ab05dfa0115e909245e3.png`,
-  `${BASE_PATH}/cases/f7f9a59fb629bc50bd16b0d625b4121f2ced0c0c.png`,
-  `${BASE_PATH}/cases/f52f8354b0cae68738cfcd2bfd7e2f28c24e56eb.png`,
-  `${BASE_PATH}/cases/7a43535bda67a565f92d4c59b40208caca25857c.jpg`,
-  `${BASE_PATH}/cases/9cb8ae990c7485afbbdad3534bbb2fb9f0b95ba0.png`,
-  `${BASE_PATH}/cases/a947072b922f94c359fe8d47a6f82546cd6251ba.png`,
-  `${BASE_PATH}/cases/614242dcf847675c792606557d89585df622ca2d.png`,
-  `${BASE_PATH}/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg`,
-  `${BASE_PATH}/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg`,
-  `${BASE_PATH}/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png`,
+  assetUrl('/cases-bg.png'),
+  assetUrl('/cases/5f74027c328b57bc4440ab05dfa0115e909245e3.png'),
+  assetUrl('/cases/f7f9a59fb629bc50bd16b0d625b4121f2ced0c0c.png'),
+  assetUrl('/cases/f52f8354b0cae68738cfcd2bfd7e2f28c24e56eb.png'),
+  assetUrl('/cases/7a43535bda67a565f92d4c59b40208caca25857c.jpg'),
+  assetUrl('/cases/9cb8ae990c7485afbbdad3534bbb2fb9f0b95ba0.png'),
+  assetUrl('/cases/a947072b922f94c359fe8d47a6f82546cd6251ba.png'),
+  assetUrl('/cases/614242dcf847675c792606557d89585df622ca2d.png'),
+  assetUrl('/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg'),
+  assetUrl('/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg'),
+  assetUrl('/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png'),
   // Section frame overlays
-  `${BASE_PATH}/Cases_png_transparent.png`,
-  `${BASE_PATH}/Showreel_png_transparent.png`,
+  assetUrl('/Cases_png_transparent.png'),
+  assetUrl('/Showreel_png_transparent.png'),
 ];
 
 // Phase 3: LOW PRIORITY - Lazy load on-demand
@@ -84,101 +84,101 @@ export const LOW_PRIORITY_PRELOAD_IMAGES = {
 // This is kept for backward compatibility
 export const HOME_PRELOAD_IMAGE_PATHS: string[] = [
   // Loading screen + global background assets
-  `${BASE_PATH}/loading-bg.jpg`,
+  assetUrl('/loading-bg.jpg'),
 
   // Static sections backgrounds (optimized) - ALL WIDTHS
   // Old behavior: preload all 7 widths of each image
-  `${BASE_PATH}/optimized/about--640.avif`,
-  `${BASE_PATH}/optimized/about--960.avif`,
-  `${BASE_PATH}/optimized/about--1280.avif`,
-  `${BASE_PATH}/optimized/about--1600.avif`,
-  `${BASE_PATH}/optimized/about--1920.avif`,
-  `${BASE_PATH}/optimized/about--2560.avif`,
-  `${BASE_PATH}/optimized/about--2920.avif`,
-  `${BASE_PATH}/optimized/about--640.webp`,
-  `${BASE_PATH}/optimized/about--960.webp`,
-  `${BASE_PATH}/optimized/about--1280.webp`,
-  `${BASE_PATH}/optimized/about--1600.webp`,
-  `${BASE_PATH}/optimized/about--1920.webp`,
-  `${BASE_PATH}/optimized/about--2560.webp`,
-  `${BASE_PATH}/optimized/about--2920.webp`,
+  assetUrl('/optimized/about--640.avif'),
+  assetUrl('/optimized/about--960.avif'),
+  assetUrl('/optimized/about--1280.avif'),
+  assetUrl('/optimized/about--1600.avif'),
+  assetUrl('/optimized/about--1920.avif'),
+  assetUrl('/optimized/about--2560.avif'),
+  assetUrl('/optimized/about--2920.avif'),
+  assetUrl('/optimized/about--640.webp'),
+  assetUrl('/optimized/about--960.webp'),
+  assetUrl('/optimized/about--1280.webp'),
+  assetUrl('/optimized/about--1600.webp'),
+  assetUrl('/optimized/about--1920.webp'),
+  assetUrl('/optimized/about--2560.webp'),
+  assetUrl('/optimized/about--2920.webp'),
 
-  `${BASE_PATH}/optimized/team1--640.avif`,
-  `${BASE_PATH}/optimized/team1--960.avif`,
-  `${BASE_PATH}/optimized/team1--1280.avif`,
-  `${BASE_PATH}/optimized/team1--1600.avif`,
-  `${BASE_PATH}/optimized/team1--1920.avif`,
-  `${BASE_PATH}/optimized/team1--2560.avif`,
-  `${BASE_PATH}/optimized/team1--2920.avif`,
-  `${BASE_PATH}/optimized/team1--640.webp`,
-  `${BASE_PATH}/optimized/team1--960.webp`,
-  `${BASE_PATH}/optimized/team1--1280.webp`,
-  `${BASE_PATH}/optimized/team1--1600.webp`,
-  `${BASE_PATH}/optimized/team1--1920.webp`,
-  `${BASE_PATH}/optimized/team1--2560.webp`,
-  `${BASE_PATH}/optimized/team1--2920.webp`,
+  assetUrl('/optimized/team1--640.avif'),
+  assetUrl('/optimized/team1--960.avif'),
+  assetUrl('/optimized/team1--1280.avif'),
+  assetUrl('/optimized/team1--1600.avif'),
+  assetUrl('/optimized/team1--1920.avif'),
+  assetUrl('/optimized/team1--2560.avif'),
+  assetUrl('/optimized/team1--2920.avif'),
+  assetUrl('/optimized/team1--640.webp'),
+  assetUrl('/optimized/team1--960.webp'),
+  assetUrl('/optimized/team1--1280.webp'),
+  assetUrl('/optimized/team1--1600.webp'),
+  assetUrl('/optimized/team1--1920.webp'),
+  assetUrl('/optimized/team1--2560.webp'),
+  assetUrl('/optimized/team1--2920.webp'),
 
-  `${BASE_PATH}/optimized/team2--640.avif`,
-  `${BASE_PATH}/optimized/team2--960.avif`,
-  `${BASE_PATH}/optimized/team2--1280.avif`,
-  `${BASE_PATH}/optimized/team2--1600.avif`,
-  `${BASE_PATH}/optimized/team2--1920.avif`,
-  `${BASE_PATH}/optimized/team2--2560.avif`,
-  `${BASE_PATH}/optimized/team2--2920.avif`,
-  `${BASE_PATH}/optimized/team2--640.webp`,
-  `${BASE_PATH}/optimized/team2--960.webp`,
-  `${BASE_PATH}/optimized/team2--1280.webp`,
-  `${BASE_PATH}/optimized/team2--1600.webp`,
-  `${BASE_PATH}/optimized/team2--1920.webp`,
-  `${BASE_PATH}/optimized/team2--2560.webp`,
-  `${BASE_PATH}/optimized/team2--2920.webp`,
+  assetUrl('/optimized/team2--640.avif'),
+  assetUrl('/optimized/team2--960.avif'),
+  assetUrl('/optimized/team2--1280.avif'),
+  assetUrl('/optimized/team2--1600.avif'),
+  assetUrl('/optimized/team2--1920.avif'),
+  assetUrl('/optimized/team2--2560.avif'),
+  assetUrl('/optimized/team2--2920.avif'),
+  assetUrl('/optimized/team2--640.webp'),
+  assetUrl('/optimized/team2--960.webp'),
+  assetUrl('/optimized/team2--1280.webp'),
+  assetUrl('/optimized/team2--1600.webp'),
+  assetUrl('/optimized/team2--1920.webp'),
+  assetUrl('/optimized/team2--2560.webp'),
+  assetUrl('/optimized/team2--2920.webp'),
 
-  `${BASE_PATH}/optimized/offer--640.avif`,
-  `${BASE_PATH}/optimized/offer--960.avif`,
-  `${BASE_PATH}/optimized/offer--1280.avif`,
-  `${BASE_PATH}/optimized/offer--1600.avif`,
-  `${BASE_PATH}/optimized/offer--1920.avif`,
-  `${BASE_PATH}/optimized/offer--2560.avif`,
-  `${BASE_PATH}/optimized/offer--2920.avif`,
-  `${BASE_PATH}/optimized/offer--640.webp`,
-  `${BASE_PATH}/optimized/offer--960.webp`,
-  `${BASE_PATH}/optimized/offer--1280.webp`,
-  `${BASE_PATH}/optimized/offer--1600.webp`,
-  `${BASE_PATH}/optimized/offer--1920.webp`,
-  `${BASE_PATH}/optimized/offer--2560.webp`,
-  `${BASE_PATH}/optimized/offer--2920.webp`,
+  assetUrl('/optimized/offer--640.avif'),
+  assetUrl('/optimized/offer--960.avif'),
+  assetUrl('/optimized/offer--1280.avif'),
+  assetUrl('/optimized/offer--1600.avif'),
+  assetUrl('/optimized/offer--1920.avif'),
+  assetUrl('/optimized/offer--2560.avif'),
+  assetUrl('/optimized/offer--2920.avif'),
+  assetUrl('/optimized/offer--640.webp'),
+  assetUrl('/optimized/offer--960.webp'),
+  assetUrl('/optimized/offer--1280.webp'),
+  assetUrl('/optimized/offer--1600.webp'),
+  assetUrl('/optimized/offer--1920.webp'),
+  assetUrl('/optimized/offer--2560.webp'),
+  assetUrl('/optimized/offer--2920.webp'),
 
-  `${BASE_PATH}/optimized/partners--640.avif`,
-  `${BASE_PATH}/optimized/partners--960.avif`,
-  `${BASE_PATH}/optimized/partners--1280.avif`,
-  `${BASE_PATH}/optimized/partners--1600.avif`,
-  `${BASE_PATH}/optimized/partners--1920.avif`,
-  `${BASE_PATH}/optimized/partners--2560.avif`,
-  `${BASE_PATH}/optimized/partners--2920.avif`,
-  `${BASE_PATH}/optimized/partners--640.webp`,
-  `${BASE_PATH}/optimized/partners--960.webp`,
-  `${BASE_PATH}/optimized/partners--1280.webp`,
-  `${BASE_PATH}/optimized/partners--1600.webp`,
-  `${BASE_PATH}/optimized/partners--1920.webp`,
-  `${BASE_PATH}/optimized/partners--2560.webp`,
-  `${BASE_PATH}/optimized/partners--2920.webp`,
+  assetUrl('/optimized/partners--640.avif'),
+  assetUrl('/optimized/partners--960.avif'),
+  assetUrl('/optimized/partners--1280.avif'),
+  assetUrl('/optimized/partners--1600.avif'),
+  assetUrl('/optimized/partners--1920.avif'),
+  assetUrl('/optimized/partners--2560.avif'),
+  assetUrl('/optimized/partners--2920.avif'),
+  assetUrl('/optimized/partners--640.webp'),
+  assetUrl('/optimized/partners--960.webp'),
+  assetUrl('/optimized/partners--1280.webp'),
+  assetUrl('/optimized/partners--1600.webp'),
+  assetUrl('/optimized/partners--1920.webp'),
+  assetUrl('/optimized/partners--2560.webp'),
+  assetUrl('/optimized/partners--2920.webp'),
 
   // Cases section background
-  `${BASE_PATH}/cases-bg.png`,
+  assetUrl('/cases-bg.png'),
 
   // Cases cards
-  `${BASE_PATH}/cases/5f74027c328b57bc4440ab05dfa0115e909245e3.png`,
-  `${BASE_PATH}/cases/f7f9a59fb629bc50bd16b0d625b4121f2ced0c0c.png`,
-  `${BASE_PATH}/cases/f52f8354b0cae68738cfcd2bfd7e2f28c24e56eb.png`,
-  `${BASE_PATH}/cases/7a43535bda67a565f92d4c59b40208caca25857c.jpg`,
-  `${BASE_PATH}/cases/9cb8ae990c7485afbbdad3534bbb2fb9f0b95ba0.png`,
-  `${BASE_PATH}/cases/a947072b922f94c359fe8d47a6f82546cd6251ba.png`,
-  `${BASE_PATH}/cases/614242dcf847675c792606557d89585df622ca2d.png`,
-  `${BASE_PATH}/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg`,
-  `${BASE_PATH}/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg`,
-  `${BASE_PATH}/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png`,
+  assetUrl('/cases/5f74027c328b57bc4440ab05dfa0115e909245e3.png'),
+  assetUrl('/cases/f7f9a59fb629bc50bd16b0d625b4121f2ced0c0c.png'),
+  assetUrl('/cases/f52f8354b0cae68738cfcd2bfd7e2f28c24e56eb.png'),
+  assetUrl('/cases/7a43535bda67a565f92d4c59b40208caca25857c.jpg'),
+  assetUrl('/cases/9cb8ae990c7485afbbdad3534bbb2fb9f0b95ba0.png'),
+  assetUrl('/cases/a947072b922f94c359fe8d47a6f82546cd6251ba.png'),
+  assetUrl('/cases/614242dcf847675c792606557d89585df622ca2d.png'),
+  assetUrl('/cases/d7546950bcd3ab692d9d95cf48dbf1f4b49d65ca.jpg'),
+  assetUrl('/cases/9534b83aa66ccdd7e8f10bcea0eeaea278cf4554.jpg'),
+  assetUrl('/cases/d95f75bea90f42feb2c769a38b8c30a17d48bca5.png'),
 
   // Section frame overlays
-  `${BASE_PATH}/Cases_png_transparent.png`,
-  `${BASE_PATH}/Showreel_png_transparent.png`,
+  assetUrl('/Cases_png_transparent.png'),
+  assetUrl('/Showreel_png_transparent.png'),
 ] as const;
