@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
-import { BASE_PATH } from "./constants/config";
+import { BASE_PATH, SOUND_PATHS } from "./constants/config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -130,7 +130,7 @@ export default function RootLayout({
         <link
           rel="preload"
           as="audio"
-          href={`${BASE_PATH}/Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav`}
+          href={SOUND_PATHS.bgAudio}
           type="audio/wav"
           crossOrigin="anonymous"
         />
@@ -139,14 +139,14 @@ export default function RootLayout({
         <link
           rel="preload"
           as="audio"
-          href={`${BASE_PATH}/Forward.wav`}
+          href={SOUND_PATHS.forward}
           type="audio/wav"
           crossOrigin="anonymous"
         />
         <link
           rel="preload"
           as="audio"
-          href={`${BASE_PATH}/Backward.wav`}
+          href={SOUND_PATHS.backward}
           type="audio/wav"
           crossOrigin="anonymous"
         />

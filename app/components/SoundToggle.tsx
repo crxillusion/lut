@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { BASE_PATH } from '../constants/config';
+import { BASE_PATH, SOUND_PATHS } from '../constants/config';
 import { createLogger } from '../utils/logger';
 import { audioPool } from '../utils/audioPool';
 
@@ -22,10 +22,7 @@ export function SoundToggle({ iconSize = 45, className }: SoundToggleProps) {
   const [isMuted, setIsMuted] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  const audioSrc = useMemo(
-    () => `${BASE_PATH}/Jesse Gillis - Time to Meditate - Soothing Eternal Synth Pads Soft High Bells.wav`,
-    []
-  );
+  const audioSrc = useMemo(() => SOUND_PATHS.bgAudio, []);
 
   const clearFadeTimer = () => {
     if (fadeTimerRef.current != null) {
